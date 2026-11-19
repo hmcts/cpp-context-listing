@@ -31,7 +31,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
  * service mocked (P2.1) and authz off
  * (authz is proven end-to-end in the integration tests against WireMock).
  */
-@SpringBootTest(properties = {"listing.p20-skeleton.enabled=true", "management.health.jms.enabled=false"})
+@SpringBootTest(properties = {"listing.p20-skeleton.enabled=true", "listing.messaging.enabled=false"})
 @AutoConfigureMockMvc
 class WebPlumbingTest extends PostgresContainerSupport {
 

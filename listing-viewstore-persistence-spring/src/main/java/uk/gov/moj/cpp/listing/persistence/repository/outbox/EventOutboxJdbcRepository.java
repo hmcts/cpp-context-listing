@@ -14,7 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * JDBC access to the {@code event_outbox} table (MBD refactor Phase 1, ADR 2), on Spring's
- * {@link JdbcTemplate} (P2.1 port of the JEE repository; the relay that uses it is P2.2).
+ * {@link JdbcTemplate} (P2.1 port of the JEE repository; used by the P2.2 Spring relay and writer in
+ * listing-messaging).
  *
  * <p>All methods must run inside the caller's transaction ({@code MANDATORY}): {@link #append}
  * commits atomically with the caller's viewstore changes, and the advisory lock taken by
@@ -30,7 +31,7 @@ public class EventOutboxJdbcRepository {
     private static final String INSERT =
             "INSERT INTO event_outbox (event_id, event_name, stream_id, envelope, created_at) VALUES (?, ?, ?, ?, ?)";
     private static final String TRY_LOCK = "SELECT pg_try_advisory_xact_lock(?)";
-    private static final String SELECT_BATCH = "SELECT id, envelope, attempts FROM event_outbox ORDER BY id LIMIT ?";
+    private static final String SELECT_BATCH = "SELECT id, event_name, envelope, attempts FROM event_outbox ORDER BY id LIMIT ?";
     private static final String INCREMENT_ATTEMPTS = "UPDATE event_outbox SET attempts = attempts + 1 WHERE id = ?";
     private static final String DELETE_BY_IDS = "DELETE FROM event_outbox WHERE id = ANY (?)";
 
@@ -73,7 +74,8 @@ public class EventOutboxJdbcRepository {
     public List<OutboxEntry> nextBatch(final int maxRows) {
         try {
             return jdbcTemplate.query(SELECT_BATCH,
-                    (rs, rowNum) -> new OutboxEntry(rs.getLong("id"), rs.getString("envelope"), rs.getInt("attempts")),
+                    (rs, rowNum) -> new OutboxEntry(rs.getLong("id"), rs.getString("event_name"), rs.getString("envelope"),
+                            rs.getInt("attempts")),
                     maxRows);
         } catch (final DataAccessException e) {
             throw new EventOutboxException("Failed to read from event_outbox", e);
@@ -105,6 +107,7 @@ public class EventOutboxJdbcRepository {
         }
     }
 
-    public record OutboxEntry(long id, String envelopeJson, int attempts) {
+    /** One outbox row; {@code eventName} lets the relay route without parsing the envelope first (P2.2). */
+    public record OutboxEntry(long id, String eventName, String envelopeJson, int attempts) {
     }
 }

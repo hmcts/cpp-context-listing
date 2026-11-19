@@ -1,0 +1,189 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/courtApplicationType.json",
+  "description": "The type of application made to court for judicial decision. Taken from reference data",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "code": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "legislation": {
+      "type": "string"
+    },
+    "categoryCode": {
+      "type": "string"
+    },
+    "linkType": {
+      "$ref": "#/definitions/linkType"
+    },
+    "jurisdiction": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/applicationJurisdictionType"
+    },
+    "appealFlag": {
+      "type": "boolean"
+    },
+    "summonsTemplateType": {
+      "$ref": "#/definitions/summonsTemplateType"
+    },
+    "validFrom": {
+      "type": "string",
+      "format": "date"
+    },
+    "validTo": {
+      "type": "string",
+      "format": "date"
+    },
+    "applicantAppellantFlag": {
+      "type": "boolean"
+    },
+    "pleaApplicableFlag": {
+      "type": "boolean"
+    },
+    "offenceActiveOrder": {
+      "$ref": "#/definitions/offenceActiveOrder"
+    },
+    "commrOfOathFlag": {
+      "type": "boolean"
+    },
+    "breachType": {
+      "$ref": "#/definitions/breachType"
+    },
+    "courtOfAppealFlag": {
+      "type": "boolean"
+    },
+    "courtExtractAvlFlag": {
+      "type": "boolean"
+    },
+    "listingNotifTemplate": {
+      "type": "string"
+    },
+    "boxworkNotifTemplate": {
+      "type": "string"
+    },
+    "typeWelsh": {
+      "type": "string"
+    },
+    "legislationWelsh": {
+      "type": "string"
+    },
+    "prosecutorThirdPartyFlag": {
+      "type": "boolean"
+    },
+    "spiOutApplicableFlag": {
+      "type": "boolean"
+    },
+    "hearingCode": {
+      "type": "string"
+    },
+    "resentencingActivationCode": {
+      "type": "string"
+    },
+    "prefix": {
+      "type": "string"
+    },
+    "pssId": {
+      "type": "integer"
+    },
+    "applicationWording": {
+      "type": "string"
+    },
+    "applicationWordingWelsh": {
+      "type": "string"
+    },
+    "terminalEntry": {
+      "type": "string"
+    },
+    "applicationSynonym": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "initialFeeApplicable": {
+      "type": "boolean"
+    },
+    "contestedFeeApplicable": {
+      "type": "boolean"
+    },
+    "exParte": {
+      "type": "boolean"
+    },
+    "sowRef": {
+      "type": "string",
+      "maxLength": 10
+    },
+    "changeDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "lastModified": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "definitions": {
+    "linkType": {
+      "id": "http://justice.gov.uk/core/courts/linkType.json",
+      "type": "string",
+      "enum": [
+        "STANDALONE",
+        "LINKED",
+        "SJP",
+        "FIRST_HEARING"
+      ]
+    },
+
+    "summonsTemplateType": {
+      "id": "http://justice.gov.uk/core/courts/summonsTemplateType.json",
+      "type": "string",
+      "enum": [
+        "GENERIC_APPLICATION",
+        "BREACH",
+        "NOT_APPLICABLE",
+        "FIRST_HEARING",
+        "PARENT_GENERIC_CASE"
+      ]
+    },
+    "offenceActiveOrder": {
+      "id": "http://justice.gov.uk/core/courts/offenceActiveOrder.json",
+      "type": "string",
+      "enum": [
+        "OFFENCE",
+        "COURT_ORDER",
+        "NOT_APPLICABLE"
+      ]
+    },
+    "breachType": {
+      "id": "http://justice.gov.uk/core/courts/breachType.json",
+      "type": "string",
+      "enum": [
+        "GENERIC_BREACH",
+        "COMMISSION_OF_NEW_OFFENCE_BREACH",
+        "NOT_APPLICABLE"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "type",
+    "categoryCode",
+    "linkType",
+    "jurisdiction",
+    "summonsTemplateType",
+    "breachType",
+    "appealFlag",
+    "applicantAppellantFlag",
+    "pleaApplicableFlag",
+    "commrOfOathFlag",
+    "courtOfAppealFlag",
+    "courtExtractAvlFlag",
+    "prosecutorThirdPartyFlag",
+    "spiOutApplicableFlag",
+    "offenceActiveOrder"
+  ],
+  "additionalProperties": false
+}

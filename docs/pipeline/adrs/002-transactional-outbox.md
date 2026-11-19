@@ -39,7 +39,10 @@ after the database write is two writes that can fail independently.
      (`listing.outbox.relay.maxAttempts`) it is logged at ERROR and dropped, where JMS would have
      used the DLQ.
 5. **Phase 2.** The table stays; the relay is re-implemented in Spring and publishes public events
-   to `public.event` directly.
+   to `public.event` directly. *Done in P2.2 (ADR 013):* `listing-messaging` `EventOutbox`,
+   `OutboxRelay`/`OutboxDeliverer` (same lock key, ordering, exact-id delete, attempts and give-up;
+   a failed entry now waits one relay delay before its retry), `public.*` published in the
+   framework wire format, other names routed to in-process `PrivateEventHandler`s.
 
 ## Consequences
 

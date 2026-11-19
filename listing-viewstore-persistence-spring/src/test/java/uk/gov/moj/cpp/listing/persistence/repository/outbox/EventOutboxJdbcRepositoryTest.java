@@ -27,6 +27,7 @@ class EventOutboxJdbcRepositoryTest extends AbstractRepositoryTest {
 
         final List<OutboxEntry> batch = repository.nextBatch(10);
         assertThat(batch).extracting(OutboxEntry::envelopeJson).containsExactly("{\"n\":1}", "{\"n\":2}");
+        assertThat(batch).extracting(OutboxEntry::eventName).containsExactly("public.listing.one", "public.listing.two");
         assertThat(batch).extracting(OutboxEntry::attempts).containsOnly(0);
         assertThat(repository.nextBatch(1)).hasSize(1);
 

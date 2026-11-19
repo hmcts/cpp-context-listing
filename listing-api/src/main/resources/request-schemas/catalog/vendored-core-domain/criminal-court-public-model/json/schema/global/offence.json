@@ -1,0 +1,214 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/offence.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "bailStatus": {
+      "$ref": "http://justice.gov.uk/core/courts/bailStatus.json"
+    },
+    "offenceDefinitionId": {
+      "description": "The identifier of the offence from reference data",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "offenceCode": {
+      "type": "string"
+    },
+    "offenceTitle": {
+      "type": "string"
+    },
+    "offenceTitleWelsh": {
+      "type": "string"
+    },
+    "offenceLegislation": {
+      "type": "string"
+    },
+    "offenceLegislationWelsh": {
+      "type": "string"
+    },
+    "modeOfTrial": {
+      "type": "string"
+    },
+    "wording": {
+      "type": "string"
+    },
+    "wordingWelsh": {
+      "type": "string"
+    },
+    "startDate": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "endDate": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "arrestDate": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "chargeDate": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "laidDate": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "dateOfInformation": {
+      "description": "The date that the matter is brought to court attention for consideration and for proceeding",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "orderIndex": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
+    },
+    "count": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
+    },
+    "convictionDate": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "notifiedPlea": {
+      "$ref": "http://justice.gov.uk/core/courts/notifiedPlea.json"
+    },
+    "indicatedPlea": {
+      "$ref": "http://justice.gov.uk/core/courts/indicatedPlea.json"
+    },
+    "allocationDecision": {
+      "$ref": "http://justice.gov.uk/core/courts/allocationDecision.json"
+    },
+    "plea": {
+      "$ref": "http://justice.gov.uk/core/courts/plea.json"
+    },
+    "onlinePleaReceived": {
+      "description": "Determines online plea received",
+      "type": "boolean"
+    },
+    "verdict": {
+      "$ref": "http://justice.gov.uk/core/courts/verdict.json"
+    },
+    "offenceFacts": {
+      "$ref": "http://justice.gov.uk/core/courts/offenceFacts.json"
+    },
+    "aquittalDate": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "victims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/person.json"
+      }
+    },
+    "judicialResults": {
+      "description": "A record of any judicial decisions and results made against the offence",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/judicialResult.json"
+      }
+    },
+    "isDisposed": {
+      "description": "Determines that the offence has been disposed",
+      "type": "boolean"
+    },
+    "custodyTimeLimit": {
+      "description": "The custody time limit for the individual offence when a defendant has been ordered to be remanded in custody",
+      "$ref": "http://justice.gov.uk/core/courts/custodyTimeLimit.json"
+    },
+    "laaApplnReference": {
+      "description": "A record of legal aid applications for this offence",
+      "$ref": "http://justice.gov.uk/core/courts/laaReference.json"
+    },
+    "proceedingsConcluded": {
+      "description": "Indicates that proceedings for the defendant have been concluded i.e. all offences have been disposed with final results or have been withdrawn by the prosecuting authority",
+      "type": "boolean"
+    },
+    "isDiscontinued": {
+      "description": "Determines that the offence has been discontinued by the prosecutor i.e. is no longer being proceeded with",
+      "type": "boolean"
+    },
+    "introducedAfterInitialProceedings": {
+      "description": "Determines that the offence has been introduced by the prosecutor after proceeedings have already been initiated",
+      "type": "boolean"
+    },
+    "committingCourt": {
+      "description": "Sending court details",
+      "$ref": "http://justice.gov.uk/core/courts/committingCourt.json"
+    },
+    "offenceDateCode": {
+      "description": "The code for the offence date to be used within the offence wording, 1 = on or in, 2 = before, 3 = after, 4 = between, 5 = on or about and 6 = on or before",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 6
+    },
+    "dvlaOffenceCode": {
+      "description": "The code for the offence to be used within the offence wording",
+      "type": "string"
+    },
+    "reportingRestrictions": {
+      "description": "Reporting restrictions",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/reportingRestriction.json"
+      }
+    },
+    "endorsableFlag": {
+      "type": "boolean"
+    },
+    "seedingHearing" : {
+      "$ref": "http://justice.gov.uk/core/courts/seedingHearing.json"
+    },
+    "lastAdjournDate": {
+      "description": "When hearing adjourned this is that time",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "lastAdjournedHearingType": {
+      "description": "When hearing adjourned this is adjournment type description",
+      "type": "string"
+    },
+    "statementOfFacts": {
+      "type": "string"
+    },
+    "maxPenalty": {
+      "description": "Max penalty of offence",
+      "type": "string"
+    },
+    "listingNumber": {
+      "description": "Number of listing for offence",
+      "type" : "integer"
+    },
+    "ctlClockStopped": {
+      "description": "custodyTimeLimit will be deleted if the flag is true and auto custody time Limit calculation is avoided if the flag is true",
+      "type": "boolean"
+    },
+    "previousDaysHeldInCustody": {
+      "description": "Total days held in custody outside of any current/ongoing period",
+      "type": "integer"
+    },
+    "dateHeldInCustodySince": {
+      "description": "date of the order date if in custody and null if the offence on bail",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "convictingCourt": {
+      "$ref": "http://justice.gov.uk/core/courts/courtCentre.json"
+    },
+    "offenceClass": {
+      "type": "string"
+    },
+    "indictmentParticular": {
+      "type": "string"
+    },
+    "civilOffence": {
+      "description": "The Offence data object related to civil cases",
+      "$ref": "http://justice.gov.uk/core/courts/civilOffence.json"
+    }
+  },
+  "required": [
+    "id",
+    "offenceDefinitionId",
+    "offenceCode",
+    "offenceTitle",
+    "wording",
+    "startDate"
+  ],
+  "additionalProperties": false
+}

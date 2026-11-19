@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/defendantJudicialResult.json",
+  "description": "The result that was ordered by the judiciary for a defendant across zero or more cases in a hearing",
+  "type": "object",
+  "properties": {
+    "masterDefendantId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid",
+      "description": "The global identifier for a defendant across zero or more cases"
+    },
+    "defendantId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid",
+      "description": "The defendant id from the prosecution case"
+    },
+    "judicialResult": {
+      "$ref": "http://justice.gov.uk/core/courts/judicialResult.json",
+      "description": "The details of the judicial result for the identified"
+    }
+  },
+  "required": [
+    "masterDefendantId",
+    "judicialResult"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/seedingHearing.json",
+  "type": "object",
+  "properties": {
+    "seedingHearingId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "jurisdictionType": {
+      "id": "http://justice.gov.uk/core/courts/jurisdictionType.json",
+      "type": "string",
+      "enum": [
+        "MAGISTRATES",
+        "CROWN"
+      ]
+    },
+    "sittingDay": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "seedingHearingId",
+    "jurisdictionType",
+    "sittingDay"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/secondaryCJSCode.json",
+  "description": "Secondary CJS data required by the Police",
+  "type": "object",
+  "properties": {
+    "cjsCode": {
+      "description": "The Secondary CJS data standard code",
+      "type": "string"
+    },
+    "text": {
+      "description": "The Secondary result text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "cjsCode",
+    "text"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/defendantFineAccountNumber.json",
+  "type": "object",
+  "properties": {
+    "defendantId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "fineAccountNumber": {
+      "type": "string",
+      "description": "The fine account number that comes from legacy system"
+    }
+  },
+  "required": [
+    "defendantId",
+    "fineAccountNumber"
+  ],
+  "additionalProperties": false
+}

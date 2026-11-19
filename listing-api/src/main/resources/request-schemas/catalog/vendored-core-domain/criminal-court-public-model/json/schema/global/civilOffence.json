@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/civilOffence.json",
+  "description": "The Offence data object related to civil cases",
+  "type": "object",
+  "properties": {
+    "isExParte": {
+      "description": "Persists ex parte value on offence (constant)",
+      "type": "boolean"
+    },
+    "isRespondent": {
+      "description": "Persists the NOWs addressee acknowledgment to be ‘Respondent’ rather than defendant.",
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

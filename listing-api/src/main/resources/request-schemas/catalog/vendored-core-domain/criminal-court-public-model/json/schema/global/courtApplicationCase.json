@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/courtApplicationCase.json",
+  "description": "The details of any cases that are linked to a court application",
+  "type": "object",
+  "properties": {
+    "prosecutionCaseId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "offences": {
+      "description": "The details of teh offences that are being dealt with/considered as part of this application",
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/offence.json"
+      }
+    },
+    "isSJP": {
+      "type": "boolean"
+    },
+    "prosecutionCaseIdentifier": {
+      "$ref": "http://justice.gov.uk/core/courts/prosecutionCaseIdentifier.json"
+    },
+    "caseStatus": {
+      "description": "case status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "prosecutionCaseId",
+    "prosecutionCaseIdentifier",
+    "isSJP",
+    "caseStatus"
+  ],
+  "additionalProperties": false
+}

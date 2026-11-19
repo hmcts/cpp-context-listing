@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/civilFees.json",
+  "description": "The prosecution case civilFees object will persist a fee id that will be used as the primary key for a query to the fee table",
+  "type": "object",
+  "properties": {
+    "feeId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "feeType": {
+      "id": "http://justice.gov.uk/core/courts/feeType.json",
+      "description": "Indicates if a fee is initial or contested type",
+      "type": "string",
+      "enum": [
+        "INITIAL",
+        "CONTESTED"
+      ]
+    },
+    "feeStatus": {
+      "description": "Indicates status of the fee according to fix list",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/civilFeeStatus"
+    },
+    "paymentReference": {
+      "description": "Prosecutor reference for the fee payment",
+      "type": "string"
+    }
+  },
+  "required": [
+    "feeId"
+  ],
+  "additionalProperties": false
+}

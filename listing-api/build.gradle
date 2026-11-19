@@ -2,7 +2,7 @@
 // courtscheduler's listingcourtscheduler-api/build.gradle (ADR 007). P2.0: web plumbing, authz,
 // audit, envelope, schema validation, actuator and JSON logging. P2.1: persistence (JPA,
 // Liquibase, Postgres) and the query controllers over listing-common-spring's query services.
-// Domain messaging arrives in P2.2.
+// P2.2: domain messaging (listing-messaging: outbox relay, public.event publisher and listener).
 plugins {
     id 'application'
     id 'org.springframework.boot'
@@ -47,52 +47,18 @@ tasks.named('compileJava') { dependsOn tasks.named('openApiGenerate') }
  * The RAML request schemas are reused unchanged (§6). Until the JEE modules are deleted (P2.6)
  * they stay where the Maven build reads them; processResources copies them onto the classpath.
  * Their remote $refs (http://justice.gov.uk/...) are resolved from a classpath catalog built
- * from the same sources the framework's schema catalog used: listing-json and the two
- * core-domain schema jars (schema-only jars, unpacked at build time, never on the runtime
- * classpath as dependencies). */
-repositories {
-    // The core-domain schema jars are plain jars of JSON files. Fetch the jar only
-    // (metadataSources artifact()): their POMs inherit the CPP Maven parent chain
-    // (service-parent-pom, platform-libraries-bom), which Gradle does not need.
-    exclusiveContent {
-        forRepositories(
-                maven {
-                    name = 'cppSchemaJarsLocal'
-                    url = uri("${System.getProperty('user.home')}/.m2/repository")
-                    metadataSources { artifact() }
-                },
-                maven {
-                    name = 'cppSchemaJarsAzure'
-                    url = uri(rootProject.ext.azureADOArtifactRepository)
-                    if (rootProject.ext.azureADOArtifactActor && rootProject.ext.azureADOArtifactToken) {
-                        credentials {
-                            username = rootProject.ext.azureADOArtifactActor
-                            password = rootProject.ext.azureADOArtifactToken
-                        }
-                    }
-                    metadataSources { artifact() }
-                })
-        filter { includeGroup 'uk.gov.moj.cpp.core.domain' }
-    }
-}
-
-configurations {
-    legacySchemaCatalog {
-        canBeConsumed = false
-        canBeResolved = true
-        transitive = false
-    }
-}
+ * from the same sources the framework's schema catalog used: listing-json (copied below) and the
+ * core-domain schemas those refs reach, vendored under
+ * src/main/resources/request-schemas/catalog/vendored-core-domain (D22; see the README there). */
 
 /* ---------------- Dependencies ---------------- */
 dependencies {
-    legacySchemaCatalog 'uk.gov.moj.cpp.core.domain:common-core-domain:17.104.6'
-    legacySchemaCatalog 'uk.gov.moj.cpp.core.domain:criminal-court-public-model:17.104.6'
-
     // P2.1: query services, viewstore persistence, Liquibase changelogs (runtime resources only).
     implementation project(':listing-common-spring')
     implementation project(':listing-viewstore-persistence-spring')
     runtimeOnly project(':listing-viewstore-liquibase')
+    // P2.2: domain messaging (ADR 013).
+    implementation project(':listing-messaging')
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.postgresql:postgresql'
     implementation 'org.liquibase:liquibase-core'
@@ -173,7 +139,11 @@ jar {
 bootJar {
     archiveFileName = "${rootProject.name}-${project.version}.jar"
     manifest {
-        attributes('Implementation-Version': project.version.toString())
+        // Enable-Native-Access: Netty loads native libraries; without this the JVM prints non-JSON
+        // warnings on stderr (context/logging-standards.md: JSON-only output). Java 24+ honours it
+        // for executable jars.
+        attributes('Implementation-Version': project.version.toString(),
+                   'Enable-Native-Access': 'ALL-UNNAMED')
     }
 }
 
@@ -276,18 +246,11 @@ def listingJsonSchemas   = rootProject.file('listing-json/src/main/resources/jso
 tasks.named('processResources') {
     // §11 pitfall 9: legacy modules ship duplicate META-INF descriptors; first one wins.
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    inputs.files(configurations.legacySchemaCatalog)
 
     // RAML request (and query response) schemas, unchanged, for RequestSchemaValidationFilter.
     from(legacyCommandSchemas) { into 'request-schemas' }
     from(legacyQuerySchemas) { into 'request-schemas' }
-    // Schemas their $refs point at (the framework's schema catalog, rebuilt on the classpath).
+    // Schemas their $refs point at (the framework's schema catalog, rebuilt on the classpath;
+    // the core-domain part is vendored in src/main/resources, D22).
     from(listingJsonSchemas) { into 'request-schemas/catalog/listing-json' }
-    ['common-core-domain', 'criminal-court-public-model'].each { jarName ->
-        from({ zipTree(configurations.legacySchemaCatalog.files.find { it.name.startsWith(jarName) }) }) {
-            include 'json/schema/**'
-            includeEmptyDirs = false
-            into "request-schemas/catalog/${jarName}"
-        }
-    }
 }

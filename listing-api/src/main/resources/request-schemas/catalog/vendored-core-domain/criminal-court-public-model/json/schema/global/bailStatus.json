@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/bailStatus.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "code": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "custodyTimeLimit": {
+      "$ref": "http://justice.gov.uk/core/courts/custodyTimeLimit.json"
+    }
+  },
+  "required": [
+    "id",
+    "code",
+    "description"
+  ],
+  "additionalProperties": false
+}

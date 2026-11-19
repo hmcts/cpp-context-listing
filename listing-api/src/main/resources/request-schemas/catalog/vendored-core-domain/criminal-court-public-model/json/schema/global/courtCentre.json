@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/courtCentre.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "code": {
+      "type": "string",
+      "description": "The reference data ou code for the court centre, required for court register subscription matching and therefore must be provided at least by the point that results are published"
+    },
+    "name": {
+      "type": "string",
+      "description": "The reference data name for the court centre, required for rendering throughout entire UI journey on CPP and also must be on events for CP Search reasons.  Also rendered on all downstream processes after results are published i.e. NOWs, LAA & other 3rd parties, Court Extract, Certificates of acquittal, conviction, etc. Due to the level of usage an enrichment pattern is implemented to prevent multiple extensive ref data lookups.  The additional complication is that the name is immutable at teh time of the court proceedings and therefore from an historical perspective any ref data lookup must be history aware"
+    },
+    "welshName": {
+      "type": "string"
+    },
+    "roomId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "roomName": {
+      "type": "string"
+    },
+    "welshRoomName": {
+      "type": "string"
+    },
+    "address": {
+      "description": "The court address.  Required for generation of documentation.  Required to be enriched when publishing hearing results",
+      "$ref": "http://justice.gov.uk/core/courts/address.json"
+    },
+    "courtHearingLocation": {
+      "type": "string"
+    },
+    "psaCode": {
+      "type": "integer"
+    },
+    "welshAddress": {
+      "$ref": "http://justice.gov.uk/core/courts/address.json",
+      "description": "The court address in welsh language.  Required for generation of welsh documentation.  Required to be enriched when publishing hearing results"
+    },
+    "welshCourtCentre": {
+      "description": "Indicates that the court centre is located under Welsh regulation i.e. is in Wales",
+      "type": "boolean"
+    },
+    "lja": {
+      "description": "The lja details of the court centre.  Required for generation of documentation.  Required to be enriched when publishing hearing results",
+      "$ref": "http://justice.gov.uk/core/courts/ljaDetails.json"
+    },
+    "courtLocationCode": {
+      "description": "Identifier of a crown court. This is similar to an LJA for a magistrate",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name"
+  ],
+  "additionalProperties": false
+}

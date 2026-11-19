@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/courtCivilApplication.json",
+  "description": "The details of the court civil application",
+  "type": "object",
+  "properties": {
+    "isExParte": {
+      "description": "Persists ex parte value on offence (constant)",
+      "type": "boolean"
+    },
+    "isCivil": {
+      "description": "is civil application",
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

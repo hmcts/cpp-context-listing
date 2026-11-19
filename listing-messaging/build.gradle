@@ -1,0 +1,29 @@
+// Domain messaging for the Spring Boot port (§8 `listing-messaging`, new in P2.2; ADR 013):
+// the framework-compatible JSON envelope, the transactional outbox writer and relay (ADR 002,
+// replacing the Phase 1 EJB timer), the public.event JMS publisher, the @JmsListener on
+// public.event with its dispatcher, inbound dedup (ADR 3) and the Artemis connection factory.
+// No Justice Services dependency: the wire format is re-implemented (§11 pitfall 9).
+dependencies {
+    api project(':listing-domain-spring')
+    api project(':listing-viewstore-persistence-spring')
+    api 'org.springframework.boot:spring-boot-starter-artemis'
+    api 'org.springframework:spring-jms'
+    api 'org.springframework:spring-tx'
+    api 'org.springframework:spring-context'
+    api 'jakarta.json:jakarta.json-api:2.1.3'
+
+    implementation 'org.springframework.boot:spring-boot'
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+    implementation 'org.slf4j:slf4j-api'
+    runtimeOnly 'org.eclipse.parsson:parsson:1.1.9'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.yaml:snakeyaml'
+    testRuntimeOnly 'org.eclipse.parsson:parsson:1.1.9'
+}
+
+tasks.named('test') {
+    // The legacy subscriptions descriptor and generated MDB are read from the Maven modules
+    // (until P2.6) to prove the selector and subscription name are unchanged.
+    systemProperty 'listing.repoRoot', rootProject.projectDir.absolutePath
+}

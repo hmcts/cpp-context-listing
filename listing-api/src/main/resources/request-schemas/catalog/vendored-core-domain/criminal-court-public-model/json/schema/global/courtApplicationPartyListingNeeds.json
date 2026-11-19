@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/courtApplicationPartyListingNeeds.json",
+  "type": "object",
+  "properties": {
+    "courtApplicationId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "courtApplicationPartyId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "courtApplicationPartyType": {
+      "type": "string",
+      "description": "Always SUBJECT for the time being. Could be APPLICANT / RESPONDENT in the future"
+    },
+    "hearingLanguageNeeds": {
+      "description": "The applicants or respondents hearing needs.  Indicates the respondents preference for the hearing to be conducted in non English",
+      "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
+    },
+    "summonsRequired": {
+      "description": "The type of summons required (BREACH or APPLICATION)",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/summonsType"
+    },
+    "summonsApprovedOutcome": {
+      "$ref": "http://justice.gov.uk/core/courts/summonsApprovedOutcome.json",
+      "description": "Outcome of summons approval request"
+    }
+  },
+  "required": [
+    "courtApplicationId",
+    "courtApplicationPartyId"
+  ],
+  "additionalProperties": false
+}

@@ -18,7 +18,8 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 /**
  * Classpath replacement for the framework's JSON schema catalog ({@code schema_catalog.json} in
- * listing-json and the core-domain schema jars). The legacy request schemas reference shared
+ * listing-json and the core-domain schema jars; the core-domain schemas reached are vendored under
+ * {@code request-schemas/catalog/vendored-core-domain}, D22). The legacy request schemas reference shared
  * definitions by absolute id ({@code "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"});
  * the framework resolved those ids from the catalog, never over the network.
  *

@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/hearingLanguage.json",
+  "description": "The language of the hearing",
+  "enum": [
+    "ENGLISH",
+    "WELSH"
+  ],
+  "additionalProperties": false
+}

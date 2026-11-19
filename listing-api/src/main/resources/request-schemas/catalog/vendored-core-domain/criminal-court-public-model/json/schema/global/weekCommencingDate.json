@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/weekCommencingDate.json",
+  "type": "object",
+  "properties": {
+    "startDate": {
+      "description": "Week commencing start date.",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "duration": {
+      "description": "Duration of hearing. Number of weeks from the start date.",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
+    }
+  },
+  "required": [
+    "startDate"
+  ],
+  "additionalProperties": false
+}

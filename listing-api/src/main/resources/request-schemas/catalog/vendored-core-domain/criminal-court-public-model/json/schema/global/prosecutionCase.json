@@ -1,0 +1,143 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/prosecutionCase.json",
+  "description": "The details of the prosecution matter brought before court",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "prosecutionCaseIdentifier": {
+      "$ref": "http://justice.gov.uk/core/courts/prosecutionCaseIdentifier.json"
+    },
+    "originatingOrganisation": {
+      "type": "string"
+    },
+    "cpsOrganisation": {
+      "type": "string"
+    },
+    "cpsOrganisationId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "prosecutor": {
+      "$ref": "http://justice.gov.uk/core/courts/prosecutor.json"
+    },
+    "initiationCode": {
+      "$ref": "http://justice.gov.uk/core/courts/initiationCode.json"
+    },
+    "caseStatus": {
+      "description": "The status of the case.  When SJP Referrals are received this will be set to SJPReferral by the receiving Progression API ",
+      "type": "string"
+    },
+    "policeOfficerInCase": {
+      "$ref": "http://justice.gov.uk/core/courts/policeOfficerInCase.json"
+    },
+    "statementOfFacts": {
+      "type": "string"
+    },
+    "statementOfFactsWelsh": {
+      "type": "string"
+    },
+    "breachProceedingsPending": {
+      "type": "boolean"
+    },
+    "removalReason": {
+      "type": "string"
+    },
+    "appealProceedingsPending": {
+      "type": "boolean"
+    },
+    "defendants": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/defendant.json"
+      }
+    },
+    "caseMarkers": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/marker.json"
+      }
+    },
+    "classOfCase": {
+      "description": "Class of case received. E.g Class 1, Class 2",
+      "type": "string"
+    },
+    "isCpsOrgVerifyError": {
+      "description": "Flag to determine if CPS organisation verified",
+      "type": "boolean"
+    },
+    "summonsCode": {
+      "description": "When it is a first hearing summons request, system must check the summons code (in the summons request message) to determine which summons template type should be used to generate a summons",
+      "type": "string"
+    },
+    "trialReceiptType": {
+      "type": "string",
+      "description": "Trial case type E.g Either way case, Indictable, Transfer, Voluntary bail"
+    },
+    "groupId": {
+      "description": "Indicates the Staging.CivilProsecutor assigned group id for bulk cases",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "isCivil": {
+      "description": "Marker to indicate that MoJ offence reference data should be used as opposed to criminal offence reference data",
+      "type": "boolean"
+    },
+    "isGroupMember": {
+      "description": "Indicates if a case is part of a group of cases within the hearing",
+      "type": "boolean"
+    },
+    "isGroupMaster": {
+      "description": "Indicates which case within a group (isGroupMember = true) is the master and should be returned by the backend to the UI",
+      "type": "boolean"
+    },
+    "civilFees": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/civilFees.json"
+      }
+    },
+    "relatedUrn": {
+      "type": "string"
+    },
+    "migrationSourceSystem": {
+      "$ref": "http://justice.gov.uk/core/courts/migrationSourceSystem.json"
+    },
+    "committalDate": {
+      "description": "The Committal date",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "sendingCourt": {
+      "description": "the Sending court",
+      "$ref": "http://justice.gov.uk/core/courts/courtCentre.json"
+    },
+    "receivingCourt": {
+      "description": "the Receiving court",
+      "$ref": "http://justice.gov.uk/core/courts/courtCentre.json"
+    },
+    "receiptType": {
+      "description": "The Receipt type",
+      "type": "string"
+    },
+    "retrialIndicator": {
+      "description": "The Re-trial indicator flag ",
+      "type": "boolean"
+    },
+    "dateOfSendingCase": {
+      "description": "The date of sending case",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "isRetrial": {
+      "description": "Indicates if the migrated XHIBIT case manually on the CP is a retrial",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "prosecutionCaseIdentifier",
+    "initiationCode",
+    "defendants"
+  ],
+  "additionalProperties": false
+}

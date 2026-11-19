@@ -1,10 +1,62 @@
-# Domain messaging (Artemis). P2.0 STUB: only the broker connection, so the JMS auto-configuration
-# (pulled in at runtime by cp-audit-filter-springboot) and the JMS health indicator point at the
-# right broker. Topics, durable subscriptions, transacted sessions, the outbox relay and HA/SSL
-# tuning (modelled on the cp.audit.* block) are added in P2.2.
-spring:
-  artemis:
-    mode: native
-    broker-url: ${LISTING_ARTEMIS_BROKER_URL:tcp://${LISTING_ARTEMIS_HOST_PRIMARY:localhost}:${LISTING_ARTEMIS_PORT:61616}}
-    user: ${LISTING_ARTEMIS_USER:}
-    password: ${LISTING_ARTEMIS_PASSWORD:}
+# Domain messaging (Artemis; MBD refactor P2.2, ADR 013). Bound to MessagingProperties
+# (listing-messaging). Broker keys mirror courtscheduler's cp.audit.* block (application-audit.yml)
+# and read the same LISTING_ARTEMIS_* / LISTING_JMS_* variables, so one set of variables configures
+# both the domain messaging and the audit publisher.
+listing:
+  messaging:
+    # Master switch: false = no public.event listener, no outbox relay, no JMS health contributor.
+    enabled: ${LISTING_MESSAGING_ENABLED:true}
+    artemis:
+      high-availability: ${LISTING_ARTEMIS_HA:false}
+      hosts:
+        - ${LISTING_ARTEMIS_HOST_PRIMARY:localhost}
+        - ${LISTING_ARTEMIS_HOST_SECONDARY:}
+      port: ${LISTING_ARTEMIS_PORT:61616}
+      user: ${LISTING_ARTEMIS_USER:}
+      password: ${LISTING_ARTEMIS_PASSWORD:}
+      ssl-enabled: ${LISTING_ARTEMIS_SSL_ENABLED:false}
+      client-auth-required: ${LISTING_ARTEMIS_CLIENT_AUTH_REQUIRED:false}
+      keystore: ${LISTING_ARTEMIS_KEYSTORE:}
+      keystore-password: ${LISTING_ARTEMIS_KEYSTORE_PASSWORD:}
+      truststore: ${LISTING_ARTEMIS_TRUSTSTORE:${LISTING_ARTEMIS_KEYSTORE:}}
+      truststore-password: ${LISTING_ARTEMIS_TRUSTSTORE_PASSWORD:${LISTING_ARTEMIS_KEYSTORE_PASSWORD:}}
+      verify-host: ${LISTING_ARTEMIS_VERIFY_HOST:false}
+      jms:
+        reconnect-attempts: ${LISTING_JMS_RECONNECT_ATTEMPTS:-1}
+        initial-connect-attempts: ${LISTING_JMS_INITIAL_CONNECT_ATTEMPTS:10}
+        retry-interval-ms: ${LISTING_JMS_RETRY_INTERVAL_MS:2000}
+        retry-multiplier: ${LISTING_JMS_RETRY_MULTIPLIER:1.5}
+        max-retry-interval-ms: ${LISTING_JMS_MAX_RETRY_INTERVAL_MS:30000}
+        connection-ttl-ms: ${LISTING_JMS_CONNECTION_TTL_MS:60000}
+        call-timeout-ms: ${LISTING_JMS_CALL_TIMEOUT_MS:15000}
+        session-cache-size: ${LISTING_JMS_SESSION_CACHE_SIZE:10}
+    public-event:
+      # Physical Artemis address of the framework's public.event topic (JNDI public.event on WildFly).
+      topic: ${LISTING_PUBLIC_EVENT_TOPIC:jms.topic.public.event}
+      # The legacy processor MDB's durable shared subscription: the same broker queue.
+      subscription-name: ${LISTING_PUBLIC_EVENT_SUBSCRIPTION:listing.event.processor.public.event}
+      # The legacy MDB allowed up to 15 sessions (property.mdb.EVENT_PROCESSOR.maxSession).
+      concurrency: ${LISTING_PUBLIC_EVENT_CONCURRENCY:1-15}
+      # false: start with the listener stopped (e.g. at cut-over); start it via JmsListenerEndpointRegistry.
+      auto-startup: ${LISTING_PUBLIC_EVENT_AUTO_STARTUP:true}
+    outbox:
+      relay:
+        enabled: ${LISTING_OUTBOX_RELAY_ENABLED:true}
+        delay-millis: ${LISTING_OUTBOX_RELAY_DELAY_MILLIS:25}
+        max-attempts: ${LISTING_OUTBOX_RELAY_MAX_ATTEMPTS:10}
+    inbound:
+      dedup:
+        # inbound_event_dedup retention (D26): rows older than this (ISO-8601) are purged.
+        retention: ${LISTING_INBOUND_DEDUP_RETENTION:P30D}
+        purge:
+          enabled: ${LISTING_INBOUND_DEDUP_PURGE_ENABLED:true}
+          # Spring cron (sec min hour day month weekday); default daily 02:30 (UTC in the container).
+          cron: ${LISTING_INBOUND_DEDUP_PURGE_CRON:0 30 2 * * *}
+          batch-size: ${LISTING_INBOUND_DEDUP_PURGE_BATCH_SIZE:1000}
+
+# P2.0 open item fixed in P2.2: the JMS health contributor follows the messaging switch, so
+# /actuator/health is not DOWN merely because messaging is disabled and no broker is reachable.
+management:
+  health:
+    jms:
+      enabled: ${listing.messaging.enabled}

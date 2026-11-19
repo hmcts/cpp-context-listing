@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <!--
+        MBD refactor P2.2 (ADR 013, §7 ADR 3): inbound public-event idempotency, replacing the
+        framework's processed_event / stream buffer for the public.event subscription.
+        The Spring listener inserts the message's _metadata.id with INSERT ... ON CONFLICT DO NOTHING
+        in the same transaction as the handler's changes; a conflict means "already handled".
+        Retention: unbounded for now (§15.3); received_at is indexed for a later purge job.
+        Additive only: the JEE app never reads or writes this table.
+    -->
+    <changeSet author="listing" id="031-create-inbound-event-dedup" logicalFilePath="031-create-inbound-event-dedup.xml">
+        <createTable tableName="inbound_event_dedup">
+            <column name="event_id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="inbound_event_dedup_pk" nullable="false"/>
+            </column>
+            <column name="event_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="received_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="inbound_event_dedup" indexName="inbound_event_dedup_received_at_idx">
+            <column name="received_at"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="inbound_event_dedup"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

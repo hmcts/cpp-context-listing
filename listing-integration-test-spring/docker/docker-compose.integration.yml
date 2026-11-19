@@ -36,14 +36,17 @@ services:
       retries: 10
 
   artemis:
-    # New, not in courtscheduler: listing's domain messaging (P2.2) runs on Artemis. In P2.0 it
-    # only has to start; the app's JMS health indicator connects to it.
+    # New, not in courtscheduler: listing's domain messaging (P2.2, ADR 013). The app publishes to
+    # and consumes from jms.topic.public.event (the framework's public.event topic); the ITs
+    # connect on 61626. Redelivery and dead-letter settings: artemis/broker.properties.
     image: apache/activemq-artemis:2.39.0
     container_name: CP_LISTING_artemis_it
     environment:
       ARTEMIS_USER: listing
       ARTEMIS_PASSWORD: listing
       ANONYMOUS_LOGIN: "false"
+    volumes:
+      - ./artemis:/var/lib/artemis-instance/etc-override:ro
     ports:
       - "61626:61616"
     healthcheck:
@@ -81,8 +84,11 @@ services:
       LISTING_DATASOURCE_USERNAME: listing
       LISTING_DATASOURCE_PASSWORD: listing
 
-      # Artemis (domain messaging from P2.2; JMS health from P2.0).
-      LISTING_ARTEMIS_BROKER_URL: "tcp://artemis:61616"
+      # Artemis: domain messaging (P2.2, listing.messaging.*) and the audit publisher's cp.audit.*
+      # read the same LISTING_ARTEMIS_* variables. Faster outbox relay retries are not needed:
+      # the defaults (25 ms delay, 10 attempts) are the production ones.
+      LISTING_ARTEMIS_HOST_PRIMARY: artemis
+      LISTING_ARTEMIS_PORT: "61616"
       LISTING_ARTEMIS_USER: listing
       LISTING_ARTEMIS_PASSWORD: listing
 

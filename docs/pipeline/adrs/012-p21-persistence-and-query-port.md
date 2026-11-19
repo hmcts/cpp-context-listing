@@ -19,6 +19,10 @@ queries byte-compatible and the Maven build untouched.
    Maven module's directory (resources only, `liquibase.properties` excluded, build output under
    the root `build/`), and listing-api has it as `runtimeOnly`. Legacy package names are kept so
    P2.3 can move command code without renames. The suffix goes at P2.6.
+   *Note (D21, 2026-11-19):* reusing the directory unchanged also keeps the changeset identities:
+   Spring Boot records the same (id, author, filename) rows as the JEE deployment (compared with a
+   JEE-deployed viewstore; `LiquibaseChangelogIdentityTest` guards it), so the cut-over run only
+   applies new changesets. It upgrades the stored checksums to Liquibase 5's `9:` format.
 2. **Hibernate 7 compatibility without changing behaviour.**
    - `jsonb` columns map to Jackson 2 `JsonNode` through an `AttributeConverter` and
      `@ColumnTransformer(write = "?::jsonb")`, replacing hibernate-types' `JsonNodeBinaryType`.

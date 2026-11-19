@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/jurisdictionType.json",
+  "description": "Jurisdiriction Types MAGISTRATES,CROWN",
+    "type": "string",
+    "enum": [
+      "MAGISTRATES",
+      "CROWN"
+    ],
+    "additionalProperties": false
+}

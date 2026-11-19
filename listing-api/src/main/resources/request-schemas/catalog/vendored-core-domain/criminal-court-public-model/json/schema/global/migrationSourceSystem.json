@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/migrationSourceSystem.json",
+  "type": "object",
+  "properties": {
+    "migrationSourceSystemName": {
+      "description": "Indicates the originating system name like Libra/XHibit",
+      "type": "string"
+    },
+    "migrationSourceSystemCaseIdentifier": {
+      "description": "The reference from originating system case identifier like libra number",
+      "type": "string"
+    },
+    "migrationCaseStatus": {
+      "id": "http://justice.gov.uk/core/courts/migrationCaseStatus.json",
+      "type": "string",
+      "default": "ACTIVE",
+      "enum": [
+        "ACTIVE",
+        "INACTIVE"
+      ]
+    },
+    "defendantFineAccountNumbers": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/defendantFineAccountNumber.json"
+      }
+    }
+  },
+  "additionalProperties": false
+}

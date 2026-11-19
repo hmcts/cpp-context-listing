@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/deletedJudicialResults.json",
+  "description": "Holds deleted judicial results made in a Hearing",
+  "type": "object",
+  "properties": {
+    "prosecutionCaseResults": {
+      "description": "Array of deleted Judicial Results of the Prosecution Cases in the hearing",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "properties": {
+          "defendantId": {
+            "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+          },
+          "offenceId": {
+            "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+          },
+          "judicialResult": {
+            "$ref": "http://justice.gov.uk/core/courts/judicialResult.json"
+          }
+        },
+        "requiredProperties": [
+          "offenceId",
+          "judicialResult"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "applicationResults": {
+      "description": "Array of deleted Judicial Results of the Application(s) in the hearing",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "properties": {
+          "defendantId": {
+            "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+          },
+          "applicationId": {
+            "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+          },
+          "judicialResult": {
+            "$ref": "http://justice.gov.uk/core/courts/judicialResult.json"
+          }
+        },
+        "requiredProperties": [
+          "applicationId",
+          "judicialResult"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "applicationCaseResults": {
+      "description": "Array of deleted Judicial Results of the Application Cases in the hearing",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/applicationOffenceResult"
+      }
+    },
+    "applicationCourtOrderResults": {
+      "description": "Array of deleted Judicial Results of the Application Court Order in the hearing",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/applicationOffenceResult"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "applicationOffenceResult": {
+      "type": "object",
+      "properties": {
+        "defendantId": {
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "applicationId": {
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "offenceId": {
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+        },
+        "judicialResult": {
+          "$ref": "http://justice.gov.uk/core/courts/judicialResult.json"
+        }
+      },
+      "required": [
+        "applicationId",
+        "offenceId",
+        "judicialResult"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

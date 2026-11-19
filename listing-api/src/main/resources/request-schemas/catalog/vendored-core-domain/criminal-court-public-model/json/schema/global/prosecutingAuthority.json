@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/prosecutingAuthority.json",
+  "description": "The authority that initiates court proceedings",
+  "type": "object",
+  "properties": {
+    "prosecutionAuthorityId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "prosecutionAuthorityCode": {
+      "type": "string"
+    },
+    "prosecutionAuthorityOUCode": {
+      "type": "string"
+    },
+    "majorCreditorCode": {
+      "type": "string"
+    },
+    "name": {
+      "description": "The name of the Organization Prosecution authority",
+      "type": "string"
+    },
+    "firstName": {
+      "description": "The first name of the person Prosecution authority",
+      "type": "string"
+    },
+    "middleName": {
+      "description": "The middle name of the person Prosecution authority",
+      "type": "string"
+    },
+    "lastName": {
+      "description": "The last name of the person Prosecution authority",
+      "type": "string"
+    },
+    "welshName": {
+      "description": "The name of the authority in Welsh",
+      "type": "string"
+    },
+    "prosecutorCategory": {
+      "type": "string"
+    },
+    "accountCode": {
+      "description": "The account code details",
+      "type": "string"
+    },
+    "address": {
+      "description": "The authority address details",
+      "$ref": "http://justice.gov.uk/core/courts/address.json"
+    },
+    "contact": {
+      "description": "The authority contact details",
+      "$ref": "http://justice.gov.uk/core/courts/contactNumber.json"
+    },
+    "standard": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "prosecutionAuthorityId",
+    "prosecutionAuthorityCode"
+  ],
+  "additionalProperties": false
+}

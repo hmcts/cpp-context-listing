@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  JSON logging to stdout, per context/logging-standards.md (D24; the HMCTS standard as found in
+  cpp-context-progression/.claude/context/logging-standards.md, 2026-11-19): ConsoleAppender with
+  LoggingEventCompositeJsonEncoder, providers in the standard's order, root INFO. MDC carries
+  correlationId and requestId (TracingFilter). Levels can be overridden with
+  logging.level.* (LOG_LEVEL_ROOT, LOG_LEVEL_LISTING in application.yaml).
+-->
+<configuration>
+    <appender name="JSON_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <mdc/>
+                <timestamp>
+                    <fieldName>timestamp</fieldName>
+                    <pattern>yyyy-MM-dd' 'HH:mm:ss.SSS</pattern>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <message/>
+                <loggerName/>
+                <threadName/>
+                <logLevel/>
+                <pattern>
+                    <pattern>{"exception": "%xException{full}"}</pattern>
+                </pattern>
+            </providers>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="JSON_STDOUT"/>
+    </root>
+</configuration>

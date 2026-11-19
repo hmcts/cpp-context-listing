@@ -1,0 +1,79 @@
+# D21: (id|author|filename) of every DATABASECHANGELOG row in a JEE-deployed listing viewstore,
+# in orderexecuted order. Captured 2026-11-19 from the local cpp-developers-docker postgres
+# (database listingviewstore, Liquibase 4.10.0 as run by the JEE deployment), with
+#   SELECT id, author, filename FROM databasechangelog ORDER BY orderexecuted
+# event-buffer-*/stream_buffer-*/subscription-repository-* rows come from the framework's own
+# changelogs; LiquibaseChangelogIdentityTest excludes them. 017-drop-process-event-index.xml has no
+# rows: its preconditions use onFail="CONTINUE" and the index does not exist, so it never runs.
+# Refresh only from a real JEE viewstore; never edit rows by hand.
+event-buffer-001|TechPod|001-initial-schema.changelog.xml
+event-buffer-002|TechPod|002-add-source-to-stream-buffer.changelog.xml
+event-buffer-003|TechPod|003-add-source-to-stream-status.changelog.xml
+event-buffer-004|TechPod|004-add-component-to-stream-buffer.changelog.xml
+event-buffer-005|TechPod|005-rename-version-to-position-in-stream-status.changelog.xml
+event-buffer-006|TechPod|006-add-component-to-stream-status.changelog.xml
+stream_buffer-007|TechPod|007-add-buffered-at-column-to-stream-buffer-table.changelog.xml
+stream_buffer-008|TechPod|liquibase/event-buffer-changesets/008-create-stream-error-table.changelog.xml
+stream_buffer-009|TechPod|liquibase/event-buffer-changesets/009-add-stream-error-id-and-position-to-stream-status-table.changelog.xml
+stream_buffer-010|TechPod|liquibase/event-buffer-changesets/010-add-component-name-and-source-to-stream-error-table.changelog.xml
+stream_buffer-011|TechPod|liquibase/event-buffer-changesets/011-add-stream-error-hash-table.changelog.xml
+stream_buffer-012|TechPod|liquibase/event-buffer-changesets/012-add-unique-constraint-on-stream-error-hash-columns.changelog.xml
+stream_buffer-013|TechPod|liquibase/event-buffer-changesets/013-add-updated-at-column-to-stream-status-table.changelog.xml
+stream_buffer-014|TechPod|liquibase/event-buffer-changesets/014-add-latest-known-position-column-to-stream-status-table.changelog.xml
+stream_buffer-015|TechPod|liquibase/event-buffer-changesets/015-add-index-to-stream-to-improve-metrics-queries.changelog.xml
+stream_buffer-016|TechPod|liquibase/event-buffer-changesets/016-add-stream-statistic-table.changelog.xml
+stream_buffer-017|TechPod|liquibase/event-buffer-changesets/017-add-index-on-error-hash-in-stream-status.changelog.xml
+1|listing|001-viewdb-init.xml
+1|listing|002-GPE-3836.xml
+1|listing|003-GPE-3830&3045.xml
+1|listing|004-GPE-5524.xml
+1|listing|005-GPE-6050.xml
+1|listing|006-GPE-6402.xml
+1|listing|007-GPE-8184.xml
+8|TechPod|008-SCSL-97.xml
+9|listing|009-SCSL-33.xml
+10|listing|010-SCSL-258.xml
+11|listing|011-SCSL-281.xml
+12|listing|012-RQA-1115.xml
+13|listing|013-GPE-15215.xml
+14|listing|014-DD-11717.xml
+14|listing|014-DD-6177.xml
+14.1|listing|014-DD-6177.xml
+14.2|listing|014-DD-6177.xml
+15|listing|015-CPI-504.xml
+15.1|listing|015-CPI-504.xml
+15.2|listing|015-CPI-504.xml
+15.3|listing|015-CPI-504.xml
+15.4|listing|015-CPI-504.xml
+15.5|listing|liquibase/listing-view-store-db-changesets/015-CPI-504.xml
+15.6|listing|015-CPI-504.xml
+16|listing|016-DD-13276.xml
+16.1|listing|016-DD-13276.xml
+16.2|listing|016-DD-13276.xml
+drop-hearing-index|Jayen|liquibase/listing-view-store-db-changesets/018-recreate-hearing-index.xml
+drop-listed-case-index|Jayen|liquibase/listing-view-store-db-changesets/018-recreate-hearing-index.xml
+hearing-court-centre-id-court-room-id-index|Jayen|018-recreate-hearing-index.xml
+modify_court_application_indexes|baris.ozturkmen|019-recreate-court-application-indexes.xml
+modify_court_application_indexes|baris.ozturkmen|020-add-new-indexes-hearing.xml
+21|listing|021-DD-24840.xml
+22|ozgur.yalcin|022-add-new-index-defendant.xml
+drop-hearing_court_centre_id_court_room_id_idx|sajank|liquibase/listing-view-store-db-changesets/022-drop-hearing-indexes.xml
+drop-hearing_start_date_end_date_idx|sajank|liquibase/listing-view-store-db-changesets/022-drop-hearing-indexes.xml
+drop-range_search_idx|sajank|liquibase/listing-view-store-db-changesets/022-drop-hearing-indexes.xml
+drop-hearing_idx_1|sajank|liquibase/listing-view-store-db-changesets/022-drop-hearing-indexes.xml
+023_drop_indexes_hearing|siby.george|023-drop-indexes-hearing.xml
+21|vinay.kumar|023_add-new-index-listedCases.xml
+024_drop_indexes_hearing_days|siby.george|024-drop-indexes-hearing-days.xml
+025-DD-35625-drop-offence-listing|ragubalan.durairaj|025-DD-35625-drop-offence-listing.xml
+026-lpt-989-create-table-cache-refdata-courtroom|listing|026-lpt-989-create-table-cache-refdata-courtroom.xml
+027-add-estimated-minutes-column|listing|027-add-estimated-minutes-column.xml
+add_hearing_reference_indexes|koray.kaya|027-add-hearing-ref-indexes.xml
+028-create-event-outbox|listing|028-create-event-outbox.xml
+029-add-event-outbox-attempts|listing|029-add-event-outbox-attempts.xml
+030-create-aggregate-snapshot|listing|030-create-aggregate-snapshot.xml
+subscription-repository-001|TechPod|001-add-current_event_number-table.changelog.xml
+subscription-repository-002|TechPod|002-drop-current_event_number-table.changelog.xml
+subscription-repository-003|TechPod|003-initial-schema.changelog.xml
+subscription-repository-004|TechPod|004-add-component_name-to-processed_event-table.changelog.xml
+subscription-repository-005|TechPod|005-add-event-id-to-processed_event-table.changelog.xml
+subscription-repository-006|TechPod|006-add-indexes-to-processed_event-table.changelog.xml

@@ -1,0 +1,21 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"id": "http://justice.gov.uk/core/courts/confirmedOffence.json",
+	"type": "object",
+	"properties": {
+		"id": {
+			"$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+		},
+		"seedingHearing": {
+			"$ref": "http://justice.gov.uk/core/courts/seedingHearing.json"
+		},
+		"civilOffence": {
+			"description": "The Offence data object related to civil cases",
+			"$ref": "http://justice.gov.uk/core/courts/civilOffence.json"
+		}
+	},
+	"required": [
+		"id"
+	],
+	"additionalProperties": false
+}

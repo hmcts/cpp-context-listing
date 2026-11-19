@@ -71,7 +71,7 @@ integration-test suite must be unable to tell that the implementation changed.
    `listing-query/listing-query-api/src/raml/listing-query-api.raml` keep the same path, query params,
    `Accept` media type, response JSON shape (validated against the 8 response schemas), `text/csv`
    for the CSV report, and status codes. Context root stays **`/listing-service/query/api/rest/listing`**.
-3. **Inbound public events preserved.** Consume the same 26 `public.*` events from Artemis topic
+3. **Inbound public events preserved.** Consume the same 26 `public.*` events (the descriptor and the generated selector list 28; see ADR 013) from Artemis topic
    **`public.event`**: progression ×16, hearing ×9 and `public.events.hearing.*` ×2 (see
    `listing-event/listing-event-processor/src/yaml/subscriptions-descriptor.yaml`). Parse the
    framework JSON envelope (`_metadata`: `id`, `name`, `createdAt`, `context.user`, `causation`,
@@ -438,7 +438,8 @@ Whether Phase 1 slices are released to production one by one, or only as a whole
 | Phase 1 (P1.0, P1a–P1h, P1.z) | **Done 2026-11-19.** Run `it-logs/run-20261119T082649Z-p1-complete-3.log`: 335 tests, 0 failures, 0 errors, 3 skipped, 60 IT classes (matches P0). Unexpected server.log lines in 141 test windows (P0: 156), the same `CourtScheduleEnrichmentService` noise as P0; EJB timer warnings down from 58 to 2. Three IT assertion changes approved 2026-11-19 (D10) |
 | P2.0 Foundations | **Done 2026-11-19.** Gradle (`settings.gradle`, `build.gradle`, wrapper 9.6.1) alongside Maven, building only `listing-api` and `listing-integration-test-spring`. `./gradlew --offline build -x test` green; `listing-api` unit tests green; Spring IT stack (db, WireMock, Artemis, app) 27/27 `*IntegrationTest`/`*IT` green via `./gradlew --offline :listing-integration-test-spring:test`; `mvn -o -q validate` green. ADRs 005, 007, 008. Canned test-only endpoints in `P20SkeletonApi` (integration profile only) — delete in P2.1/P2.3 |
 | P2.1 Persistence + queries | **Done 2026-11-19** (ADR 012). New Gradle modules `listing-domain-spring`, `listing-viewstore-persistence-spring` (13 entities, Spring Data repositories in the DeltaSpike style, JDBC repositories on `JdbcTemplate`), `listing-common-spring` (query services, `CppQueryClient`/RestClient, courtscheduler and systemdocgenerator clients) and `:listing-viewstore-liquibase` (the Maven module's changelogs, unchanged, `runtimeOnly`). listing-api: `application-datasource.yml`, 6 query controllers over all 17 paths / 18 names; the query part of `P20SkeletonApi` is removed (command part stays until P2.3). `./gradlew --offline build` green: 28 repository tests (`@DataJpaTest`, Testcontainers Postgres 16, real changelog), 416 query unit tests (ported from listing-query-view/-api), 49 listing-api tests, 82 Spring ITs (27 P2.0 + 23 query-endpoint + 32 denied-access); `mvn -o -q validate` green. Access control: the 21 query DRL rules match the legacy file group for group; the 4 bypasses stay. **Not run:** the legacy query ITs of the Maven `listing-integration-test` (they set data up with commands, P2.3). **Legacy response-schema mismatches (kept, reported):** `/courtListPublishStatus` names a request-parameter schema as its response schema; `/hearings` adds `matchedWithQuery` to hearing days; the court calendar adds `hearingDayCount`/`hearingDayPosition`; `/hearings/allocated-and-unallocated`, `/unscheduled`, `/any-allocation` and `/cotr-search` omit the required `notes`; listing-json `court-schedule-judiciary.json` has a broken `"$ref": "boolean"` |
-| P2.2–P2.6 | Not started |
+| P2.2 Messaging | **Done 2026-11-19** (ADR 013). New Gradle module `listing-messaging`: framework-compatible envelope (`Metadata`/`Envelope`/`EnvelopeCodec`; the message captured from the JEE app re-serialises byte for byte), `EventOutbox` writer (`MANDATORY`, Phase 1 metadata convention), Spring relay (`OutboxRelay` + `OutboxDeliverer`: 25 ms fixed delay, advisory lock, id order, exact-id delete, 10 attempts then drop) routing `public.*` to `jms.topic.public.event` (`TextMessage` + `CPPNAME` only) and other names to `PrivateEventHandler`s in `REQUIRES_NEW` (none yet), `@JmsListener` on the legacy durable shared subscription `listing.event.processor.public.event` with the generated MDB's selector (28 names), transacted session, dedup table `inbound_event_dedup` (changeset `031`, `ON CONFLICT DO NOTHING` in the listener transaction), broker redelivery → DLQ. `application-messaging.yml` (`listing.messaging.*`, `LISTING_ARTEMIS_*` shared with `cp.audit.*`); health no longer DOWN when messaging is disabled (`management.health.jms.enabled` follows `listing.messaging.enabled`). `./gradlew --offline build` green: 39 `listing-messaging` unit tests (codec, metadata, outbox writer, deliverer, relay, routes, publisher, dispatcher, dedup path, listener, selector/subscription and container config), 30 repository tests (+2 dedup), 50 listing-api tests (+1 messaging switch / health), 416 query unit tests. `./runSpringIntegrationTests.sh -- --offline`: 86/86 (82 existing + 4 `MessagingIntegrationTest`: outbox row → `public.event` in the wire format of the captured legacy message; inbound dispatch + duplicate ignored; always-failing handler → `DLQ` after 10 deliveries with `_AMQ_ORIG_QUEUE=listing\.event\.processor\.public\.event`; non-subscribed name not consumed). `mvn -o -q validate` green. Test-only `P22MessagingProbeHandler` (integration profile) — delete in P2.4 |
+| P2.3–P2.6 | Not started |
 | Jira epic (§15.1) | Missing |
 
 Update this table as each phase completes, with the date.
@@ -531,6 +532,21 @@ Update this table as each phase completes, with the date.
 | D11 | 2026-11-19 | Context roots (ADR 8) | One Boot app, one OpenAPI spec (`listing-api.openapi.yml`), `server.servlet.context-path=/listing-service`, spec paths `/command/api/rest/listing/…` and `/query/api/rest/listing/…`; actuator at `/listing-service/actuator/*` |
 | D12 | 2026-11-19 | JSON logging (§15.9) | `logback-spring.xml` with `LogstashEncoder`, JSON to stdout, banner off; root `${LOG_LEVEL_ROOT:WARN}`, app `${LOG_LEVEL_LISTING:INFO}`. Env var prefix `LISTING_*` confirmed (§15.7) |
 | D13 | 2026-11-19 | IT runner during Phase 2 | `runIntegrationTests.sh` unchanged (WildFly) until P2.5; Spring ITs via `runSpringIntegrationTests.sh` → `./gradlew :listing-integration-test-spring:test` with the same midnight-UTC guard |
+| D14 | 2026-11-19 | JMS wire format (ADR 013) | Publish `public.*` as a `TextMessage` (compact JSON envelope, `_metadata` first, payload fields at top level) with the single string property `CPPNAME`, producer defaults (persistent, priority 4, no expiry), to Artemis address `jms.topic.public.event`. Verified against a message captured from the JEE app |
+| D15 | 2026-11-19 | Inbound subscription (ADR 013) | Reuse the legacy processor's durable shared subscription `listing.event.processor.public.event` with the generated selector string unchanged, so the broker queue (and its backlog) carries over at cut-over |
+| D16 | 2026-11-19 | Inbound idempotency and poison messages (§15.3 defaults, ADR 013) | Dedup table `inbound_event_dedup` keyed on `_metadata.id`, `INSERT … ON CONFLICT DO NOTHING` in the listener transaction, retention unbounded for now. Poison messages: broker redelivery (transacted session) then the broker's DLQ — CPP brokers `jms.queue.DLQ` after 10 attempts, IT broker `DLQ` after 10 |
+| D17 | 2026-11-19 | Messaging switch and health | `listing.messaging.enabled` (`LISTING_MESSAGING_ENABLED`, default true) turns the listener, the outbox relay and the JMS health contributor on or off together; the app builds its own Artemis connection factory from `listing.messaging.artemis.*` (the `cp.audit.*` key model), `spring.artemis.*` is unused |
+| D18 | 2026-11-19 | Access-control bypasses | Keep all 4 legacy bypasses (hearing-slots, CSV report, `/sessionAvailabilityValidation`, `/courtScheduleDraftStatus`) for exact parity (§15.5) |
+| D19 | 2026-11-19 | User id on downstream calls | Mirror legacy: system user (`LISTING_SYSTEM_USER_ID`) only where the framework used `requestAsAdmin`; the caller's `CJSCPPUID` otherwise |
+| D20 | 2026-11-19 | RAML response-schema defects | Leave schemas and output as they are; keep the documented test workarounds |
+| D21 | 2026-11-19 | Liquibase changelog identity | Check now (P2.2 follow-up) that Spring writes the same `DATABASECHANGELOG` filename/id/author as JEE; fix with `logicalFilePath` or path mapping. **Checked 2026-11-19, no fix needed:** the 48 listing rows of a JEE-deployed viewstore (local cpp-developers-docker `listingviewstore`, Liquibase 4.10.0; 71 rows incl. 23 framework event-buffer/subscription rows) and the rows Spring Boot (Liquibase 5.0.3, `classpath:liquibase/db-changelog.xml`) writes are identical in (id, author, filename) — including the 9 changesets without `logicalFilePath`, recorded by both as `liquibase/listing-view-store-db-changesets/<file>`. Replaying Spring's Liquibase on a copy of that JEE schema ran only `031` plus `017` (2 `drop-process-event-index` changesets, `onFail=CONTINUE`: JEE runs them before the framework creates `processed_event`, so they never recorded there; at cut-over they drop two indexes on the unused framework table) and upgraded every stored checksum `8:` → `9:` (a rollback to the JEE app's Liquibase 4.10 would then need `UPDATE databasechangelog SET md5sum = NULL`). Guarded by `LiquibaseChangelogIdentityTest` against the checked-in capture `liquibase-identity/jee-databasechangelog.psv` |
+| D22 | 2026-11-19 | Core-domain schemas in CI | Vendor the referenced core-domain JSON schemas into `listing-api`; drop the jar dependencies (§15.13). **Done 2026-11-19:** 100 schemas (1 common-core-domain, 99 criminal-court-public-model, 17.104.6) under `listing-api/src/main/resources/request-schemas/catalog/vendored-core-domain/` (README: source, version, refresh) |
+| D23 | 2026-11-19 | usersgroups group source | Verify before M1 that the permissions response returns the same group names as groups-by-user, for real test users in non-prod (§15.4) |
+| D24 | 2026-11-19 | Logging format | Follow `context/logging-standards.md` (composite encoder, root INFO); supersedes D12. Source: the copy in `cpp-context-progression/.claude/context/` (not in this repo). **Done 2026-11-19:** `logback.xml` (LoggingEventCompositeJsonEncoder, standard provider order), `TracingFilter` (`correlationId` from `X-Correlation-Id`/`traceparent` or generated, `requestId`), correlation id propagated on outbound `RestClient` calls, `Enable-Native-Access` in the jar manifest and JSON `startup.sh` messages. Compliance run: 351 stdout lines, all valid JSON, MDC ids present, nothing on stderr. Not yet: MDC for JMS-consumed messages (P2.4) |
+| D25 | 2026-11-19 | cp-auth-rules-filter rebuilds | Measure per-request cost before M1; raise with the owners only if it matters (§15.14) |
+| D26 | 2026-11-19 | Inbound dedup retention | Purge dedup rows older than 30 days with a scheduled job (§15.3). **Done 2026-11-19:** `InboundDedupPurge` (listing-messaging) |
+| D27 | 2026-11-19 | Broker redelivery | Keep 10 attempts, no delay, DLQ `jms.queue.DLQ` (parity, §15.3) |
+| D28 | 2026-11-19 | JMS headers | `CPPNAME` only, as the framework; §15.6 closed |
 
 ## 15. Still open
 
@@ -541,6 +557,20 @@ Update this table as each phase completes, with the date.
    slice by slice in Phase 1, not at cut-over.
 3. **Inbound idempotency.** Confirm that dedup on `_metadata.id` with a retention window is
    acceptable, and how poison messages are handled (DLQ name, retry count).
+   *P2.2 (D16, ADR 013):* implemented with the defaults — dedup on `_metadata.id`
+   (`inbound_event_dedup`, changeset `031`), **retention unbounded** until a window is agreed
+   (`received_at` is indexed for a purge job); poison messages are left to the broker: transacted
+   rollback, redelivery, then the broker's dead-letter address (CPP brokers: `jms.queue.DLQ`, 10
+   attempts, no delay — unchanged; IT broker: `DLQ`, 10). Still to confirm: the retention window,
+   and whether 10 immediate redeliveries suit transient downstream failures (a `redelivery-delay`
+   is a broker setting).
+   *Update 2026-11-19 (D26, D27):* retention is 30 days. `InboundDedupPurge` deletes rows with
+   `received_at` older than `listing.messaging.inbound.dedup.retention` (`LISTING_INBOUND_DEDUP_RETENTION`,
+   default `P30D`) on `…purge.cron` (`LISTING_INBOUND_DEDUP_PURGE_CRON`, default daily `0 30 2 * * *`),
+   in batches of `…purge.batch-size` (`LISTING_INBOUND_DEDUP_PURGE_BATCH_SIZE`, 1000), one batch per
+   transaction under a Postgres advisory lock (key `7340002`; the relay uses `7340001`), so one node
+   purges at a time; off with `LISTING_INBOUND_DEDUP_PURGE_ENABLED=false` or the messaging switch.
+   Redelivery stays 10 attempts, no delay (D27). Nothing left open here.
 4. ~~**Access-control filter**: does `cp-auth-rules-filter` support group-membership checks?~~
    **Resolved:** `UserAndGroupProvider` in 1.0.9 exposes `isMemberOfAnyOfTheSuppliedGroups(Action, String...)`.
    What's left is to confirm that the usersgroups permissions endpoint the filter calls returns the
@@ -553,6 +583,11 @@ Update this table as each phase completes, with the date.
    interceptor chain. All four are excluded; confirm whether the last two should be enforced.
 6. **JMS message properties / envelope.** Confirm that downstream consumers only need the framework
    envelope and the `CPPNAME` property, or list any other headers.
+   *P2.2 (D14, ADR 013):* the framework sender sets **only** `CPPNAME` (plus default QoS headers);
+   a message captured from the JEE app on 2026-11-19 has exactly `CPPNAME` and the broker's
+   `JMSXDeliveryCount`. The Spring publisher matches it (IT-checked). Framework consumers select on
+   `CPPNAME` and parse `_metadata`; nothing else is read. Remaining: confirm no non-framework
+   consumer (e.g. a bridge or reporting tool) reads other headers.
 7. **Deployment.**
    - The Helm chart and pipeline repo need updating for a jar instead of the WAR.
    - ~~Confirm the env var prefix (`LISTING_*`).~~ **Resolved (D12):** `LISTING_*`.
@@ -573,7 +608,9 @@ Update this table as each phase completes, with the date.
     only runs the interceptor chain (§5), so the relay calls it in-VM; no new entry point or topic
     is needed. Publishing to `listing.event` was rejected because the listener dead-letters the
     events.
-13. **Schema catalog jars in CI (P2.0).** Request validation resolves the RAML schemas' remote
+13. ~~**Schema catalog jars in CI (P2.0).**~~ **Resolved 2026-11-19 (D22):** the 100 schemas the
+    `$ref`s reach are vendored under `listing-api/src/main/resources/request-schemas/catalog/vendored-core-domain/`
+    and the jar dependencies are gone from the Gradle build. Original item: Request validation resolves the RAML schemas' remote
     `$ref`s from listing-json (in the repo) and the schema-only jars
     `uk.gov.moj.cpp.core.domain:common-core-domain` / `criminal-court-public-model` 17.104.6. Gradle
     fetches those jars (jar only, no POM) from `~/.m2` or the HMCTS Azure feed. Confirm the feed
@@ -581,9 +618,11 @@ Update this table as each phase completes, with the date.
 14. **cp-auth-rules-filter cost per request (P2.0).** Version 1.0.9 builds a Drools KieBase per
     evaluation (seen in the IT logs) although `reload-on-each-request` is false. Measure before M1;
     raise with the library owners if it matters.
-15. **P2.1 follow-ups.** (a) Confirm that the Liquibase `DATABASECHANGELOG.FILENAME` values written
+15. **P2.1 follow-ups.** (a) ~~Confirm that the Liquibase `DATABASECHANGELOG.FILENAME` values written
     by Spring Boot (`classpath:liquibase/db-changelog.xml`, `includeAll`) equal the ones the JEE
-    deployment wrote, before the cut-over runs against production data. (b) The authz filter's
+    deployment wrote, before the cut-over runs against production data.~~ **Resolved (D21):** they
+    are equal (checked against a local JEE viewstore; still worth one `SELECT` on a production copy
+    before cut-over, which the D21 note describes). (b) The authz filter's
     usersgroups URL uses `/usersgroups-query-api/...` (copied from courtscheduler, P2.0) while the
     legacy listing calls and stubs use `/usersgroups-service/...`; confirm the gateway serves both.
     (c) Whether to fix the RAML response-schema defects listed in §10.3 (a contract change).

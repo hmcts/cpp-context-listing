@@ -50,10 +50,13 @@ listing:
   p20-skeleton:
     # Test-only canned command endpoint used by the P2.0 integration tests (P20SkeletonApi). Never true outside ITs.
     enabled: false
+  p22-messaging-probe:
+    # Test-only inbound handler used by the P2.2 messaging ITs (P22MessagingProbeHandler). Never true outside ITs.
+    enabled: false
 
 # Logging (JSON to stdout via logback-spring.xml). Root WARN keeps third-party noise down (the
 # WildFly deployment ran at ERROR); the app's own packages stay at INFO. Both overridable per env.
 logging:
   level:
-    root: ${LOG_LEVEL_ROOT:WARN}
+    root: ${LOG_LEVEL_ROOT:INFO}
     uk.gov.moj.cpp.listing: ${LOG_LEVEL_LISTING:INFO}

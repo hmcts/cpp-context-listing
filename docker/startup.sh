@@ -2,9 +2,10 @@
 # Container entrypoint for the Spring Boot fat jar published by this repo.
 # Looks for the jar in /app (when running in the prod container) and falls back
 # to ./build/libs (when shelling into the image from a local checkout).
+# JSON, like the application's own log lines (context/logging-standards.md: stdout is JSON only).
 logmsg() {
-    SCRIPTNAME=$(basename $0)
-    echo "$SCRIPTNAME : $1"
+    printf '{"timestamp":"%s","message":"%s","logger_name":"startup.sh","level":"%s"}\n' \
+        "$(date -u '+%Y-%m-%d %H:%M:%S.000')" "$1" "${2:-INFO}"
 }
 
 export LOCALJARFILE=$(ls ./build/libs/*.jar 2>/dev/null | grep -v 'plain' | head -n1)
@@ -20,6 +21,6 @@ elif [ -f "$LOCALJARFILE" ]; then
     logmsg "Running local java jarfile $LOCALJARFILE"
     exec java $JAVA_OPTS -jar "$LOCALJARFILE"
 else
-    logmsg "ERROR - No jarfile found. Unable to start application"
+    logmsg "No jarfile found. Unable to start application" ERROR
     exit 1
 fi

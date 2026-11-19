@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/prosecutor.json",
+  "type": "object",
+  "properties": {
+    "prosecutorId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "prosecutorCode": {
+      "type": "string"
+    },
+    "prosecutorName": {
+      "type": "string",
+      "description": "The name of the prosecution authority from reference data.  Required for documentation purposes.  Required to be enriched when publishing hearing results"
+    },
+    "address": {
+      "$ref": "http://justice.gov.uk/core/courts/address.json"
+    },
+    "isCps": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "prosecutorId",
+    "prosecutorCode"
+  ],
+  "additionalProperties": false
+}
