@@ -98,6 +98,8 @@ import uk.gov.justice.listing.events.HearingDaysCancelled;
 import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
 import uk.gov.justice.listing.events.HearingDaysSequenced;
 import uk.gov.justice.listing.events.HearingDaysWithoutCourtCentreCorrected;
+import uk.gov.justice.listing.events.OffenceOrderingRestored;
+import uk.gov.justice.listing.events.RestoredOffences;
 import uk.gov.justice.listing.events.HearingDeleted;
 import uk.gov.justice.listing.events.HearingLanguageChangedForHearing;
 import uk.gov.justice.listing.events.HearingListed;
@@ -300,6 +302,7 @@ public class Hearing implements Aggregate {
                 when(CaseEjected.class).apply(this::onCaseEjected),
                 when(ApplicationEjected.class).apply(this::onApplicationEjected),
                 when(HearingDaysWithoutCourtCentreCorrected.class).apply(this::onHearingDaysWithoutCourtCentreCorrected),
+                when(OffenceOrderingRestored.class).apply(this::onOffenceOrderingRestored),
                 when(HearingMarkedAsDuplicate.class).apply(this::onHearingMarkedAsDuplicate),
                 when(AddedCasesForHearing.class).apply(this::onAddedCasesForHearing),
                 when(HearingDeleted.class).apply(this::onHearingDeleted),
@@ -3524,6 +3527,44 @@ public class Hearing implements Aggregate {
                         .collect(Collectors.toList()))
                 .withHearingId(hearingId)
                 .build()));
+    }
+
+    /**
+     * LPT-2698 BDF: restore orderIndex/count (taken from progression) on offences that lost them.
+     * Nothing for a deleted or duplicate hearing or an empty list. Which offences are actually on the
+     * hearing is decided by the listener, which ignores unknown ones.
+     */
+    public Stream<Object> restoreOffenceOrdering(final UUID hearingId, final List<RestoredOffences> restoredOffences) {
+        if (this.duplicate || this.deleted || isEmpty(restoredOffences)) {
+            return Stream.empty();
+        }
+        return apply(Stream.of(OffenceOrderingRestored.offenceOrderingRestored()
+                .withHearingId(hearingId)
+                .withRestoredOffences(restoredOffences)
+                .build()));
+    }
+
+    private void onOffenceOrderingRestored(final OffenceOrderingRestored offenceOrderingRestored) {
+        if (isNull(this.currentHearingEventState) || isNull(this.currentHearingEventState.getListedCases())) {
+            return;
+        }
+        offenceOrderingRestored.getRestoredOffences().forEach(restored -> this.currentHearingEventState.getListedCases().stream()
+                .filter(listedCase -> listedCase.getId().equals(restored.getCaseId()))
+                .flatMap(listedCase -> listedCase.getDefendants().stream())
+                .filter(defendant -> defendant.getId().equals(restored.getDefendantId()))
+                .forEach(defendant -> defendant.getOffences().replaceAll(offence ->
+                        offence.getId().equals(restored.getOffenceId()) ? withMissingOrderingFilled(offence, restored) : offence)));
+    }
+
+    private static Offence withMissingOrderingFilled(final Offence offence, final RestoredOffences restored) {
+        if (nonNull(offence.getOrderIndex()) && nonNull(offence.getCount())) {
+            return offence;
+        }
+        return Offence.offence()
+                .withValuesFrom(offence)
+                .withOrderIndex(nonNull(offence.getOrderIndex()) ? offence.getOrderIndex() : restored.getOrderIndex())
+                .withCount(nonNull(offence.getCount()) ? offence.getCount() : restored.getCount())
+                .build();
     }
 
     public Stream<Object> raiseHearingDaysWithoutCourtCentreCorrected(final UUID hearingId, final List<uk.gov.justice.listing.events.HearingDay> hearingDays) {

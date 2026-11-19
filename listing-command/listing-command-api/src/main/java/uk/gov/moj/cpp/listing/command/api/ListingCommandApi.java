@@ -124,6 +124,7 @@ public class ListingCommandApi {
     private static final String LISTING_COMMAND_UPDATE_HEARING_DAY_COURT_SCHEDULE = "listing.command.update-hearing-day-court-schedule";
     private static final String LISTING_COMMAND_MIGRATE_CROWN_HEARINGS_TO_COURTSCHEDULES = "listing.command.migrate-crown-hearings-to-courtschedules";
     public static final String LISTING_COMMAND_UPDATE_HEARING_ADD_CASE_BDF = "listing.command.update-hearing-add-case-bdf";
+    public static final String LISTING_COMMAND_RESTORE_OFFENCE_ORDERING_BDF = "listing.command.restore-offence-ordering-bdf";
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
     private static final String PROSECUTION_CASES = "prosecutionCases";
     private static final String HEARING_ID = "hearingId";
@@ -753,6 +754,15 @@ public class ListingCommandApi {
     @Handles("listing.update-hearing-add-case-bdf")
     public void handleUpdateHearingAddCaseBdf(final JsonEnvelope envelope) {
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_UPDATE_HEARING_ADD_CASE_BDF),
+                envelope.payload()));
+    }
+
+    /**
+     * LPT-2698 BDF (temporary — remove the entry point once the production run is done).
+     */
+    @Handles("listing.restore-offence-ordering-bdf")
+    public void handleRestoreOffenceOrderingBdf(final JsonEnvelope envelope) {
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_RESTORE_OFFENCE_ORDERING_BDF),
                 envelope.payload()));
     }
 

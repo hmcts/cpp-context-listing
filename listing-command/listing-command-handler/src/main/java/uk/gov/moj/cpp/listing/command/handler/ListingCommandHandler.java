@@ -36,6 +36,7 @@ import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.UpdateCaseMarkersCommand;
 import uk.gov.justice.core.courts.UpdateCaseMarkersToHearingCommand;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
+import uk.gov.justice.listing.commands.RestoreOffenceOrderingBdf;
 import uk.gov.justice.listing.commands.CourtListRequestExport;
 import uk.gov.justice.listing.commands.Defendant;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
@@ -1584,6 +1585,25 @@ public class ListingCommandHandler {
             final Stream<Object> hearingDeleted = hearing.markHearingAsDeleted(deletedHearingId);
             return Stream.of(hearingDeleted).flatMap(i -> i);
         });
+    }
+
+    /**
+     * LPT-2698 BDF: restore orderIndex/count on the hearing's offences (temporary entry point).
+     */
+    @Handles("listing.command.restore-offence-ordering-bdf")
+    public void restoreOffenceOrderingBdf(final JsonEnvelope command) throws EventStreamException {
+        final RestoreOffenceOrderingBdf restoreOffenceOrderingBdf = jsonObjectConverter.convert(command.payloadAsJsonObject(), RestoreOffenceOrderingBdf.class);
+        final UUID hearingId = restoreOffenceOrderingBdf.getHearingId();
+        final List<uk.gov.justice.listing.events.RestoredOffences> restoredOffences = restoreOffenceOrderingBdf.getRestoredOffences().stream()
+                .map(restored -> uk.gov.justice.listing.events.RestoredOffences.restoredOffences()
+                        .withCaseId(restored.getCaseId())
+                        .withDefendantId(restored.getDefendantId())
+                        .withOffenceId(restored.getOffenceId())
+                        .withOrderIndex(restored.getOrderIndex())
+                        .withCount(restored.getCount())
+                        .build())
+                .collect(toList());
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> hearing.restoreOffenceOrdering(hearingId, restoredOffences));
     }
 
     @Handles("listing.command.update-hearing-add-case-bdf")

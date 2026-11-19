@@ -19,7 +19,9 @@ import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.OffenceAdded;
 import uk.gov.justice.listing.events.OffenceDeleted;
+import uk.gov.justice.listing.events.OffenceOrderingRestored;
 import uk.gov.justice.listing.events.OffenceUpdated;
+import uk.gov.justice.listing.events.RestoredOffences;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
@@ -78,6 +80,9 @@ public class DefendantOffencesEventListenerTest {
 
     @Mock
     private Envelope<OffenceDeleted> offenceDeletedEnvelope;
+
+    @Mock
+    private Envelope<OffenceOrderingRestored> offenceOrderingRestoredEnvelope;
 
     @Mock
     private HearingSearchSyncService hearingSearchSyncService;
@@ -512,6 +517,99 @@ public class DefendantOffencesEventListenerTest {
                 .withOffenceId(OFFENCE_ID)
                 .withDefendantId(DEFENDANT_ID)
                 .build();
+    }
+
+    /**
+     * LPT-2698 BDF: restores orderIndex/count that LPT-2677's bug wiped from stored offences.
+     */
+    @Test
+    public void shouldFillMissingOrderIndexAndCountWhenOffenceOrderingIsRestored() throws Exception {
+        givenStoredListedCases(storedListedCases(null, null));
+
+        defendantOffencesEventListener.offenceOrderingRestored(offenceOrderingRestored(OFFENCE_ID, 4, 2));
+
+        final JsonNode savedOffence = savedOffence();
+        assertThat(savedOffence.path("orderIndex").asInt(-1), equalTo(4));
+        assertThat(savedOffence.path("count").asInt(-1), equalTo(2));
+        assertThat(savedOffence.path("offenceCode").asText(), equalTo(EXPECTED_OFFENCE_CODE));
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldNotOverwriteAnExistingOrderIndexOrCountWhenOffenceOrderingIsRestored() throws Exception {
+        givenStoredListedCases(storedListedCases(1, 0));
+
+        defendantOffencesEventListener.offenceOrderingRestored(offenceOrderingRestored(OFFENCE_ID, 4, 2));
+
+        final JsonNode savedOffence = savedOffence();
+        assertThat(savedOffence.path("orderIndex").asInt(-1), equalTo(1));
+        assertThat(savedOffence.path("count").asInt(-1), equalTo(0));
+    }
+
+    @Test
+    public void shouldIgnoreARestoredOffenceThatIsNotOnTheHearing() throws Exception {
+        givenStoredListedCases(storedListedCases(null, null));
+
+        defendantOffencesEventListener.offenceOrderingRestored(offenceOrderingRestored(randomUUID(), 4, 2));
+
+        final JsonNode savedOffence = savedOffence();
+        assertThat(savedOffence.has("orderIndex"), equalTo(false));
+        assertThat(savedOffence.has("count"), equalTo(false));
+    }
+
+    @Test
+    public void shouldDoNothingWhenTheHearingIsNotInTheViewStore() {
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(null);
+
+        defendantOffencesEventListener.offenceOrderingRestored(offenceOrderingRestored(OFFENCE_ID, 4, 2));
+
+        verify(properties, never()).replace(any(), any());
+        verify(hearingRepository, never()).save(hearing);
+    }
+
+    private void givenStoredListedCases(final List<ListedCase> storedListedCases) throws Exception {
+        final JsonNode storedJson = new ObjectMapper().readTree(mapper.writeValueAsString(storedListedCases));
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(storedJson);
+    }
+
+    private JsonNode savedOffence() {
+        final ArgumentCaptor<ArrayNode> savedListedCases = ArgumentCaptor.forClass(ArrayNode.class);
+        verify(properties).replace(any(), savedListedCases.capture());
+        return savedListedCases.getValue().get(0).get("defendants").get(0).get("offences").get(0);
+    }
+
+    private Envelope<OffenceOrderingRestored> offenceOrderingRestored(final UUID offenceId, final int orderIndex, final int count) {
+        given(offenceOrderingRestoredEnvelope.payload()).willReturn(OffenceOrderingRestored.offenceOrderingRestored()
+                .withHearingId(HEARING_ID)
+                .withRestoredOffences(singletonList(RestoredOffences.restoredOffences()
+                        .withCaseId(CASE_ID)
+                        .withDefendantId(DEFENDANT_ID)
+                        .withOffenceId(offenceId)
+                        .withOrderIndex(orderIndex)
+                        .withCount(count)
+                        .build()))
+                .build());
+        return offenceOrderingRestoredEnvelope;
+    }
+
+    private List<ListedCase> storedListedCases(final Integer orderIndex, final Integer count) {
+        return singletonList(ListedCase.listedCase()
+                .withId(CASE_ID)
+                .withDefendants(singletonList(Defendant.defendant()
+                        .withId(DEFENDANT_ID)
+                        .withOffences(singletonList(Offence.offence()
+                                .withId(OFFENCE_ID)
+                                .withOffenceCode(EXPECTED_OFFENCE_CODE)
+                                .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                                        .withTitle(STRING.next())
+                                        .build())
+                                .withOrderIndex(orderIndex)
+                                .withCount(count)
+                                .build()))
+                        .build()))
+                .build());
     }
 
     private List<ListedCase> createListedCases() {

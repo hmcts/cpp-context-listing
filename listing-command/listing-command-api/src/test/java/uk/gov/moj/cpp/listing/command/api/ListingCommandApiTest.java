@@ -1491,6 +1491,17 @@ public class ListingCommandApiTest {
     }
 
     @Test
+    public void shouldHandleRestoreOffenceOrderingBdf() {
+        final Metadata mockMetadata = MetadataBuilderFactory.metadataWithRandomUUIDAndName().build();
+        when(envelope.metadata()).thenReturn(mockMetadata);
+
+        listingCommandApi.handleRestoreOffenceOrderingBdf(envelope);
+
+        verify(sender).send(envelopeArgumentCaptor.capture());
+        assertThat(envelopeArgumentCaptor.getValue().metadata().name(), is("listing.command.restore-offence-ordering-bdf"));
+    }
+
+    @Test
     public void shouldHandleDeletePreviousHearingsAndCreateNextHearing() {
         final Metadata mockMetadata = MetadataBuilderFactory.metadataWithRandomUUIDAndName().build();
         when(envelope.metadata()).thenReturn(mockMetadata);

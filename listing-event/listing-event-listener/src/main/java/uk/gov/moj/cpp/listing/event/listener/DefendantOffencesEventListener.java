@@ -12,7 +12,9 @@ import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.OffenceAdded;
 import uk.gov.justice.listing.events.OffenceDeleted;
+import uk.gov.justice.listing.events.OffenceOrderingRestored;
 import uk.gov.justice.listing.events.OffenceUpdated;
+import uk.gov.justice.listing.events.RestoredOffences;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -106,6 +108,50 @@ public class DefendantOffencesEventListener {
                     .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getAddedListedCaseFunction(caseId, defendantId, offence))
                     .save();
         }
+    }
+
+    /**
+     * LPT-2698 BDF: restores orderIndex/count wiped from stored offences. Only fills values that are
+     * missing — never overwrites, never reorders. Offences not on the hearing are ignored.
+     */
+    @Handles("listing.events.offence-ordering-restored")
+    public void offenceOrderingRestored(final Envelope<OffenceOrderingRestored> event) {
+        final OffenceOrderingRestored offenceOrderingRestored = event.payload();
+        final UUID hearingId = offenceOrderingRestored.getHearingId();
+
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getRestoredOffenceOrderingFunction(offenceOrderingRestored.getRestoredOffences()))
+                    .save();
+        }
+    }
+
+    private Function<List<ListedCase>, List<ListedCase>> getRestoredOffenceOrderingFunction(final List<RestoredOffences> restoredOffences) {
+        return cases -> restoreOffenceOrdering(cases, restoredOffences);
+    }
+
+    private static List<ListedCase> restoreOffenceOrdering(final List<ListedCase> listedCases, final List<RestoredOffences> restoredOffences) {
+        listedCases.forEach(listedCase -> listedCase.getDefendants().forEach(defendant ->
+                defendant.getOffences().replaceAll(offence -> restoredOffences.stream()
+                        .filter(restored -> restored.getCaseId().equals(listedCase.getId())
+                                && restored.getDefendantId().equals(defendant.getId())
+                                && restored.getOffenceId().equals(offence.getId()))
+                        .findFirst()
+                        .map(restored -> withMissingOrderingFilled(offence, restored))
+                        .orElse(offence))));
+        return listedCases;
+    }
+
+    private static Offence withMissingOrderingFilled(final Offence offence, final RestoredOffences restored) {
+        if (nonNull(offence.getOrderIndex()) && nonNull(offence.getCount())) {
+            return offence;
+        }
+        return Offence.offence()
+                .withValuesFrom(offence)
+                .withOrderIndex(nonNull(offence.getOrderIndex()) ? offence.getOrderIndex() : restored.getOrderIndex())
+                .withCount(nonNull(offence.getCount()) ? offence.getCount() : restored.getCount())
+                .build();
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getAddedListedCaseFunction(UUID caseId, UUID defendantId, Offence offence) {
