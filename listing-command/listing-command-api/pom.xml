@@ -65,7 +65,7 @@
                     <dependency>
                         <groupId>uk.gov.moj.cpp.progression</groupId>
                         <artifactId>progression-command-api</artifactId>
-                        <version>${progression.command.version}</version>
+                        <version>${progression.version}</version>
                         <classifier>raml</classifier>
                         <exclusions>
                             <exclusion>
