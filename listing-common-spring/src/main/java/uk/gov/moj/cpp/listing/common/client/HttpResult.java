@@ -20,4 +20,14 @@ public record HttpResult(int status, Object entity) {
     public JsonObject jsonEntity() {
         return entity instanceof JsonObject json ? json : null;
     }
+
+    /** The JAX-RS {@code Response.getStatus()} the ported JEE code calls. */
+    public int getStatus() {
+        return status;
+    }
+
+    /** The JAX-RS {@code Response.getEntity()} the ported JEE code calls. */
+    public Object getEntity() {
+        return entity;
+    }
 }

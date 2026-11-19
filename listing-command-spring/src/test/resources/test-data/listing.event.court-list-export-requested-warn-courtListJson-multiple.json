@@ -1,0 +1,628 @@
+{
+  "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+  "courtLists": [
+    {
+      "crestCourtSite": {
+        "id": "8d577791-8a0a-3e94-8455-bc03aa220b79",
+        "oucode": "C01CY00",
+        "crestCourtId": "418",
+        "crestCourtSiteId": "418",
+        "crestCourtSiteName": "CROYDON",
+        "crestCourtName": "CROYDON",
+        "crestCourtShortName": "CROYD",
+        "crestCourtFullName": "CROYDON",
+        "crestCourtSiteCode": "A",
+        "courtType": "CROWN_COURT"
+      },
+      "sittings": [
+        {
+          "sittingDate": "2023-02-20",
+          "weekCommencing": false,
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+          "judiciary": [],
+          "hearings": [
+            {
+              "startTime": "2023-02-20T10:00",
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "hasVideoLink": true,
+              "endTime": "2023-02-20T10:20",
+              "caseIdentifier": {
+                "authorityId": "764bff92-a135-34cb-b858-8bb6b4b66301",
+                "authorityCode": "SURRPF",
+                "caseReference": "15FEB000005"
+              },
+              "defendants": [
+                {
+                  "id": "c4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "address": {
+                    "address1": "56saon",
+                    "address2": "56Police House",
+                    "address3": "StreetDescription1",
+                    "address4": "Locality1",
+                    "address5": "Town2",
+                    "postcode": "TW14 9XD"
+                  },
+                  "lastName": "Saxon",
+                  "offences": [
+                    {
+                      "id": "cec4b1f8-0fbc-474c-b14a-f4e274ac4224",
+                      "count": 0,
+                      "endDate": "2020-09-17",
+                      "startDate": "2020-09-18",
+                      "orderIndex": 1,
+                      "offenceCode": "TH68023",
+                      "shadowListed": false,
+                      "offenceWording": "Robbery",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Ysbeilio/Lladrad",
+                        "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                        "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Tim",
+                  "bailStatus": {
+                    "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                    "code": "C",
+                    "description": "Custody"
+                  },
+                  "dateOfBirth": "2000-08-08",
+                  "masterDefendantId": "c4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "proceedingsConcluded": false,
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-02-15T14:50:08.189Z"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "sittingDate": "2023-02-20",
+          "weekCommencing": true,
+          "judiciary": [],
+          "hearings": [
+            {
+              "startTime": "2023-02-20T00:00",
+              "hearingType": {
+                "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+                "description": "Trial"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": true,
+              "hasVideoLink": false,
+              "caseIdentifier": {
+                "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+                "authorityCode": "CITYPF",
+                "caseReference": "38GD7734123"
+              },
+              "defendants": [
+                {
+                  "id": "808f65d0-dc76-42b5-8510-ea45c038b8c0",
+                  "address": {
+                    "address1": "Address line 1",
+                    "address2": "Address line 2",
+                    "address3": "Address line 3",
+                    "address4": "Address line 4",
+                    "address5": "West Dianaland",
+                    "postcode": "TW14 9XD"
+                  },
+                  "lastName": "Kirlin",
+                  "offences": [
+                    {
+                      "id": "405a2085-7e7d-498e-a76e-763e91d1c729",
+                      "count": 0,
+                      "endDate": "2023-02-07",
+                      "startDate": "2023-01-10",
+                      "orderIndex": 1,
+                      "offenceCode": "CA03010",
+                      "shadowListed": false,
+                      "offenceWording": "Use / install a television set without a licence 1",
+                      "statementOfOffence": {
+                        "title": "Use / install a television set without a licence",
+                        "welshTitle": "Defnyddio / gosod set deledu heb drwydded",
+                        "legislation": "Contrary to section 363(2) and (4) of the Communications Act 2003.",
+                        "welshLegislation": "Yn groes i adran 363(2) a (4) Deddf Cyfathrebu 2003."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Willie",
+                  "bailStatus": {
+                    "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                    "code": "A",
+                    "description": "Not applicable"
+                  },
+                  "dateOfBirth": "1995-01-22",
+                  "masterDefendantId": "808f65d0-dc76-42b5-8510-ea45c038b8c0",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-02-09T16:58:43.676Z"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "sittingDate": "2023-02-21",
+          "weekCommencing": false,
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+          "judiciary": [
+            {
+              "judicialId": "00f50b1e-9691-3727-8408-61c58352eec6",
+              "judicialRoleType": {
+                "judiciaryType": "CROWN"
+              }
+            },
+            {
+              "judicialId": "01963f7f-c2d0-325e-b6df-148b2907f78c",
+              "judicialRoleType": {
+                "judiciaryType": "CROWN"
+              }
+            },
+            {
+              "judicialId": "01963f7f-c2d0-325e-b6df-148b2907f78c",
+              "judicialRoleType": {
+                "judiciaryType": "CROWN"
+              }
+            }
+          ],
+          "hearings": [
+            {
+              "startTime": "2023-02-21T10:00",
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "hasVideoLink": false,
+              "endTime": "2023-02-21T10:20",
+              "caseIdentifier": {
+                "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+                "authorityCode": "CITYPF",
+                "caseReference": "54GD9455723"
+              },
+              "defendants": [
+                {
+                  "id": "effe7442-a68f-4a6c-9820-cfe4bc6d9ee3",
+                  "address": {
+                    "address1": "Address line 1",
+                    "address2": "Address line 2",
+                    "address3": "Address line 3",
+                    "address4": "Address line 4",
+                    "address5": "Pascaletown",
+                    "postcode": "TW14 9XD"
+                  },
+                  "lastName": "Stehr",
+                  "offences": [
+                    {
+                      "id": "6aa045e8-c59b-48b1-a936-833529c01c1f",
+                      "count": 0,
+                      "endDate": "2023-02-12",
+                      "startDate": "2023-01-15",
+                      "orderIndex": 1,
+                      "offenceCode": "CA03010",
+                      "shadowListed": false,
+                      "offenceWording": "From 15 January 2023, used a television receiver without a licence.",
+                      "statementOfOffence": {
+                        "title": "Use / install a television set without a licence",
+                        "welshTitle": "Defnyddio / gosod set deledu heb drwydded",
+                        "legislation": "Contrary to section 363(2) and (4) of the Communications Act 2003.",
+                        "welshLegislation": "Yn groes i adran 363(2) a (4) Deddf Cyfathrebu 2003."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Allison",
+                  "bailStatus": {
+                    "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                    "code": "A",
+                    "description": "Not applicable"
+                  },
+                  "dateOfBirth": "1995-08-26",
+                  "masterDefendantId": "effe7442-a68f-4a6c-9820-cfe4bc6d9ee3",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-02-14T12:55:19.185Z"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "sittingDate": "2023-02-21",
+          "weekCommencing": false,
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+          "judiciary": [
+            {
+              "judicialId": "019d00dc-ecdd-3c6a-9102-446a352e3faa",
+              "judicialRoleType": {
+                "judiciaryType": "CROWN"
+              }
+            },
+            {
+              "judicialId": "0032af21-9321-3699-8eec-9516c3cb2645",
+              "judicialRoleType": {
+                "judiciaryType": "CROWN"
+              }
+            },
+            {
+              "judicialId": "019d00dc-ecdd-3c6a-9102-446a352e3faa",
+              "judicialRoleType": {
+                "judiciaryType": "CROWN"
+              }
+            }
+          ],
+          "hearings": [
+            {
+              "startTime": "2023-02-21T10:00",
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "hasVideoLink": false,
+              "endTime": "2023-02-21T10:20",
+              "caseIdentifier": {
+                "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+                "authorityCode": "CITYPF",
+                "caseReference": "13GD6608923"
+              },
+              "defendants": [
+                {
+                  "id": "1ff3b576-3d28-4dc7-8e64-ccffef93b70b",
+                  "address": {
+                    "address1": "Address line 1",
+                    "address2": "Address line 2",
+                    "address3": "Address line 3",
+                    "address4": "Address line 4",
+                    "address5": "Norachester",
+                    "postcode": "TW14 9XD"
+                  },
+                  "lastName": "Yost",
+                  "offences": [
+                    {
+                      "id": "695b0727-ad34-4248-b06b-d707f50822b8",
+                      "count": 0,
+                      "endDate": "2023-02-12",
+                      "startDate": "2023-01-15",
+                      "orderIndex": 1,
+                      "offenceCode": "CA03010",
+                      "shadowListed": false,
+                      "offenceWording": "From 15 January 2023, used a television receiver without a licence.",
+                      "statementOfOffence": {
+                        "title": "Use / install a television set without a licence",
+                        "welshTitle": "Defnyddio / gosod set deledu heb drwydded",
+                        "legislation": "Contrary to section 363(2) and (4) of the Communications Act 2003.",
+                        "welshLegislation": "Yn groes i adran 363(2) a (4) Deddf Cyfathrebu 2003."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Josue",
+                  "bailStatus": {
+                    "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                    "code": "A",
+                    "description": "Not applicable"
+                  },
+                  "dateOfBirth": "2000-02-15",
+                  "masterDefendantId": "1ff3b576-3d28-4dc7-8e64-ccffef93b70b",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-02-14T12:48:30.682Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "crestCourtSite": {
+        "id": "3b61590a-a49e-33d3-8a76-34f61f6c46e3",
+        "oucode": "C01CY00",
+        "crestCourtId": "418",
+        "crestCourtSiteId": "6413",
+        "crestCourtSiteName": "CROYDON JURYS INN",
+        "crestCourtName": "CROYDON",
+        "crestCourtShortName": "CROYD",
+        "crestCourtFullName": "CROYDON JURYS INN",
+        "crestCourtSiteCode": "C",
+        "courtType": "CROWN_COURT"
+      },
+      "sittings": [
+        {
+          "sittingDate": "2023-02-20",
+          "weekCommencing": false,
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+          "judiciary": [],
+          "hearings": [
+            {
+              "startTime": "2023-02-20T10:00",
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "hasVideoLink": true,
+              "endTime": "2023-02-20T10:20",
+              "caseIdentifier": {
+                "authorityId": "764bff92-a135-34cb-b858-8bb6b4b66301",
+                "authorityCode": "SURRPF",
+                "caseReference": "15FEB000005"
+              },
+              "defendants": [
+                {
+                  "id": "a4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "address": {
+                    "address1": "56saon",
+                    "address2": "56Police House",
+                    "address3": "StreetDescription1",
+                    "address4": "Locality1",
+                    "address5": "Town2",
+                    "postcode": "TW14 9XD"
+                  },
+                  "lastName": "Saxon",
+                  "offences": [
+                    {
+                      "id": "cec4b1f8-0fbc-474c-b14a-f4e274ac4224",
+                      "count": 0,
+                      "endDate": "2020-09-17",
+                      "startDate": "2020-09-18",
+                      "orderIndex": 1,
+                      "offenceCode": "TH68023",
+                      "shadowListed": false,
+                      "offenceWording": "Robbery",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Ysbeilio/Lladrad",
+                        "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                        "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Tim",
+                  "bailStatus": {
+                    "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                    "code": "C",
+                    "description": "Custody"
+                  },
+                  "dateOfBirth": "2000-08-08",
+                  "masterDefendantId": "c4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "proceedingsConcluded": false,
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-02-15T14:50:08.189Z"
+                },
+                {
+                  "id": "b4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "address": {
+                    "address1": "56saon",
+                    "address2": "56Police House",
+                    "address3": "StreetDescription1",
+                    "address4": "Locality1",
+                    "address5": "Town2",
+                    "postcode": "TW14 9XD"
+                  },
+                  "lastName": "Saxon",
+                  "offences": [
+                    {
+                      "id": "cec4b1f8-0fbc-474c-b14a-f4e274ac4224",
+                      "count": 0,
+                      "endDate": "2020-09-17",
+                      "startDate": "2020-09-18",
+                      "orderIndex": 1,
+                      "offenceCode": "TH68023",
+                      "shadowListed": false,
+                      "offenceWording": "Robbery",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Ysbeilio/Lladrad",
+                        "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                        "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Tim",
+                  "bailStatus": {
+                    "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                    "code": "C",
+                    "description": "Custody"
+                  },
+                  "dateOfBirth": "2000-08-08",
+                  "masterDefendantId": "c4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "proceedingsConcluded": false,
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-02-15T14:50:08.189Z"
+                },
+                {
+                  "id": "d4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "address": {
+                    "address1": "56saon",
+                    "address2": "56Police House",
+                    "address3": "StreetDescription1",
+                    "address4": "Locality1",
+                    "address5": "Town2",
+                    "postcode": "TW14 9XD"
+                  },
+                  "lastName": "Saxon",
+                  "offences": [
+                    {
+                      "id": "cec4b1f8-0fbc-474c-b14a-f4e274ac4224",
+                      "count": 0,
+                      "endDate": "2020-09-17",
+                      "startDate": "2020-09-18",
+                      "orderIndex": 1,
+                      "offenceCode": "TH68023",
+                      "shadowListed": false,
+                      "offenceWording": "Robbery",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Ysbeilio/Lladrad",
+                        "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                        "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Tim",
+                  "bailStatus": {
+                    "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                    "code": "C",
+                    "description": "Custody"
+                  },
+                  "dateOfBirth": "2000-08-08",
+                  "masterDefendantId": "c4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "proceedingsConcluded": false,
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-02-15T14:50:08.189Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "crestCourtSite": {
+        "id": "23fe6402-4507-333e-87e2-e354aabb7408",
+        "oucode": "C01CY00",
+        "crestCourtId": "418",
+        "crestCourtSiteId": "418",
+        "crestCourtSiteName": "CROWN COURT SITTING AT BARCLAY ROAD",
+        "crestCourtName": "CROYDON",
+        "crestCourtShortName": "CROYD",
+        "crestCourtFullName": "CROYDON",
+        "crestCourtSiteCode": "D",
+        "courtType": "CROWN_COURT"
+      },
+      "sittings": [
+        {
+          "sittingDate": "2023-02-20",
+          "weekCommencing": false,
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+          "judiciary": [],
+          "hearings": [
+            {
+              "startTime": "2023-02-20T10:00",
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "hasVideoLink": true,
+              "endTime": "2023-02-20T10:20",
+              "caseIdentifier": {
+                "authorityId": "764bff92-a135-34cb-b858-8bb6b4b66301",
+                "authorityCode": "SURRPF",
+                "caseReference": "15FEB000005"
+              },
+              "defendants": [
+                {
+                  "id": "e4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "address": {
+                    "address1": "56saon",
+                    "address2": "56Police House",
+                    "address3": "StreetDescription1",
+                    "address4": "Locality1",
+                    "address5": "Town2",
+                    "postcode": "TW14 9XD"
+                  },
+                  "lastName": "Saxon",
+                  "offences": [
+                    {
+                      "id": "cec4b1f8-0fbc-474c-b14a-f4e274ac4224",
+                      "count": 0,
+                      "endDate": "2020-09-17",
+                      "startDate": "2020-09-18",
+                      "orderIndex": 1,
+                      "offenceCode": "TH68023",
+                      "shadowListed": false,
+                      "offenceWording": "Robbery",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Ysbeilio/Lladrad",
+                        "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                        "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Tim",
+                  "bailStatus": {
+                    "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                    "code": "C",
+                    "description": "Custody"
+                  },
+                  "dateOfBirth": "2000-08-08",
+                  "masterDefendantId": "c4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "proceedingsConcluded": false,
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-02-15T14:50:08.189Z"
+                },
+                {
+                  "id": "f4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "address": {
+                    "address1": "56saon",
+                    "address2": "56Police House",
+                    "address3": "StreetDescription1",
+                    "address4": "Locality1",
+                    "address5": "Town2",
+                    "postcode": "TW14 9XD"
+                  },
+                  "lastName": "Saxon",
+                  "offences": [
+                    {
+                      "id": "cec4b1f8-0fbc-474c-b14a-f4e274ac4224",
+                      "count": 0,
+                      "endDate": "2020-09-17",
+                      "startDate": "2020-09-18",
+                      "orderIndex": 1,
+                      "offenceCode": "TH68023",
+                      "shadowListed": false,
+                      "offenceWording": "Robbery",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Ysbeilio/Lladrad",
+                        "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                        "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Tim",
+                  "bailStatus": {
+                    "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                    "code": "C",
+                    "description": "Custody"
+                  },
+                  "dateOfBirth": "2000-08-08",
+                  "masterDefendantId": "c4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "proceedingsConcluded": false,
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-02-15T14:50:08.189Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

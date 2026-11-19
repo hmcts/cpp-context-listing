@@ -5,7 +5,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import uk.gov.moj.cpp.listing.api.testsupport.P22MessagingProbeHandler;
 import uk.gov.moj.cpp.listing.messaging.inbound.InboundDedupPurge;
 import uk.gov.moj.cpp.listing.messaging.inbound.PublicEventListener;
 import uk.gov.moj.cpp.listing.messaging.outbox.EventOutbox;
@@ -42,8 +41,6 @@ class MessagingSwitchTest extends PostgresContainerSupport {
         assertThat(context.getBeanNamesForType(InboundDedupPurge.class)).isEmpty();
         assertThat(context.getBeanNamesForType(EventOutbox.class)).hasSize(1);
         assertThat(context.getEnvironment().getProperty("management.health.jms.enabled")).isEqualTo("false");
-        // The test-only probe handler exists only in the integration profile.
-        assertThat(context.getBeanNamesForType(P22MessagingProbeHandler.class)).isEmpty();
 
         mvc.perform(get("/listing-service/actuator/health").contextPath("/listing-service"))
                 .andExpect(status().isOk())

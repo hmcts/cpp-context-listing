@@ -6,9 +6,7 @@ import java.lang.Object;
 import java.lang.Override;
 import java.util.List;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.hearing-marked-for-partial-update")
 public class HearingMarkedForPartialUpdate implements Serializable {
   private static final long serialVersionUID = -7701675490946393616L;
 

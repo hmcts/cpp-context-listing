@@ -7,10 +7,8 @@ import java.lang.Override;
 import java.lang.String;
 import java.util.List;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
 
-@Event("listing.events.next-hearing-requested")
 public class NextHearingRequested implements Serializable {
   private static final long serialVersionUID = 5338859218929785743L;
 

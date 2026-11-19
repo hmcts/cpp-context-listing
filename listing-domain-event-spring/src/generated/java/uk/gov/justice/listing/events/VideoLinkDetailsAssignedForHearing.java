@@ -7,9 +7,7 @@ import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.video-link-details-assigned-for-hearing")
 public class VideoLinkDetailsAssignedForHearing implements Serializable {
   private static final long serialVersionUID = -2033215375672306741L;
 

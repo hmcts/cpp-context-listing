@@ -6,9 +6,7 @@ import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.reporting-restriction-reason-changed-for-hearing")
 public class ReportingRestrictionReasonChangedForHearing implements Serializable {
   private static final long serialVersionUID = 3026544467778396182L;
 

@@ -59,12 +59,19 @@ dependencies {
     runtimeOnly project(':listing-viewstore-liquibase')
     // P2.2: domain messaging (ADR 013).
     implementation project(':listing-messaging')
-    // P2.3: command services, aggregates, event recorder, processor handlers (ADR 014).
+    // P2.3: command services (ADR 015: viewstore + outbox, no aggregates or private events).
     implementation project(':listing-command-spring')
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.postgresql:postgresql'
-    implementation 'org.liquibase:liquibase-core'
-    implementation 'org.springframework.boot:spring-boot-liquibase'
+    // javax.xml.bind:jaxb-api (2.3.1) is a declared dependency of liquibase-core that nothing on the
+    // runtime classpath uses (P2.3.2: no class of liquibase-core 5.0.3 or of any other runtime jar
+    // references javax/xml/bind; §12 no javax.* XML binding): excluded.
+    implementation('org.liquibase:liquibase-core') {
+        exclude group: 'javax.xml.bind', module: 'jaxb-api'
+    }
+    implementation('org.springframework.boot:spring-boot-liquibase') {
+        exclude group: 'javax.xml.bind', module: 'jaxb-api'
+    }
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'

@@ -5,9 +5,7 @@ import java.io.Serializable;
 import java.lang.Object;
 import java.lang.Override;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.court-application-added-for-hearing")
 public class CourtApplicationAddedForHearing implements Serializable {
   private static final long serialVersionUID = 4430348461943395602L;
 

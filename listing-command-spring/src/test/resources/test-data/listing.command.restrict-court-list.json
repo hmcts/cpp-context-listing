@@ -1,0 +1,14 @@
+{
+  "hearingId": "HEARING_ID_1",
+  "caseIds": [
+
+      "CASE_ID_1"
+
+  ],
+  "courtApplicationIds": [
+
+    "COURT_APPLICATION_ID_1"
+
+  ],
+  "courtApplicationType": "COURT_APPLICATION_TYPE_1"
+}

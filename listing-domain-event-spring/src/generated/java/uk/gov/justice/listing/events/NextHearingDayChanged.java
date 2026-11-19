@@ -6,9 +6,7 @@ import java.lang.Object;
 import java.lang.Override;
 import java.time.ZonedDateTime;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.next-hearing-day-changed")
 public class NextHearingDayChanged implements Serializable {
   private static final long serialVersionUID = 7212737245309610257L;
 

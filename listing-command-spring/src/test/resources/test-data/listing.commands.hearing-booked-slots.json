@@ -1,0 +1,106 @@
+{
+  "id": "ced2d8e5-9fe2-4003-a40b-cee8d1f235d8",
+  "type": {
+    "id": "6e1bef55-7e13-4615-b3ba-8663f4438e16",
+    "description": "Trial"
+  },
+  "jurisdictionType": "MAGISTRATES",
+  "courtCentre": {
+    "id": "75eb4a5f-556f-4020-bada-ceeba8c73086",
+    "name": "Carmarthen Magistrates' Court",
+    "welshName": "Llys Ynadon Caernarfon",
+    "roomId": "ad5f9d57-075c-4d40-8d32-75209bd2cbd9",
+    "roomName": "Room 1",
+    "welshRoomName": "Ystafell 1"
+  },
+  "earliestStartDateTime": "2012-12-12T01:02:33Z",
+  "estimatedMinutes": 640,
+  "prosecutorDatesToAvoid": "thursdays",
+  "listingDirections": "wheelchair access required",
+  "reportingRestrictionReason": "Automatic anonymity under the Sexual Offences (Amendment) Act 1992",
+  "courtApplications": [
+    {
+      "applicant": {
+        "id": "22b1078b-9430-4cef-ba46-eea40a129ca8",
+        "personDetails": {
+          "firstName": "5o5NzB5ewT",
+          "gender": "FEMALE",
+          "lastName": "nYhjupYT63"
+        }
+      },
+      "applicationReceivedDate": "2019-03-04",
+      "applicationReference": "Xgwcxvgqz4",
+      "applicationStatus": "LISTED",
+      "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
+      "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
+      "linkedCaseId": "19e9d562-6abb-4871-bfb3-2d777aa90371",
+      "respondents": [
+        {
+          "partyDetails": {
+            "id": "48ddbd0a-31db-4814-b052-aa3ba9afb800",
+            "personDetails": {
+              "firstName": "ijgX3B9Vy7",
+              "gender": "FEMALE",
+              "lastName": "pGk5CoFbDb"
+            }
+          }
+        }
+      ],
+      "respondentsNA": true,
+      "type": {
+        "applicationCategory": "KsZPM4vFrU",
+        "applicationCode": "A9mRuXXZ9Q",
+        "applicationJurisdictionType": "CROWN",
+        "applicationLegislation": "UoLO7ofTVm",
+        "applicationType": "9vBchM49Go",
+        "id": "46171453-3b64-4a43-91af-cfc09e6d8889",
+        "linkType": "LINKED",
+        "requiresCourtHearing": false,
+        "requiresResponse": true
+      }
+    }
+  ],
+  "courtApplicationPartyListingNeeds":[
+    {
+      "courtApplicationId":"26b856a8-ae01-4aad-814c-7cdff8db19bf",
+      "courtApplicationPartyId": "48ddbd0a-31db-4814-b052-aa3ba9afb800"
+    }
+  ],
+  "judiciary": [
+    {
+      "judicialId": "8ebc222c-9b33-402b-bfb1-4ca973058a57",
+      "judicialRoleType": {
+        "judiciaryType": "MAGISTRATE"
+      },
+      "isDeputy": false,
+      "isBenchChairman": true,
+      "userId": "505a3e6d-5dd9-49ab-b2a5-7016fd074290"
+    }
+  ],
+  "defendantListingNeeds": [
+    {
+      "prosecutionCaseId": "2279b2c3-b0d3-4889-ae8e-1ecc20c39e27",
+      "defendantId": "e1d32d9d-29ec-4934-a932-22a50f223966",
+      "datesToAvoid": "wednesdays",
+      "referralReason": "for Trial",
+      "hearingLanguageNeeds": "ENGLISH"
+    },
+    {
+      "prosecutionCaseId": "2279b2c3-b0d3-4889-ae8e-1ecc20c39e27",
+      "defendantId": "f23e4d9d-29ec-4934-a932-22a50f223944",
+      "datesToAvoid": "thursdays",
+      "referralReason": "for Trial",
+      "hearingLanguageNeeds": "WELSH"
+    }
+  ],
+  "bookedSlots": [
+    {
+      "startTime": "2020-06-22T01:02:33Z",
+      "duration": 25,
+      "courtScheduleId": "d74876ff-2bd9-435a-87e3-b8047cb1357a",
+      "session": "AM",
+      "oucode": "ABS236",
+      "courtRoomId": 123498
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "hearingIds": [
+    "HEARING_ID_1",
+    "HEARING_ID_2"
+  ],
+  "courtApplication":
+  {
+    "applicant": {
+      "id": "22b1078b-9430-4cef-ba46-eea40a129ca8",
+      "firstName": "Fred",
+      "isRespondent": false,
+      "lastName": "Perry",
+      "courtApplicationPartyType": "PERSON",
+      "address": {
+        "address1": "Address1",
+        "address2": "Address2",
+        "address3": "Address3",
+        "address4": "Address4",
+        "address5": "Address5",
+        "postcode": "SW13 0AA"
+      }
+    },
+    "applicationType": "App Type",
+    "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
+    "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
+    "linkedCaseIds": ["19e9d562-6abb-4871-bfb3-2d777aa90371"],
+    "applicationReference": "REF-1",
+    "applicationParticulars": "Application particulars",
+    "respondents": [
+      {
+        "id" : "48ddbd0a-31db-4814-b052-aa3ba9afb800",
+        "firstName": "Dan",
+        "isRespondent": true,
+        "lastName": "Brown",
+        "courtApplicationPartyType": "PERSON",
+        "address": {
+          "address1": "Address1",
+          "address2": "Address2",
+          "address3": "Address3",
+          "address4": "Address4",
+          "address5": "Address5",
+          "postcode": "SW13 0AA"
+        }
+      }
+    ]
+  }
+}

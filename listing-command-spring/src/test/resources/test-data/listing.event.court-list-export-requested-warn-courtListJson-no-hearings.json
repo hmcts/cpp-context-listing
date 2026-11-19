@@ -1,0 +1,96 @@
+{
+  "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+  "courtLists": [
+    {
+      "crestCourtSite": {
+        "id": "8d577791-8a0a-3e94-8455-bc03aa220b79",
+        "oucode": "C01CY00",
+        "crestCourtId": "418",
+        "crestCourtSiteId": "418",
+        "crestCourtSiteName": "CROYDON",
+        "crestCourtName": "CROYDON",
+        "crestCourtShortName": "CROYD",
+        "crestCourtFullName": "CROYDON",
+        "crestCourtSiteCode": "A",
+        "courtType": "CROWN_COURT"
+      },
+      "sittings": [
+        {
+          "sittingDate": "2023-02-20",
+          "weekCommencing": false,
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+          "judiciary": []
+        },
+        {
+          "sittingDate": "2023-02-20",
+          "weekCommencing": true,
+          "judiciary": []
+        },
+        {
+          "sittingDate": "2023-02-21",
+          "weekCommencing": false,
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+          "judiciary": [
+            {
+              "judicialId": "00f50b1e-9691-3727-8408-61c58352eec6",
+              "judicialRoleType": {
+                "judiciaryType": "CROWN"
+              }
+            },
+            {
+              "judicialId": "01963f7f-c2d0-325e-b6df-148b2907f78c",
+              "judicialRoleType": {
+                "judiciaryType": "CROWN"
+              }
+            },
+            {
+              "judicialId": "01963f7f-c2d0-325e-b6df-148b2907f78c",
+              "judicialRoleType": {
+                "judiciaryType": "CROWN"
+              }
+            }
+          ]
+        },
+        {
+          "sittingDate": "2023-02-21",
+          "weekCommencing": false,
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+          "judiciary": [
+            {
+              "judicialId": "019d00dc-ecdd-3c6a-9102-446a352e3faa",
+              "judicialRoleType": {
+                "judiciaryType": "CROWN"
+              }
+            },
+            {
+              "judicialId": "0032af21-9321-3699-8eec-9516c3cb2645",
+              "judicialRoleType": {
+                "judiciaryType": "CROWN"
+              }
+            },
+            {
+              "judicialId": "019d00dc-ecdd-3c6a-9102-446a352e3faa",
+              "judicialRoleType": {
+                "judiciaryType": "CROWN"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "crestCourtSite": {
+        "id": "3b61590a-a49e-33d3-8a76-34f61f6c46e3",
+        "oucode": "C01CY00",
+        "crestCourtId": "418",
+        "crestCourtSiteId": "6413",
+        "crestCourtSiteName": "CROYDON JURYS INN",
+        "crestCourtName": "CROYDON",
+        "crestCourtShortName": "CROYD",
+        "crestCourtFullName": "CROYDON JURYS INN",
+        "crestCourtSiteCode": "C",
+        "courtType": "CROWN_COURT"
+      }
+    }
+  ]
+}

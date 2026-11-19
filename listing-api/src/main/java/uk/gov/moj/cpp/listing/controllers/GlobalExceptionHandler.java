@@ -40,6 +40,8 @@ public class GlobalExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    static final String HEARING_NOT_SPLITTABLE = "HEARING_NOT_SPLITTABLE";
+
     @ExceptionHandler(ValidationFailedException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(final ValidationFailedException ex) {
         return error(HttpStatus.BAD_REQUEST, ex.getErrorMessages());
@@ -97,6 +99,75 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, List.of(String.valueOf(ex.getMessage())));
     }
 
+    /**
+     * The command API's validation failure (the framework REST adapter's {@code BadRequestException}
+     * in JEE) → 400 (MBD refactor P2.3.2).
+     */
+    @ExceptionHandler(uk.gov.moj.cpp.listing.command.hearing.api.CommandBadRequestException.class)
+    public ResponseEntity<Map<String, Object>> handleCommandBadRequest(final RuntimeException ex) {
+        return error(HttpStatus.BAD_REQUEST, List.of(String.valueOf(ex.getMessage())));
+    }
+
+    /**
+     * JEE {@code CrownMultiDayExtensionExceptionMapper}: courtscheduler's status, body
+     * {@code {"errorCode":…, "unavailableDates":[…]}} (each only when present).
+     */
+    @ExceptionHandler(uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException.class)
+    public ResponseEntity<String> handleCrownMultiDayExtension(final uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException ex) {
+        LOG.debug("CROWN extend-multiday rejected by courtscheduler", ex);
+        final jakarta.json.JsonObjectBuilder builder = jakarta.json.Json.createObjectBuilder();
+        if (ex.getErrorCode() != null) {
+            builder.add("errorCode", ex.getErrorCode());
+        }
+        if (!ex.getUnavailableDates().isEmpty()) {
+            final jakarta.json.JsonArrayBuilder dates = jakarta.json.Json.createArrayBuilder();
+            ex.getUnavailableDates().forEach(dates::add);
+            builder.add("unavailableDates", dates);
+        }
+        return json(ex.getHttpStatus(), builder.build());
+    }
+
+    /** JEE {@code ChangeCourtRoomForMultidayExceptionMapper}: the exception's status, body {@code {"errorCode":…, "message":…}}. */
+    @ExceptionHandler(uk.gov.moj.cpp.listing.common.courtroomchange.ChangeCourtRoomForMultidayException.class)
+    public ResponseEntity<String> handleChangeCourtRoomForMultiday(final uk.gov.moj.cpp.listing.common.courtroomchange.ChangeCourtRoomForMultidayException ex) {
+        LOG.debug("change-court-room-for-multiday-hearing rejected", ex);
+        return json(ex.getHttpStatus(), errorCodeAndMessage(ex.getErrorCode(), ex.getResponseBody(), ex.getMessage()));
+    }
+
+    /** JEE {@code MoveHearingToPastDateExceptionMapper}: the exception's status, body {@code {"errorCode":…, "message":…}}. */
+    @ExceptionHandler(uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException.class)
+    public ResponseEntity<String> handleMoveHearingToPastDate(final uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException ex) {
+        LOG.debug("move-hearing-to-past-date rejected", ex);
+        return json(ex.getHttpStatus(), errorCodeAndMessage(ex.getErrorCode(), ex.getResponseBody(), ex.getMessage()));
+    }
+
+    /**
+     * JEE {@code SplitHearingRejectedExceptionMapper} (MBD refactor P2.3.3): progression's 409 is
+     * answered as 422 (the front end has no 409 handling) with {@code errorCode} HEARING_NOT_SPLITTABLE
+     * unless progression gave one; every other status is passed through. Body
+     * {@code {"errorCode":…, "message":…}}, the message being progression's {@code message}, else its
+     * {@code error}, else the exception's.
+     */
+    @ExceptionHandler(uk.gov.moj.cpp.listing.common.splithearing.SplitHearingRejectedException.class)
+    public ResponseEntity<String> handleSplitHearingRejected(final uk.gov.moj.cpp.listing.common.splithearing.SplitHearingRejectedException ex) {
+        LOG.debug("split-hearing rejected by progression", ex);
+        final boolean conflict = ex.getHttpStatus() == HttpStatus.CONFLICT.value();
+        final String errorCode = ex.getErrorCode() != null ? ex.getErrorCode() : conflict ? HEARING_NOT_SPLITTABLE : null;
+        final jakarta.json.JsonObjectBuilder builder = jakarta.json.Json.createObjectBuilder();
+        if (errorCode != null) {
+            builder.add("errorCode", errorCode);
+        }
+        final jakarta.json.JsonObject responseBody = ex.getResponseBody();
+        final String message = responseBody == null ? ex.getMessage()
+                : uk.gov.moj.cpp.listing.domain.json.JsonObjects.getString(responseBody, "message")
+                .or(() -> uk.gov.moj.cpp.listing.domain.json.JsonObjects.getString(responseBody, "error"))
+                .orElse(ex.getMessage());
+        if (message != null) {
+            builder.add("message", message);
+        }
+        return json(conflict ? HttpStatus.UNPROCESSABLE_CONTENT.value() : ex.getHttpStatus(), builder.build());
+    }
+
     /** A remote query answered 403 (the framework's AccessControlViolationException) → 403. */
     @ExceptionHandler(uk.gov.moj.cpp.listing.common.client.RemoteAccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleRemoteAccessDenied(final RuntimeException ex) {
@@ -151,6 +222,25 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleAny(final Exception ex) {
         LOG.error("Unhandled exception", ex);
         return error(HttpStatus.INTERNAL_SERVER_ERROR, List.of("Internal Server Error"));
+    }
+
+    private static jakarta.json.JsonObject errorCodeAndMessage(final String errorCode, final jakarta.json.JsonObject responseBody,
+                                                               final String exceptionMessage) {
+        final jakarta.json.JsonObjectBuilder builder = jakarta.json.Json.createObjectBuilder();
+        if (errorCode != null) {
+            builder.add("errorCode", errorCode);
+        }
+        final String message = responseBody == null
+                ? exceptionMessage
+                : uk.gov.moj.cpp.listing.domain.json.JsonObjects.getString(responseBody, "message").orElse(exceptionMessage);
+        if (message != null) {
+            builder.add("message", message);
+        }
+        return builder.build();
+    }
+
+    private static ResponseEntity<String> json(final int status, final jakarta.json.JsonObject body) {
+        return ResponseEntity.status(status).contentType(MediaType.APPLICATION_JSON).body(body.toString());
     }
 
     private static ResponseEntity<Map<String, Object>> error(final HttpStatus status, final List<String> messages) {

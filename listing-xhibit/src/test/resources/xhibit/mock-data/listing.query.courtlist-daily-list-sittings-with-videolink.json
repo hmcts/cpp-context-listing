@@ -1,0 +1,594 @@
+{
+  "courtLists": [
+    {
+      "sittings": [
+        {
+          "hearings": [
+            {
+              "endTime": "2020-03-16T11:15",
+              "applicant": {
+                "id": "9dd9ab3f-3aae-4567-bedf-992cde2a5805",
+                "lastName": "ENGEL",
+                "firstName": "Elsie",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "PERSON_DEFENDANT"
+              },
+              "startTime": "2020-03-16T10:30",
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "respondents": [
+                {
+                  "id": "460cb321-9017-4c01-bbf4-8c1d28a5f3b5",
+                  "lastName": "MAURO",
+                  "firstName": "Dean",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                },
+                {
+                  "id": "546d824c-30e7-495f-b33c-adea4c9f9b00",
+                  "lastName": "ALBANESE",
+                  "firstName": "Ernest",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                }
+              ],
+              "weekCommencing": false,
+              "applicationReference": "16AR990439",
+              "restrictFromCourtList": false,
+              "hasVideoLink": true,
+              "publicListNote": "Pre Conf"
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "26c0a195-973b-36ba-92a0-13c89dd82315",
+              "judicialRoleType": {
+                "judiciaryType": "DISTRICT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "2ec286ec-615c-33ee-ac2e-41810135863f",
+          "sittingDate": "2020-03-16",
+          "weekCommencing": false
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2020-03-16T15:15",
+              "applicant": {
+                "id": "9dd9ab3f-3aae-4567-bedf-992cde2a5805",
+                "lastName": "ENGEL",
+                "firstName": "Elsie",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "PERSON_DEFENDANT"
+              },
+              "startTime": "2020-03-16T12:30",
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "respondents": [
+                {
+                  "id": "460cb321-9017-4c01-bbf4-8c1d28a5f3b5",
+                  "lastName": "MAURO",
+                  "firstName": "Dean",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                },
+                {
+                  "id": "546d824c-30e7-495f-b33c-adea4c9f9b00",
+                  "lastName": "ALBANESE",
+                  "firstName": "Ernest",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                }
+              ],
+              "weekCommencing": false,
+              "applicationReference": "16AR990439",
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "26c0a195-973b-36ba-92a0-13c89dd82315",
+              "judicialRoleType": {
+                "judiciaryType": "DISTRICT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "2ec286ec-615c-33ee-ac2e-418101358632",
+          "sittingDate": "2020-03-16",
+          "weekCommencing": false
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2020-03-17T10:20",
+              "startTime": "2020-03-17T10:00",
+              "defendants": [
+                {
+                  "id": "af45200a-dc97-456d-bb11-c41ee67a50f4",
+                  "lastName": "VIVIANI",
+                  "offences": [
+                    {
+                      "id": "084f5d7e-ec0b-4580-a6ab-e8289d00d80f",
+                      "endDate": "2020-02-23",
+                      "startDate": "2020-02-22",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Rejroze be gizu vovedel luvilu jobpoz ow ramweto cisni jo so boforid ji na ka mozura we.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        },{
+                          "id": "35e35356-3ef5-4b45-94c5-7e0b2212310a",
+                          "label": "ReportingRestriction Applied",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "4f38ebe7-4d26-44e4-b8f2-c26739b9a542d"
+                        },{
+                          "id": "ebae8284-960a-4cd7-9f76-85b28337edf6",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "2fd90e66-319e-43a5-9c02-c005fa412b93"
+                        }
+                        ],
+                        "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Laura",
+                  "dateOfBirth": "1990-02-21",
+                  "custodyTimeLimit": "2020-03-21",
+                  "specificRequirements": "Gelzobima vaivouwo jawagupaf sojho azzac izihev zeewi miz fe utigite serkij cedsafam wamhi jup mumulof henceftip.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "caseIdentifier": {
+                "authorityId": "adb899d1-c1e5-4b09-9e74-e75f0b6e50a6",
+                "authorityCode": "CPS",
+                "caseReference": "82HS459261"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false,
+              "hasVideoLink": true,
+              "publicListNote": "Conference at 10:30"
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "234a1273-487b-37b2-a206-1b9b56373a29",
+              "judicialRoleType": {
+                "judiciaryType": "DISTRICT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+          "sittingDate": "2020-03-17",
+          "weekCommencing": false
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2020-03-18T10:20",
+              "startTime": "2020-03-18T10:00",
+              "defendants": [
+                {
+                  "id": "af45200a-dc97-456d-bb11-c41ee67a50f4",
+                  "lastName": "VIVIANI",
+                  "offences": [
+                    {
+                      "id": "084f5d7e-ec0b-4580-a6ab-e8289d00d80f",
+                      "endDate": "2020-02-23",
+                      "startDate": "2020-02-22",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Rejroze be gizu vovedel luvilu jobpoz ow ramweto cisni jo so boforid ji na ka mozura we.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Laura",
+                  "dateOfBirth": "1990-02-21",
+                  "custodyTimeLimit": "2020-03-21",
+                  "specificRequirements": "Gelzobima vaivouwo jawagupaf sojho azzac izihev zeewi miz fe utigite serkij cedsafam wamhi jup mumulof henceftip.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "caseIdentifier": {
+                "authorityId": "adb899d1-c1e5-4b09-9e74-e75f0b6e50a6",
+                "authorityCode": "CPS",
+                "caseReference": "82HS459261"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "234a1273-487b-37b2-a206-1b9b56373a29",
+              "judicialRoleType": {
+                "judiciaryType": "DISTRICT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb1",
+          "sittingDate": "2020-03-18",
+          "weekCommencing": false
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2020-03-20T10:20",
+              "startTime": "2020-03-20T10:00",
+              "defendants": [
+                {
+                  "id": "af45200a-dc97-456d-bb11-c41ee67a50f4",
+                  "lastName": "VIVIANI",
+                  "offences": [
+                    {
+                      "id": "084f5d7e-ec0b-4580-a6ab-e8289d00d80f",
+                      "endDate": "2020-02-23",
+                      "startDate": "2020-02-22",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Rejroze be gizu vovedel luvilu jobpoz ow ramweto cisni jo so boforid ji na ka mozura we.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Laura",
+                  "dateOfBirth": "1990-02-21",
+                  "custodyTimeLimit": "2020-03-21",
+                  "specificRequirements": "Gelzobima vaivouwo jawagupaf sojho azzac izihev zeewi miz fe utigite serkij cedsafam wamhi jup mumulof henceftip.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "caseIdentifier": {
+                "authorityId": "adb899d1-c1e5-4b09-9e74-e75f0b6e50a6",
+                "authorityCode": "CPS",
+                "caseReference": "82HS459261"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "234a1273-487b-37b2-a206-1b9b56373a29",
+              "judicialRoleType": {
+                "judiciaryType": "DISTRICT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb2",
+          "sittingDate": "2020-03-20",
+          "weekCommencing": false
+        },
+        {
+          "hearings": [
+            {
+              "startTime": "2020-02-16T08:41:55",
+              "defendants": [
+                {
+                  "id": "3e48f9a2-caf7-4ab2-bdb7-42143d9b2735",
+                  "lastName": "FAINI",
+                  "offences": [
+                    {
+                      "id": "587eddd9-f871-4419-a9ce-23da665f35b8",
+                      "endDate": "2020-02-16",
+                      "startDate": "2020-02-15",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Hasejog sub tu mazziw akna buobco hirgazbur hab refnol jegna ebihal hirka takenkih bikga.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Herbert",
+                  "dateOfBirth": "1990-02-14",
+                  "custodyTimeLimit": "2020-03-14",
+                  "specificRequirements": "Idren kak kektuac ronat san sizusfor obetama wapal wuropme nel sazmana ib wogad wujwe fowdomep lufrowu itisitonu.",
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "f892de50-7cb2-40b3-9a90-bd9c42d4bb08",
+                  "lastName": "MULLINS",
+                  "offences": [
+                    {
+                      "id": "2788e56e-065d-4f4a-83f0-f275f74857c8",
+                      "endDate": "2020-02-16",
+                      "startDate": "2020-02-15",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Akuebak hontihir atujalvaw cag tukwul maw igzator cic uctebib fasaz fovabo ju asser ache.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Tillie",
+                  "dateOfBirth": "1990-02-14",
+                  "custodyTimeLimit": "2020-03-14",
+                  "specificRequirements": "Owami juwjam komip ralekid de libve banra pomli ar coamo avendad opjiv vimki afba pic vobtad zoreh kubewew.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "caseIdentifier": {
+                "authorityId": "5717dbd9-337e-4e90-8f3d-dfe8b5ae7a4b",
+                "authorityCode": "CPS",
+                "caseReference": "99II821359"
+              },
+              "weekCommencing": true,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "sittingDate": "2020-03-09",
+          "weekCommencing": true
+        },
+        {
+          "hearings": [
+            {
+              "startTime": "2020-02-16T08:41:55",
+              "defendants": [
+                {
+                  "id": "52901e17-6918-4cee-ae9f-a2b01af8af4f",
+                  "lastName": "ROBERTSON",
+                  "offences": [
+                    {
+                      "id": "9f70fa5d-7428-466e-9316-9b7265aef30a",
+                      "endDate": "2020-02-16",
+                      "startDate": "2020-02-15",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Livumim pihgari it ritzew jetejla amosab elbo uc egehimap em ceodaram cavicsas jut.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "6f13317c-9568-4124-b43e-4ad9827a1a82",
+                      "endDate": "2020-02-16",
+                      "startDate": "2020-02-15",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Mehbo levene perojta ekamopiz jozummu waguk nal tiz ti diapi lifol jutoovi fifo pop uwo.",
+                      "statementOfOffence": {
+                        "title": "Harrassment",
+                        "welshTitle": "Harrassment",
+                        "legislation": "legislation"
+                      },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "f8a45df1-482d-48ee-88e5-5da7d7bc682a",
+                      "endDate": "2020-02-16",
+                      "startDate": "2020-02-15",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Efa jiw efagi su is epoj fogimsa lu ta sam guvji ped hazhe.",
+                      "statementOfOffence": {
+                        "title": "Armed robbery",
+                        "welshTitle": "Armed robbery",
+                        "legislation": "legislation"
+                      },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Austin",
+                  "dateOfBirth": "1990-02-14",
+                  "custodyTimeLimit": "2020-03-14",
+                  "specificRequirements": "Wab jabru garhor pij pa sakad fuvuc haz urisihih joz sojhomav guhbis dovigdad naiw cud fu.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "caseIdentifier": {
+                "authorityId": "df04a227-b765-4ff9-bf66-597291e01bb4",
+                "authorityCode": "CPS",
+                "caseReference": "35JX974797"
+              },
+              "weekCommencing": true,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "27bbb5dc-6124-3281-950f-2890d27c9b0d",
+          "sittingDate": "2020-03-09",
+          "weekCommencing": true
+        },
+        {
+          "hearings": [
+            {
+              "startTime": "2020-02-16T08:41:55",
+              "defendants": [
+                {
+                  "id": "6bebbeb6-6d11-4aff-a493-512f25430d54",
+                  "lastName": "SHERMAN",
+                  "offences": [
+                    {
+                      "id": "ee445e84-135e-457c-9a06-3f474e1a38e7",
+                      "endDate": "2020-02-16",
+                      "startDate": "2020-02-15",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Fev lazafopo ili fa omibe lopir bionvaz tozsusfo kohov don abifodti om.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
+
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Herman",
+                  "dateOfBirth": "1990-02-14",
+                  "custodyTimeLimit": "2020-03-14",
+                  "specificRequirements": "Zogezoed uget relivpiw tud tidik ke gewuwi pidno acivu zaja deini wuk nunekad siow ejocago ri ka.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "caseIdentifier": {
+                "authorityId": "9a9e1c75-e6e8-426b-82e9-50b6bdd69797",
+                "authorityCode": "CPS",
+                "caseReference": "57LH840882"
+              },
+              "weekCommencing": true,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "6f3ef77a-c0e3-319e-9815-9e9b6febf557",
+              "judicialRoleType": {
+                "judiciaryType": "RECORDER"
+              }
+            }
+          ],
+          "sittingDate": "2020-03-09",
+          "weekCommencing": true
+        }
+      ],
+      "crestCourtSite": {
+        "id": "8d577791-8a0a-3e94-8455-bc03aa220b79",
+        "oucode": "C01CY00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "418",
+        "crestCourtName": "CROYDON",
+        "crestCourtSiteId": "418",
+        "crestCourtFullName": "CROYDON",
+        "crestCourtSiteCode": "A",
+        "crestCourtSiteName": "CROYDON",
+        "crestCourtShortName": "CROYD"
+      }
+    },
+    {
+      "sittings": [],
+      "crestCourtSite": {
+        "id": "23fe6402-4507-333e-87e2-e354aabb7408",
+        "oucode": "C01CY00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "418",
+        "crestCourtName": "CROYDON",
+        "crestCourtSiteId": "418",
+        "crestCourtFullName": "CROYDON",
+        "crestCourtSiteCode": "D",
+        "crestCourtSiteName": "CROWN COURT SITTING AT BARCLAY ROAD",
+        "crestCourtShortName": "CROYD"
+      }
+    }
+  ],
+  "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2"
+}

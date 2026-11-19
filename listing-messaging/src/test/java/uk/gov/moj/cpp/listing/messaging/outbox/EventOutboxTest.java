@@ -1,13 +1,14 @@
 package uk.gov.moj.cpp.listing.messaging.outbox;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import uk.gov.moj.cpp.listing.common.domain.DomainEvent;
 import uk.gov.moj.cpp.listing.messaging.envelope.Envelope;
@@ -78,24 +79,26 @@ class EventOutboxTest {
     void writeAppendsEachEventsEnvelopeToTheOutbox() {
         final List<Envelope> written = outbox.write(command, List.of(
                 new DomainEvent("public.listing.one", STREAM, Json.createObjectBuilder().build()),
-                new DomainEvent("listing.events.two", null, Json.createObjectBuilder().build())));
+                new DomainEvent("public.events.listing.two", null, Json.createObjectBuilder().build())));
 
         assertThat(written).hasSize(2);
         final ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
         verify(repository).append(eq(written.get(0).metadata().id()), eq("public.listing.one"), eq(STREAM), json.capture(),
                 eq(ZonedDateTime.ofInstant(NOW, ZoneOffset.UTC)));
-        verify(repository).append(eq(written.get(1).metadata().id()), eq("listing.events.two"), isNull(), anyString(), any());
+        verify(repository).append(eq(written.get(1).metadata().id()), eq("public.events.listing.two"), isNull(), anyString(), any());
         assertThat(codec.parse(json.getValue())).isEqualTo(written.get(0));
     }
 
     @Test
-    void appendIfAbsentPassesTheEnvelopeAndReportsWhetherItWasInserted() {
-        final Envelope envelope = outbox.envelopeFor(command, new DomainEvent("public.listing.x", STREAM, Json.createObjectBuilder().build()));
-        when(repository.appendIfAbsent(eq(envelope.metadata().id()), eq("public.listing.x"), eq(STREAM), anyString(), any()))
-                .thenReturn(true, false);
+    void privateEventsAreNeverStored() {
+        final Envelope privateEvent = outbox.envelopeFor(command, new DomainEvent("listing.events.created-listing-note", STREAM,
+                Json.createObjectBuilder().build()));
 
-        assertThat(outbox.appendIfAbsent(envelope)).isTrue();
-        assertThat(outbox.appendIfAbsent(envelope)).isFalse();
+        assertThatThrownBy(() -> outbox.append(privateEvent)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("listing.events.created-listing-note");
+        assertThatThrownBy(() -> outbox.write(command, List.of(new DomainEvent("listing.command.x", null, Json.createObjectBuilder().build()))))
+                .isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(repository);
     }
 
     public record Payload(String value, ZonedDateTime at, String absent) {

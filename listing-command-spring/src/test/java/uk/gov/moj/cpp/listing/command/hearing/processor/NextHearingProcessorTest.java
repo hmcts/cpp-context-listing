@@ -1,0 +1,572 @@
+
+package uk.gov.moj.cpp.listing.command.hearing.processor;
+
+
+import static java.util.Arrays.asList;
+import static java.util.UUID.randomUUID;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static uk.gov.moj.cpp.listing.command.hearing.flow.Envelopes.envelopeFrom;
+import static uk.gov.moj.cpp.listing.command.hearing.processor.ProcessorTestSupport.metadataWithRandomUUID;
+import static uk.gov.moj.cpp.listing.command.hearing.processor.ProcessorTestSupport.setField;
+
+import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.justice.listing.commands.HearingListingNeeds;
+import uk.gov.justice.listing.events.AllocatedHearingDeleted;
+import uk.gov.justice.listing.events.CourtCentreDetails;
+import uk.gov.justice.listing.events.Defendant;
+import uk.gov.justice.listing.events.DeleteNextHearingRequested;
+import uk.gov.justice.listing.events.Hearing;
+import uk.gov.justice.listing.events.HearingDeleted;
+import uk.gov.justice.listing.events.ListedCase;
+import uk.gov.justice.listing.events.NextHearingDayChanged;
+import uk.gov.justice.listing.events.NextHearingReplaced;
+import uk.gov.justice.listing.events.NextHearingRequested;
+import uk.gov.justice.listing.events.Offence;
+import uk.gov.justice.listing.events.OffencesRemovedFromExistingAllocatedHearing;
+import uk.gov.justice.listing.events.OffencesRemovedFromExistingUnallocatedHearing;
+import uk.gov.justice.listing.events.OffencesRemovedFromHearing;
+import uk.gov.justice.listing.events.RemoveOffencesFromExistingHearingRequested;
+import uk.gov.justice.listing.events.UnscheduledNextHearingRequested;
+import uk.gov.moj.cpp.listing.domain.json.JsonObjectToObjectConverter;
+import uk.gov.moj.cpp.listing.domain.json.ListToJsonArrayConverter;
+import uk.gov.moj.cpp.listing.domain.json.ObjectToJsonObjectConverter;
+import uk.gov.moj.cpp.listing.domain.json.ObjectToJsonValueConverter;
+import uk.gov.moj.cpp.listing.domain.json.StringToJsonObjectConverter;
+import uk.gov.moj.cpp.listing.domain.json.ObjectMapperProducer;
+import uk.gov.moj.cpp.listing.command.hearing.flow.ProcessorSender;
+import uk.gov.moj.cpp.listing.messaging.envelope.Envelope;
+
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
+import jakarta.json.JsonObject;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class NextHearingProcessorTest {
+
+    @Mock
+    private ProcessorSender sender;
+
+    @Spy
+    private ObjectToJsonObjectConverter objectToJsonObjectConverter;
+
+    @Spy
+    private ListToJsonArrayConverter listToJsonArrayConverter;
+
+    @Spy
+    private StringToJsonObjectConverter stringToJsonObjectConverter;
+
+    @Spy
+    private JsonObjectToObjectConverter jsonObjectConverter;
+
+    @Captor
+    private ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor;
+
+    @InjectMocks
+    private NextHearingProcessor nextHearingProcessor;
+
+
+    private UUID offenceId1 = randomUUID();
+    private Hearing hearing = Hearing.hearing()
+            .withListedCases(new ArrayList(Collections.singletonList(ListedCase.listedCase()
+                    .withDefendants(new ArrayList(Collections.singletonList(Defendant.defendant()
+                            .withOffences(new ArrayList(Collections.singletonList(Offence.offence()
+                                    .withId(offenceId1)
+                                    .build())))
+                            .build())))
+                    .build())))
+            .build();
+
+    @BeforeEach
+    public void setup() {
+        final ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter();
+        setField(this.nextHearingProcessor, "jsonObjectConverter", jsonObjectConverter);
+        setField(this.nextHearingProcessor, "objectToJsonValueConverter", objectToJsonValueConverter);
+        setField(this.nextHearingProcessor, "listToJsonArrayConverter", listToJsonArrayConverter);
+    }
+
+    @Test
+    public void shouldHandleNextHearingRequested() {
+
+        final String adjournedFromDate = "2020-01-25";
+        final UUID courtCentreId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID shadowOffenceId = randomUUID();
+
+        final NextHearingRequested nextHearingRequested = NextHearingRequested.nextHearingRequested()
+                .withAdjournedFromDate(adjournedFromDate)
+                .withHearing(HearingListingNeeds.hearingListingNeeds()
+                        .withId(hearingId)
+                        .build())
+                .withCourtCentreDetails(asList(CourtCentreDetails.courtCentreDetails()
+                        .withDefaultDuration(30)
+                        .withDefaultStartTime(LocalTime.of(10, 0))
+                        .withId(courtCentreId)
+                        .build()))
+                .withShadowListedOffences(asList(shadowOffenceId))
+                .build();
+
+
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.next-hearing-requested"),
+                objectToJsonObjectConverter.convert(nextHearingRequested));
+
+        nextHearingProcessor.handleNextHearingRequested(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final Envelope commandEvent = this.senderJsonEnvelopeCaptor.getValue();
+
+        final JsonObject jsonObject = commandEvent.payload();
+        final JsonObject hearing = jsonObject.getJsonObject("hearing");
+        assertThat(hearing.getString("id"), is(hearingId.toString()));
+        assertThat(jsonObject.getString("adjournedFromDate"), is(adjournedFromDate));
+        final JsonObject jsonCourtCentreDetailsObject = (JsonObject) jsonObject.getJsonArray("courtCentresDetails").get(0);
+        assertThat(jsonCourtCentreDetailsObject.getString("id"), is(courtCentreId.toString()));
+        assertThat(jsonObject.getJsonArray("shadowListedOffences").getJsonString(0).getString(), is(shadowOffenceId.toString()));
+
+        assertThat(commandEvent.metadata().name(), is("listing.command.list-next-hearing"));
+    }
+
+    @Test
+    public void shouldHandleDeleteNextHearingRequested() {
+
+        final UUID seedingHearingId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final DeleteNextHearingRequested deleteNextHearingRequested = DeleteNextHearingRequested.deleteNextHearingRequested()
+                .withHearingId(hearingId)
+                .build();
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.delete-next-hearing-requested"),
+                objectToJsonObjectConverter.convert(deleteNextHearingRequested));
+        nextHearingProcessor.handleDeleteNextHearingRequested(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final Envelope commandEvent = this.senderJsonEnvelopeCaptor.getValue();
+        final JsonObject jsonObject = commandEvent.payload();
+        assertThat(commandEvent.metadata().name(), is("listing.command.delete-seeded-hearing"));
+        assertThat(jsonObject.getString("hearingId"), is(hearingId.toString()));
+    }
+
+    @Test
+    public void shouldHandleAllocatedHearingDeleted() {
+        final UUID hearingId = randomUUID();
+        final UUID caseId = randomUUID();
+
+        final AllocatedHearingDeleted hearingDeletedV2 = AllocatedHearingDeleted.allocatedHearingDeleted()
+                .withHearingId(hearingId)
+                .withCaseIds(asList(caseId))
+                .build();
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.allocated-hearing-deleted"),
+                objectToJsonObjectConverter.convert(hearingDeletedV2));
+
+        nextHearingProcessor.handleAllocatedHearingDeleted(event);
+
+        verify(this.sender, times(2)).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final List<Envelope> events = this.senderJsonEnvelopeCaptor.getAllValues();
+
+        final JsonObject publicEventObject = events.get(0).payload();
+        assertThat(events.get(0).metadata().name(), is("public.events.listing.allocated-hearing-deleted"));
+        assertThat(publicEventObject.getString("hearingId"), is(hearingId.toString()));
+
+        final JsonObject commandObject = events.get(1).payload();
+        assertThat(events.get(1).metadata().name(), is("listing.command.mark-hearing-as-duplicate-for-case"));
+        assertThat(commandObject.getString("hearingId"), is(hearingId.toString()));
+        assertThat(commandObject.getString("caseId"), is(caseId.toString()));
+    }
+
+    @Test
+    public void shouldHandleUnallocatedHearingDeleted() {
+        final UUID hearingId = randomUUID();
+        final UUID caseId = randomUUID();
+
+        final AllocatedHearingDeleted hearingDeletedV2 = AllocatedHearingDeleted.allocatedHearingDeleted()
+                .withHearingId(hearingId)
+                .withCaseIds(asList(caseId))
+                .build();
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.unallocated-hearing-deleted"),
+                objectToJsonObjectConverter.convert(hearingDeletedV2));
+
+        nextHearingProcessor.handleUnallocatedHearingDeleted(event);
+
+        verify(this.sender, times(2)).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final List<Envelope> events = this.senderJsonEnvelopeCaptor.getAllValues();
+
+        final JsonObject publicEventObject = events.get(0).payload();
+        assertThat(events.get(0).metadata().name(), is("public.events.listing.unallocated-hearing-deleted"));
+        assertThat(publicEventObject.getString("hearingId"), is(hearingId.toString()));
+
+        final JsonObject commandObject = events.get(1).payload();
+        assertThat(events.get(1).metadata().name(), is("listing.command.mark-hearing-as-duplicate-for-case"));
+        assertThat(commandObject.getString("hearingId"), is(hearingId.toString()));
+        assertThat(commandObject.getString("caseId"), is(caseId.toString()));
+    }
+
+    @Test
+    public void shouldHandleHearingDeleted() {
+        final UUID hearingId = randomUUID();
+
+        final HearingDeleted hearingDeleted = HearingDeleted.hearingDeleted()
+                .withHearingIdToBeDeleted(hearingId)
+                .build();
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.hearing-deleted"),
+                objectToJsonObjectConverter.convert(hearingDeleted));
+
+        nextHearingProcessor.handleHearingDeleted(event);
+
+        verify(this.sender, times(1)).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final List<Envelope> events = this.senderJsonEnvelopeCaptor.getAllValues();
+
+        final JsonObject publicEventObject = events.get(0).payload();
+        assertThat(events.get(0).metadata().name(), is("public.events.listing.hearing-deleted"));
+        assertThat(publicEventObject.getString("hearingId"), is(hearingId.toString()));
+    }
+
+    @Test
+    public void shouldHandleHearingAllocatedForListing() {
+        final UUID hearingId = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+        final UUID caseId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        final OffencesRemovedFromHearing offencesRemovedFromHearing = OffencesRemovedFromHearing.offencesRemovedFromHearing()
+                .withHearingId(hearingId)
+                .withCaseIdsSeededByOnlySeedingHearingId(asList(caseId))
+                .withSeedingHearingId(seedingHearingId)
+                .withSeededOffences(asList(offenceId))
+                .withUnallocated(false)
+                .build();
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.offences-removed-from-hearing"),
+                objectToJsonObjectConverter.convert(offencesRemovedFromHearing));
+
+        nextHearingProcessor.handleOffencesRemovedFromHearing(event);
+
+        verify(this.sender, times(2)).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final List<Envelope> publishedStreams = this.senderJsonEnvelopeCaptor.getAllValues();
+
+
+        final Envelope publishedPublicEvent = publishedStreams.get(0);
+        final JsonObject eventObject = publishedPublicEvent.payload();
+        assertThat(publishedPublicEvent.metadata().name(), is("public.events.listing.offences-removed-from-existing-allocated-hearing"));
+        assertThat(eventObject.getString("hearingId"), is(hearingId.toString()));
+        assertThat(eventObject.getJsonArray("offenceIds").size(), is(1));
+
+        final Envelope publishedCommand = publishedStreams.get(1);
+        final JsonObject commandObject = publishedCommand.payload();
+        assertThat(publishedCommand.metadata().name(), is("listing.command.mark-hearing-as-duplicate-for-case"));
+        assertThat(commandObject.getString("hearingId"), is(hearingId.toString()));
+        assertThat(commandObject.getString("caseId"), is(caseId.toString()));
+    }
+
+    @Test
+    public void shouldHandleHearingUnallocatedForListingWhenUnallocatedHearing() {
+        final UUID hearingId = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+        final UUID caseId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        final OffencesRemovedFromHearing offencesRemovedFromHearing = OffencesRemovedFromHearing.offencesRemovedFromHearing()
+                .withHearingId(hearingId)
+                .withCaseIdsSeededByOnlySeedingHearingId(asList(caseId))
+                .withSeedingHearingId(seedingHearingId)
+                .withSeededOffences(asList(offenceId))
+                .withUnallocated(true)
+                .build();
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.offences-removed-from-hearing"),
+                objectToJsonObjectConverter.convert(offencesRemovedFromHearing));
+
+        nextHearingProcessor.handleOffencesRemovedFromHearing(event);
+
+        verify(this.sender, times(2)).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final List<Envelope> publishedStreams = this.senderJsonEnvelopeCaptor.getAllValues();
+
+        final Envelope publishedPublicEvent = publishedStreams.get(0);
+        final JsonObject eventObject = publishedPublicEvent.payload();
+        assertThat(publishedPublicEvent.metadata().name(), is("public.events.listing.offences-removed-from-unallocated-hearing"));
+        assertThat(eventObject.getString("hearingId"), is(hearingId.toString()));
+        assertThat(eventObject.getJsonArray("offenceIds").size(), is(1));
+
+        final Envelope publishedCommand = publishedStreams.get(1);
+
+        final JsonObject commandObject = publishedCommand.payload();
+        assertThat(publishedCommand.metadata().name(), is("listing.command.mark-hearing-as-duplicate-for-case"));
+        assertThat(commandObject.getString("hearingId"), is(hearingId.toString()));
+        assertThat(commandObject.getString("caseId"), is(caseId.toString()));
+    }
+
+    @Test
+    public void shouldHandleUnscheduledNextHearingRequested() {
+        final UUID courtCentreId = randomUUID();
+        final UUID hearingId = randomUUID();
+
+        final UnscheduledNextHearingRequested nextHearingRequested = UnscheduledNextHearingRequested.unscheduledNextHearingRequested()
+                .withHearing(HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
+                        .withId(hearingId)
+                        .build())
+                .withCourtCentreDetails(asList(CourtCentreDetails.courtCentreDetails()
+                        .withDefaultDuration(30)
+                        .withDefaultStartTime(LocalTime.of(10, 0))
+                        .withId(courtCentreId)
+                        .build()))
+                .build();
+
+
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.unscheduled-next-hearing-requested"),
+                objectToJsonObjectConverter.convert(nextHearingRequested));
+
+        nextHearingProcessor.handleUnscheduledNextHearingRequested(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final Envelope commandEvent = this.senderJsonEnvelopeCaptor.getValue();
+
+        final JsonObject jsonObject = commandEvent.payload();
+        final JsonObject hearing = jsonObject.getJsonObject("hearing");
+        assertThat(hearing.getString("id"), is(hearingId.toString()));
+        final JsonObject jsonCourtCentreDetailsObject = (JsonObject) jsonObject.getJsonArray("courtCentresDetails").get(0);
+        assertThat(jsonCourtCentreDetailsObject.getString("id"), is(courtCentreId.toString()));
+
+        assertThat(commandEvent.metadata().name(), is("listing.command.list-unscheduled-next-hearing"));
+    }
+
+    /**
+     * LPT-2405 — the inherited tier / list type ride the event as a sibling of the hearing. If
+     * this processor drops them, the per-hearing command has nothing to apply and the trial
+     * silently loses its tier.
+     */
+    @Test
+    public void shouldForwardPtphDetailOntoTheUnscheduledNextHearingCommand() {
+        final UUID courtCentreId = randomUUID();
+        final UUID hearingId = randomUUID();
+
+        final UnscheduledNextHearingRequested nextHearingRequested = UnscheduledNextHearingRequested.unscheduledNextHearingRequested()
+                .withHearing(HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
+                        .withId(hearingId)
+                        .build())
+                .withCourtCentreDetails(asList(CourtCentreDetails.courtCentreDetails()
+                        .withDefaultDuration(30)
+                        .withDefaultStartTime(LocalTime.of(10, 0))
+                        .withId(courtCentreId)
+                        .build()))
+                .withPtphDetail(uk.gov.justice.listing.events.PtphDetail.ptphDetail()
+                        .withTier("TIER_3")
+                        .withListType("TYPE_1_FIXED")
+                        .withKeyReason("Vulnerable witness")
+                        .build())
+                .build();
+
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.unscheduled-next-hearing-requested"),
+                objectToJsonObjectConverter.convert(nextHearingRequested));
+
+        nextHearingProcessor.handleUnscheduledNextHearingRequested(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final JsonObject jsonObject = this.senderJsonEnvelopeCaptor.getValue().payload();
+        final JsonObject forwarded = jsonObject.getJsonObject("ptphDetail");
+        assertThat(forwarded.getString("tier"), is("TIER_3"));
+        assertThat(forwarded.getString("listType"), is("TYPE_1_FIXED"));
+        assertThat(forwarded.getString("keyReason"), is("Vulnerable witness"));
+    }
+
+    /**
+     * Nothing inherited means no `ptphDetail` key at all, rather than an empty object the
+     * downstream schema would have to tolerate.
+     */
+    @Test
+    public void shouldOmitPtphDetailWhenNoneWasInherited() {
+        final UnscheduledNextHearingRequested nextHearingRequested = UnscheduledNextHearingRequested.unscheduledNextHearingRequested()
+                .withHearing(HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
+                        .withId(randomUUID())
+                        .build())
+                .withCourtCentreDetails(asList(CourtCentreDetails.courtCentreDetails()
+                        .withDefaultDuration(30)
+                        .withDefaultStartTime(LocalTime.of(10, 0))
+                        .withId(randomUUID())
+                        .build()))
+                .build();
+
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.unscheduled-next-hearing-requested"),
+                objectToJsonObjectConverter.convert(nextHearingRequested));
+
+        nextHearingProcessor.handleUnscheduledNextHearingRequested(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        assertThat(this.senderJsonEnvelopeCaptor.getValue().payload().containsKey("ptphDetail"), is(false));
+    }
+
+    public void shouldHandleSeedHearingEarliestNextHearingDateUpdated() {
+
+        final UUID seedingHearingId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final ZonedDateTime startTime = ZonedDateTime.now();
+        final NextHearingDayChanged nextHearingDayChanged = NextHearingDayChanged.nextHearingDayChanged()
+                .withHearingId(hearingId)
+                .withHearingStartDate(startTime)
+                .withSeedingHearingId(seedingHearingId)
+                .build();
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.seed-hearing-earliest-next-hearing-date-updated"),
+                objectToJsonObjectConverter.convert(nextHearingDayChanged));
+
+        nextHearingProcessor.handleSeedHearingEarliestNextHearingDayUpdated(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final Envelope publishedEvent = this.senderJsonEnvelopeCaptor.getValue();
+        final JsonObject jsonObject = publishedEvent.payload();
+
+        assertThat(jsonObject.getString("hearingId"), is(hearingId.toString()));
+        assertThat(jsonObject.getString("seedingHearingId"), is(seedingHearingId.toString()));
+        assertThat(jsonObject.getString("earliestHearingStartDate"), is(startTime.withFixedOffsetZone().toString()));
+    }
+
+    @Test
+    public void shouldHandleOffencesRemovedFromExistingAllocatedHearingEventWhenSourceIsListing() {
+
+        shouldHandleOffencesRemovedFromExistingAllocatedHearingEvent("Listing", "public.events.listing.offences-removed-from-existing-allocated-hearing");
+
+    }
+
+
+
+    @Test
+    public void shouldHandleOffencesRemovedFromExistingAllocatedHearingEventWhenSourceIsHearing() {
+
+        shouldHandleOffencesRemovedFromExistingAllocatedHearingEvent("Hearing", "public.events.listing.offences-removed-from-allocated-hearing");
+
+    }
+
+    @Test
+    public void shouldHandleOffencesRemovedFromExistingUnallocatedHearingEvent() {
+
+        final UUID hearingId = randomUUID();
+        final UUID offenceId2 = randomUUID();
+
+        final OffencesRemovedFromExistingUnallocatedHearing offencesToBeDeleted = OffencesRemovedFromExistingUnallocatedHearing.offencesRemovedFromExistingUnallocatedHearing()
+                .withHearingId(hearingId)
+                .withOffenceIds(asList(offenceId1, offenceId2))
+                .build();
+
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.offence-from-existing-unallocated-hearing-deleted"),
+                objectToJsonObjectConverter.convert(offencesToBeDeleted));
+
+        nextHearingProcessor.handleOffencesRemovedFromExistingUnallocatedHearingEvent(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final Envelope publishedEvent = this.senderJsonEnvelopeCaptor.getValue();
+        final JsonObject jsonObject = publishedEvent.payload();
+
+        assertThat(jsonObject.getString("hearingId"), is(hearingId.toString()));
+        assertThat(jsonObject.getJsonArray("offenceIds").getString(0), is(offenceId1.toString()));
+        assertThat(jsonObject.getJsonArray("offenceIds").getString(1), is(offenceId2.toString()));
+
+    }
+
+    @Test
+    public void shouldHandleRemoveOffencesFromExistingHearingRequestedEvent() {
+
+        final UUID hearingId = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+        final RemoveOffencesFromExistingHearingRequested removeOffencesFromExistingHearingRequested = RemoveOffencesFromExistingHearingRequested.removeOffencesFromExistingHearingRequested()
+                .withHearingId(hearingId)
+                .withSeedingHearingId(seedingHearingId)
+                .build();
+
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.delete-offence-from-existing-hearing-requested"),
+                objectToJsonObjectConverter.convert(removeOffencesFromExistingHearingRequested));
+
+        nextHearingProcessor.handleRemoveOffencesFromExistingHearingRequestedEvent(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final Envelope publishedEvent = this.senderJsonEnvelopeCaptor.getValue();
+        final JsonObject jsonObject = publishedEvent.payload();
+
+        assertThat(jsonObject.getString("hearingId"), is(hearingId.toString()));
+        assertThat(jsonObject.getString("seedingHearingId"), is(seedingHearingId.toString()));
+
+    }
+
+    private void shouldHandleOffencesRemovedFromExistingAllocatedHearingEvent(final String source, final String publicEvent) {
+        final UUID hearingId = randomUUID();
+        final UUID offenceId2 = randomUUID();
+
+
+        final OffencesRemovedFromExistingAllocatedHearing offencesToBeDeleted = OffencesRemovedFromExistingAllocatedHearing.offencesRemovedFromExistingAllocatedHearing()
+                .withHearingId(hearingId)
+                .withOffenceIds(asList(offenceId1, offenceId2))
+                .withSourceContext(source)
+                .build();
+
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.offence-from-existing-allocated-hearing-deleted"),
+                objectToJsonObjectConverter.convert(offencesToBeDeleted));
+
+        nextHearingProcessor.handleOffencesRemovedFromExistingAllocatedHearingEvent(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final Envelope publishedEvent = this.senderJsonEnvelopeCaptor.getValue();
+        final JsonObject jsonObject = publishedEvent.payload();
+
+        assertThat(publishedEvent.metadata().name(), is(publicEvent));
+        assertThat(jsonObject.getString("hearingId"), is(hearingId.toString()));
+        assertThat(jsonObject.getJsonArray("offenceIds").getString(0), is(offenceId1.toString()));
+        assertThat(jsonObject.getJsonArray("offenceIds").getString(1), is(offenceId2.toString()));
+        assertThat(jsonObject.size(), is(2));
+    }
+
+    @Test
+    public void shouldHandleNextHearingReplaced() {
+        final UUID seedingHearingId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID oldHearingId1 = randomUUID();
+        final UUID oldHearingId2 = randomUUID();
+
+        final NextHearingReplaced nextHearingReplaced = NextHearingReplaced.nextHearingReplaced()
+                .withNewHearingId(hearingId)
+                .withSeedingHearingId(seedingHearingId)
+                .withOldHearingIds(asList(oldHearingId1, oldHearingId2))
+                .build();
+
+        final Envelope event = envelopeFrom(metadataWithRandomUUID("listing.events.next-hearing-replaced"),
+                objectToJsonObjectConverter.convert(nextHearingReplaced));
+
+        nextHearingProcessor.handleNextHearingReplaced(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final Envelope publishedEvent = this.senderJsonEnvelopeCaptor.getValue();
+        final JsonObject jsonObject = publishedEvent.payload();
+
+        assertThat(publishedEvent.metadata().name(), is("public.listing.offences-moved-to-next-hearing"));
+        assertThat(jsonObject.getString("newHearingId"), is(hearingId.toString()));
+        assertThat(jsonObject.getString("seedingHearingId"), is(seedingHearingId.toString()));
+        assertThat(jsonObject.getJsonArray("oldHearingIds").getString(0), is(oldHearingId1.toString()));
+        assertThat(jsonObject.getJsonArray("oldHearingIds").getString(1), is(oldHearingId2.toString()));
+
+    }
+}

@@ -7,9 +7,7 @@ import java.lang.Override;
 import java.util.List;
 import java.util.UUID;
 import uk.gov.justice.core.courts.LaaReference;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.laa-reference-for-application-updated")
 public class LaaReferenceForApplicationUpdated implements Serializable {
   private static final long serialVersionUID = 7597620069471456771L;
 

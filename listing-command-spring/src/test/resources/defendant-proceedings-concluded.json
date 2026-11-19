@@ -1,0 +1,33 @@
+[
+  {
+    "caseIdentifier":{
+      "authorityCode":"btx4uyUfIa",
+      "authorityId":"f0ddeecf-fda8-46f8-a293-c1813e58b478",
+      "caseReference":"Estzcf6yAC"
+    },
+    "caseStatus":"CASE_CLOSED",
+    "defendants":[
+      {
+        "bailStatus":{
+          "code":"C",
+          "description":"Custody or remanded into custody",
+          "id":"12e69486-4d01-3403-a50a-7419ca040635"
+        },
+        "id":"ddc332a5-c141-40e2-b50f-94ab7552b763",
+        "offences":[
+          {
+            "id":"62a010d2-f59a-4ce6-849a-47036c460337",
+            "offenceCode":"IZW6LmpNdY",
+            "startDate":"2019-11-29",
+            "statementOfOffence":{
+              "legislation":"j0j7R9T8qR",
+              "title":"3IYoGCh7YH"
+            }
+          }
+        ],
+        "proceedingsConcluded":true
+      }
+    ],
+    "id":"4ec3cbb8-2fb7-447c-9949-ad71436911f1"
+  }
+]

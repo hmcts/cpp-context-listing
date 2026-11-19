@@ -9,13 +9,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static uk.gov.moj.cpp.listing.common.domain.note.ListingNoteService.CREATED_LISTING_NOTE;
-import static uk.gov.moj.cpp.listing.common.domain.note.ListingNoteService.DELETED_LISTING_NOTE;
-import static uk.gov.moj.cpp.listing.common.domain.note.ListingNoteService.LISTING_NOTE_EDITED;
 
-import uk.gov.justice.listing.events.CreatedListingNote;
-import uk.gov.justice.listing.events.DeletedListingNote;
-import uk.gov.justice.listing.events.ListingNoteEdited;
 import uk.gov.moj.cpp.listing.common.NoteUUIDService;
 import uk.gov.moj.cpp.listing.common.domain.DomainEvent;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
@@ -25,6 +19,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.json.Json;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,8 +28,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Ports {@code ListingNoteTest} (aggregate guards) and {@code ListingNoteEventListenerTest}
- * (viewstore writes) for slice P1a.
+ * Ports {@code ListingNoteTest} (aggregate guards), {@code ListingNoteEventListenerTest} (viewstore
+ * writes) and {@code ListingNoteEventProcessorTest} (public payloads) — ADR 015: no private events.
  */
 @ExtendWith(MockitoExtension.class)
 class ListingNoteServiceTest {
@@ -56,7 +51,7 @@ class ListingNoteServiceTest {
     }
 
     @Test
-    void createNoteSavesTheNoteAndRaisesCreatedListingNote() {
+    void createNoteSavesTheNoteAndPublishesCreatedListingNote() {
         when(notesRepository.findOptionalById(noteId)).thenReturn(null);
 
         final List<DomainEvent> events = service.createNote(COURT_ROOM_ID, HEARING_DATE, "note text");
@@ -67,8 +62,12 @@ class ListingNoteServiceTest {
         assertThat(saved.getValue().getNote(), is("note text"));
         assertThat(saved.getValue().getCourtRoomId(), is(COURT_ROOM_ID));
 
-        assertThat(events, contains(new DomainEvent(CREATED_LISTING_NOTE, noteId,
-                new CreatedListingNote(COURT_ROOM_ID, HEARING_DATE, noteId, "note text"))));
+        assertThat(events, contains(new DomainEvent("public.listing.created-listing-note", noteId, Json.createObjectBuilder()
+                .add("id", noteId.toString())
+                .add("date", HEARING_DATE)
+                .add("courtRoomId", COURT_ROOM_ID.toString())
+                .add("note", "note text")
+                .build())));
     }
 
     @Test
@@ -82,7 +81,7 @@ class ListingNoteServiceTest {
     }
 
     @Test
-    void editNoteUpdatesTheDescriptionAndRaisesListingNoteEdited() {
+    void editNoteUpdatesTheDescriptionAndPublishesNoteEdited() {
         final Notes existing = existingNote();
         when(notesRepository.findOptionalById(noteId)).thenReturn(existing);
 
@@ -90,7 +89,8 @@ class ListingNoteServiceTest {
 
         verify(notesRepository).save(existing);
         assertThat(existing.getNote(), is("edited"));
-        assertThat(events, contains(new DomainEvent(LISTING_NOTE_EDITED, noteId, new ListingNoteEdited("edited", noteId))));
+        assertThat(events, contains(new DomainEvent("public.listing.note-edited", noteId,
+                Json.createObjectBuilder().add("noteDescription", "edited").add("noteId", noteId.toString()).build())));
     }
 
     @Test
@@ -104,14 +104,15 @@ class ListingNoteServiceTest {
     }
 
     @Test
-    void deleteNoteRemovesTheNoteAndRaisesDeletedListingNote() {
+    void deleteNoteRemovesTheNoteAndPublishesDeletedListingNote() {
         final Notes existing = existingNote();
         when(notesRepository.findOptionalById(noteId)).thenReturn(existing);
 
         final List<DomainEvent> events = service.deleteNote(noteId);
 
         verify(notesRepository).remove(existing);
-        assertThat(events, contains(new DomainEvent(DELETED_LISTING_NOTE, noteId, new DeletedListingNote(noteId))));
+        assertThat(events, contains(new DomainEvent("public.listing.deleted-listing-note", noteId,
+                Json.createObjectBuilder().add("noteId", noteId.toString()).build())));
     }
 
     @Test

@@ -1,0 +1,75 @@
+{
+  "hearings": ["0baecac5-222b-402d-9047-84803679edaf"],
+  "caseId": "ba2cd20b-a54e-4a37-bfc6-d7e638a80c16",
+  "defendants": [
+    {
+      "id": "0baecac5-222b-402d-9047-84803679edac",
+      "masterDefendantId": "0baecac5-222b-402d-9047-84803679edac",
+      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+      "personId": "0baecac5-222b-402d-9047-84803679edad",
+      "firstName": "David",
+      "lastName": "Lloyd",
+      "dateOfBirth": "1995-03-23",
+      "bailStatus": {
+        "id" : "12e69486-4d01-3403-a50a-7419ca040635",
+        "code": "C",
+        "description": "Custody or remanded into custody"
+      },
+      "custodyTimeLimit": "2017-03-23",
+      "defenceOrganisation": "Solicitor XYZ",
+      "associatedDefenceOrganisation" :{
+        "defenceOrganisation": {
+          "organisation": {
+            "address": {
+              "address1": "defenceOrganisation",
+              "address2": "225",
+              "address3": "FuseRoad",
+              "address4": "East Croydon",
+              "address5": "SouthLondon",
+              "postcode": "LN72 9NG"
+            },
+            "contact": {
+              "fax": "765997700",
+              "home": "759019681",
+              "mobile": "1444010616",
+              "primaryEmail": "zdivwdsblf@gxvm7kqbh4.duzrohmbtt",
+              "secondaryEmail": "dusl1j0oxw@0rzelb2mln.rvjnuth3ar",
+              "work": "584591171"
+            },
+            "incorporationNumber": "cegH7rIgdX",
+            "name": "Test",
+            "registeredCharityNumber": "TestCharity"
+          },
+          "laaContractNumber" :"LAA44569"
+        },
+        "associationStartDate": "2019-09-12",
+        "associationEndDate": "2019-12-12",
+        "fundingType": "REPRESENTATION_ORDER",
+        "isAssociatedByLAA": true
+      },
+      "offences": [
+        {
+          "id": "0baecac5-222b-402d-9047-84803679edad",
+          "offenceCode": "OF61131",
+          "startDate" :"2016-06-21",
+          "endDate": "2017-08-01",
+          "offenceWording": "Offence wording",
+          "statementOfOffence": {
+            "title": "Wounding with intent",
+            "legislation": "legislation",
+            "welshTitle": "Wounding with intent in welsh",
+            "welshLegislation": "legislation in welsh"
+          }
+        }
+      ],
+      "address": {
+        "address1": "defenceOrganisation",
+        "address2": "225",
+        "address3": "FuseRoad",
+        "address4": "East Croydon",
+        "address5": "SouthLondon",
+        "postcode": "LN72 9NG"
+      }
+    }
+  ]
+}

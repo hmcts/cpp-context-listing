@@ -1,0 +1,20 @@
+{
+  "hearings": [
+    {
+      "startTime": "2019-12-15T09:20",
+      "endTime": "2019-12-15T09:50",
+      "hearingType": {
+        "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+        "description": "Sentence"
+      }
+    },
+    {
+      "startTime": "2019-12-15T09:21",
+      "endTime": "2019-12-15T09:51",
+      "hearingType": {
+        "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+        "description": "Sentence"
+      }
+    }
+  ]
+}

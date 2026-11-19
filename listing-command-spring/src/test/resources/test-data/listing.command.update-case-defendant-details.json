@@ -1,0 +1,34 @@
+{
+  "defendant": {
+    "defenceOrganisation": {
+      "id": "d14d0c52-2e2d-4497-a5f2-0040c0ccd16a",
+      "name": "withOrganisationName"
+    },
+    "id": "DEFENDANT_ID1",
+    "masterDefendantId": "DEFENDANT_ID1",
+    "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+    "legalEntityDefendant": {
+      "organisation": {
+        "id": "d14d0c52-2e2d-4497-a5f2-0040c0ccd16a",
+        "name": "withOrganisationName"
+      }
+    },
+    "personDefendant": {
+      "bailStatus": {
+        "id":"12e69486-4d01-3403-a50a-7419ca040635",
+        "code":"C",
+        "description":"Custody or remanded into custody"
+      },
+      "custodyTimeLimit": "2017-10-05",
+      "personDetails": {
+        "dateOfBirth": "1980-07-15",
+        "datesToAvoid": "wednesdays",
+        "firstName": "Harry",
+        "gender": "FEMALE",
+        "lastName": "Kane Junior",
+        "specificRequirements": "Screen"
+      }
+    },
+    "prosecutionCaseId": "CASE_ID"
+  }
+}

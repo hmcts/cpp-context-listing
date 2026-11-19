@@ -38,6 +38,18 @@ class RequestSchemaRegistryTest {
     }
 
     @Test
+    void deleteHearingTakesAnEmptyBodyTheHearingIsInThePath() {
+        // As the RAML schema (additionalProperties false, no properties): the JEE framework rejected a
+        // body naming the hearingId too. The P2.3.2 Spring IT first sent {"hearingId":...} and got 400.
+        final Schema schema = registry.schemaFor("application/vnd.listing.delete-hearing+json").orElseThrow();
+        schema.validate(new JSONObject("{}"));
+        assertThatThrownBy(() -> schema.validate(new JSONObject("""
+                {"hearingId":"a299cf49-d14a-496f-895f-59c46859b4a9"}""")))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("extraneous key [hearingId]");
+    }
+
+    @Test
     void lookupIsCaseInsensitive() {
         assertThat(registry.schemaFor(CREATE_NOTE.toUpperCase())).isPresent();
     }

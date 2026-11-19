@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <!--
+        MBD refactor P2.3.1 (ADR 015 §3): the state of PublishCourtListRequestAggregate, which the
+        viewstore did not hold. One row per listing.command.publish-court-list request, keyed by the
+        random publishCourtListRequestId the JEE handler used as the aggregate's stream id.
+        week_commencing is the aggregate's only field (startDate != endDate); the JEE app put it
+        on the publish-court-list-produced status row, so record-court-list-produced reads it here.
+        The other columns are the request as recorded (no extra behaviour depends on them).
+        Additive only: the JEE app never reads or writes this table.
+    -->
+    <changeSet author="listing" id="032-create-publish-court-list-request" logicalFilePath="032-create-publish-court-list-request.xml">
+        <createTable tableName="publish_court_list_request">
+            <column name="publish_court_list_request_id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="publish_court_list_request_pk" nullable="false"/>
+            </column>
+            <column name="court_centre_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="publish_court_list_type" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="week_commencing" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="requested_time" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="publish_court_list_request"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

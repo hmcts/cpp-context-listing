@@ -24,7 +24,7 @@ import org.springframework.http.ResponseEntity;
  * {@code listing.command.create-listing-note}), and the {@code CPPCLIENTCORRELATIONID},
  * {@code CJSCPPUID}, {@code CPPSID} and {@code CPPCAUSATION} headers as {@code correlation.client},
  * {@code context.user}, {@code context.session} and {@code causation}. No {@code createdAt}, as the
- * framework. The events a command raises take their metadata from this ({@code EventRecorder}).
+ * framework. The public messages a command writes take their metadata from this ({@code EventOutbox#envelopeFor}).
  *
  * <p>Payload: the JSON body with the path parameters added (a path parameter wins over a body field
  * of the same name), as the framework merged them.

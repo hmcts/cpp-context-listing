@@ -11,9 +11,7 @@ import java.util.List;
 import java.util.UUID;
 import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.JurisdictionType;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.hearing-allocated-for-listing")
 public class HearingAllocatedForListing implements Serializable {
   private static final long serialVersionUID = 481348104142252561L;
 

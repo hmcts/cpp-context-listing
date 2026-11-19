@@ -28,8 +28,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * </ul>
  * The delivery's exception is caught here, inside this class's own transaction, and never passes
  * through a transactional proxy: the transaction stays committable, so the attempt count is
- * recorded (§11 pitfall 2). In-process handlers run in their own transaction
- * ({@link InProcessEventRoute}).
+ * recorded (§11 pitfall 2).
  */
 @Component
 public class OutboxDeliverer {
@@ -90,7 +89,7 @@ public class OutboxDeliverer {
         return routes.stream()
                 .filter(route -> route.handles(eventName))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No outbox route (JMS topic or in-process handler) for event " + eventName));
+                .orElseThrow(() -> new IllegalStateException("No outbox route (only public.* messages are published) for event " + eventName));
     }
 
     private void handleFailure(final OutboxEntry entry, final RuntimeException e) {

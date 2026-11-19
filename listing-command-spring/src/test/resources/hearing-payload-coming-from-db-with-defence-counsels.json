@@ -1,0 +1,180 @@
+{
+  "id": "HEARING_ID",
+  "type": {
+    "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+    "description": "First hearing"
+  },
+  "panel": "ADULT",
+  "endDate": "2023-12-01",
+  "allocated": true,
+  "judiciary": [],
+  "startDate": "2023-12-01",
+  "courtRoomId": "5f3bf957-8787-3fe1-a1db-8934fb2cf1b2",
+  "hearingDays": [
+    {
+      "endTime": "2023-12-01T10:20:00.000Z",
+      "sequence": 2,
+      "startTime": "2023-12-01T10:00:00.000Z",
+      "courtRoomId": "5f3bf957-8787-3fe1-a1db-8934fb2cf1b2",
+      "hearingDate": "2023-12-01",
+      "isCancelled": false,
+      "courtCentreId": "67aa82ba-67bb-4699-8176-5f572048352b",
+      "durationMinutes": 20
+    }
+  ],
+  "listedCases": [
+    {
+      "id": "CASE_ID",
+      "markers": [],
+      "defendants": [
+        {
+          "id": "DEFENDANT_ID1",
+          "address": {
+            "address1": "Address line 1",
+            "address2": "Address line 2",
+            "address3": "Address line 3",
+            "address4": "Address line 4",
+            "address5": "North Zella",
+            "postcode": "TW14 9XD"
+          },
+          "lastName": "Schamberger",
+          "offences": [
+            {
+              "id": "OFFENCE_ID1",
+              "count": 0,
+              "endDate": "2023-11-28",
+              "startDate": "2023-10-31",
+              "orderIndex": 1,
+              "offenceCode": "CA03010",
+              "shadowListed": false,
+              "offenceWording": "From 31 October 2023, used a television receiver without a licence.",
+              "statementOfOffence": {
+                "title": "Use a television set without a licence",
+                "welshTitle": "Defnyddio set deledu heb drwydded",
+                "legislation": "Contrary to section 363(2) and (4) of the Communications Act 2003.",
+                "welshLegislation": "Yn groes i adran 363(2) a (4) Deddf Cyfathrebu 2003."
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "Elsa",
+          "bailStatus": {
+            "id": "86009c70-759d-3308-8de4-194886ff9a77",
+            "code": "A",
+            "description": "Not applicable"
+          },
+          "dateOfBirth": "1983-06-19",
+          "masterDefendantId": "DEFENDANT_ID1",
+          "hearingLanguageNeeds": "ENGLISH",
+          "restrictFromCourtList": false,
+          "courtProceedingsInitiated": "2023-11-30T19:02:59.787Z"
+        },
+        {
+          "id": "DEFENDANT_ID2",
+          "address": {
+            "address1": "Address line 1",
+            "address2": "Address line 2",
+            "address3": "Address line 3",
+            "address4": "Address line 4",
+            "address5": "North Cassieport",
+            "postcode": "TW14 9XD"
+          },
+          "lastName": "Mayer",
+          "offences": [
+            {
+              "id": "OFFENCE_ID2",
+              "count": 0,
+              "endDate": "2023-11-28",
+              "startDate": "2023-10-31",
+              "orderIndex": 1,
+              "offenceCode": "CA03010",
+              "shadowListed": false,
+              "offenceWording": "From 31 October 2023, used a television receiver without a licence.",
+              "statementOfOffence": {
+                "title": "Use a television set without a licence",
+                "welshTitle": "Defnyddio set deledu heb drwydded",
+                "legislation": "Contrary to section 363(2) and (4) of the Communications Act 2003.",
+                "welshLegislation": "Yn groes i adran 363(2) a (4) Deddf Cyfathrebu 2003."
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "Gordon",
+          "bailStatus": {
+            "id": "86009c70-759d-3308-8de4-194886ff9a77",
+            "code": "A",
+            "description": "Not applicable"
+          },
+          "dateOfBirth": "1989-06-19",
+          "masterDefendantId": "DEFENDANT_ID2",
+          "hearingLanguageNeeds": "ENGLISH",
+          "restrictFromCourtList": false,
+          "courtProceedingsInitiated": "2023-11-30T19:02:59.787Z"
+        }
+      ],
+      "prosecutor": {
+        "prosecutorId": "42880989-5d09-332e-a711-8797af06ecea",
+        "prosecutorCode": "CPS-EM"
+      },
+      "shadowListed": false,
+      "caseIdentifier": {
+        "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+        "authorityCode": "CITYPF",
+        "caseReference": "82GD7984623"
+      },
+      "restrictFromCourtList": false
+    }
+  ],
+  "hasVideoLink": true,
+  "courtCentreId": "67aa82ba-67bb-4699-8176-5f572048352b",
+  "isSlotsBooked": false,
+  "nonDefaultDays": [
+    {
+      "roomId": "5f3bf957-8787-3fe1-a1db-8934fb2cf1b2",
+      "duration": 20,
+      "startTime": "2023-12-01T10:00:00.000Z",
+      "courtCentreId": "67aa82ba-67bb-4699-8176-5f572048352b"
+    }
+  ],
+  "nonSittingDays": [],
+  "publicListNote": "",
+  "defenceCounsels": [
+    {
+      "id": "027783c4-8a6f-4043-8d86-b21122b03a93",
+      "title": "",
+      "status": "DefFL22 Gordon",
+      "lastName": "DefL2 Gordon",
+      "firstName": "DefF2 Gordon",
+      "defendants": [
+        "DEFENDANT_ID2"
+      ],
+      "middleName": "",
+      "attendanceDays": [
+        "2023-12-01"
+      ]
+    },
+    {
+      "id": "7e382ecc-dcf4-441d-add6-1f3eb732b25c",
+      "title": "",
+      "status": "DefFL11 Elsa",
+      "lastName": "DefL1 Elsa",
+      "firstName": "DefF1 Elsa",
+      "defendants": [
+        "DEFENDANT_ID1"
+      ],
+      "middleName": "",
+      "attendanceDays": [
+        "2023-12-01"
+      ]
+    }
+  ],
+  "hearingLanguage": "ENGLISH",
+  "estimatedMinutes": 20,
+  "jurisdictionType": "MAGISTRATES",
+  "courtApplications": [],
+  "courtCentreDetails": {
+    "id": "67aa82ba-67bb-4699-8176-5f572048352b",
+    "defaultDuration": 420,
+    "defaultStartTime": "10:00:00"
+  }
+}

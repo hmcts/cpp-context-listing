@@ -101,6 +101,8 @@ class AccessControlRulesTest {
             "listing.command.publish-court-lists-for-crown-courts | /command/api/rest/listing/publishCourtListsForCrownCourts | System Users | true",
             "listing.command.publish-court-lists-for-crown-courts | /command/api/rest/listing/publishCourtListsForCrownCourts | Listing Officers | false",
             "listing.delete-hearing | /command/api/rest/listing/delete-hearing/h1 | System Users | true",
+            // as JEE (isSystemUser): a listing officer may not delete a hearing (the P2.3.2 IT first tried)
+            "listing.delete-hearing | /command/api/rest/listing/delete-hearing/h1 | Listing Officers | false",
             // group names compare case-insensitively (cp-auth-rules-filter), as usersgroups returns them
             "listing.command.create-listing-note | /command/api/rest/listing/listing-note | listing officers | true",
             // queries sharing the listing.search.hearings token are told apart by path

@@ -7,9 +7,7 @@ import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.hearing-unallocated-for-listing")
 public class HearingUnallocatedForListing implements Serializable {
   private static final long serialVersionUID = -4721635558148597533L;
 

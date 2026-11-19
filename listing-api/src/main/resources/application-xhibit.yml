@@ -1,0 +1,11 @@
+# XHIBIT court-list export (MBD refactor P2.3.1, listing-xhibit). The legacy JNDI values
+# webdav.outbound.url / webdav.user / webdav.password, with the same defaults; the outbound URL
+# defaults to the CPP gateway's xhibit-gateway path.
+listing:
+  xhibit:
+    webdav:
+      outbound-url: ${LISTING_WEBDAV_OUTBOUND_URL:${listing.clients.base-url}/xhibit-gateway/send-to-xhibit/}
+      user: ${LISTING_WEBDAV_USER:listing}
+      password: ${LISTING_WEBDAV_PASSWORD:listing}
+      connect-timeout-seconds: ${LISTING_WEBDAV_CONNECT_TIMEOUT_SECONDS:5}
+      request-timeout-seconds: ${LISTING_WEBDAV_REQUEST_TIMEOUT_SECONDS:60}

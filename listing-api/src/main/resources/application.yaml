@@ -14,7 +14,7 @@ spring:
       - "optional:classpath:application-audit.yml"
       - "optional:classpath:application-messaging.yml"
       - "optional:classpath:application-datasource.yml"
-      # application-xhibit.yml arrives with the XHIBIT export.
+      - "optional:classpath:application-xhibit.yml"
   threads:
     virtual:
       enabled: ${VIRTUAL_THREADS:false}
@@ -35,6 +35,10 @@ listing:
     # systemdocgenerator through the CPP gateway; listingcourtscheduler (legacy courtscheduler.base.url).
     base-url: ${LISTING_BASE_URL:http://localhost:8080}
     courtscheduler-base-url: ${LISTING_COURTSCHEDULER_BASE_URL:}
+    # P2.3.3: hearing context query API (PTPH detail; legacy hearing.query.base.url) and
+    # progression command API (split-hearing; legacy progression.base.url). Empty: <base-url>/<context>-service/...
+    hearing-query-base-url: ${LISTING_HEARING_QUERY_BASE_URL:}
+    progression-command-base-url: ${LISTING_PROGRESSION_COMMAND_BASE_URL:}
     # CJSCPPUID for the calls the framework made as admin / as the context system user.
     system-user-id: ${LISTING_SYSTEM_USER_ID:}
     connect-timeout-seconds: ${LISTING_HTTP_CONNECT_TIMEOUT_SECONDS:5}
@@ -47,9 +51,6 @@ listing:
     # Listing's WildFly query API returned the payload only (no _metadata), see
     # EnvelopeResponseBodyAdvice. Keep false unless a client is proven to need the envelope.
     enabled: ${LISTING_ENVELOPE_ENABLED:false}
-  p22-messaging-probe:
-    # Test-only inbound handler used by the P2.2 messaging ITs (P22MessagingProbeHandler). Never true outside ITs.
-    enabled: false
 
 # Logging (JSON to stdout via logback-spring.xml). Root WARN keeps third-party noise down (the
 # WildFly deployment ran at ERROR); the app's own packages stay at INFO. Both overridable per env.

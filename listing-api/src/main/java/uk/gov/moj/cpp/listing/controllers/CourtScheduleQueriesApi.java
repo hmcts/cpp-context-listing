@@ -6,7 +6,6 @@ import uk.gov.moj.cpp.listing.openapi.api.CourtScheduleQueriesOpenApi;
 import uk.gov.moj.cpp.listing.query.api.CourtScheduleQueryService;
 
 import java.io.StringReader;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import jakarta.json.Json;
@@ -32,9 +31,12 @@ public class CourtScheduleQueriesApi implements CourtScheduleQueriesOpenApi {
     }
 
     @Override
+    // The parameter order is the generated interface's: required parameters first, then the
+    // optional ones in spec order. Overriding binds by position, not by name, so this order must
+    // follow the spec (D33 made sessionEndDate optional, which moved it after jurisdiction).
     public ResponseEntity<Map<String, Object>> searchHearingSlots(final String panel, final String sessionStartDate,
-                                                                  final String sessionEndDate, final String pageSize,
-                                                                  final String pageNumber, final String jurisdiction,
+                                                                  final String pageSize, final String pageNumber,
+                                                                  final String jurisdiction, final String sessionEndDate,
                                                                   final String hearingStartTime, final String oucodeL2Code,
                                                                   final String ouCode, final String courtRoomId,
                                                                   final String courtRoomNumber, final String businessType,
@@ -58,27 +60,30 @@ public class CourtScheduleQueriesApi implements CourtScheduleQueriesOpenApi {
     }
 
     /**
-     * Status and body as courtscheduler (or the failed call) gave them. A non-JSON body (the legacy
-     * code passed the raw string through) is returned as {@code {"error": "<body>"}}.
+     * Status and body as courtscheduler (or the failed call) gave them. A JSON object body is
+     * returned as JSON; any other body is passed through as the raw string, as the legacy JAX-RS
+     * {@code Response} did (e.g. rota's 400 {@code Mandatory Search Criteria sessionEndDate cannot be
+     * null}, which {@code HearingSlotsIT} asserts verbatim; P2.3.1).
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     static ResponseEntity<Map<String, Object>> passThrough(final HttpResult result) {
         final Object entity = result.entity();
-        final Map<String, Object> body;
         if (entity instanceof JsonObject json) {
-            body = JsonValueConverter.toMap(json);
-        } else {
-            body = parseOrWrap(entity == null ? "" : entity.toString());
+            return ResponseEntity.status(result.status()).body(JsonValueConverter.toMap(json));
         }
-        return ResponseEntity.status(result.status()).body(body);
+        final String raw = entity == null ? "" : entity.toString();
+        final Map<String, Object> parsed = parseObject(raw);
+        if (parsed != null) {
+            return ResponseEntity.status(result.status()).body(parsed);
+        }
+        return (ResponseEntity) ResponseEntity.status(result.status()).body(raw);
     }
 
-    private static Map<String, Object> parseOrWrap(final String raw) {
+    private static Map<String, Object> parseObject(final String raw) {
         try (JsonReader reader = Json.createReader(new StringReader(raw))) {
             return JsonValueConverter.toMap(reader.readObject());
         } catch (final JsonException | IllegalStateException e) {
-            final Map<String, Object> error = new LinkedHashMap<>();
-            error.put("error", raw);
-            return error;
+            return null;
         }
     }
 

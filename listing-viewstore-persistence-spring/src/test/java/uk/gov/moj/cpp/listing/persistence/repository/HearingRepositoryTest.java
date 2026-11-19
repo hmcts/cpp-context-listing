@@ -215,4 +215,18 @@ class HearingRepositoryTest extends AbstractRepositoryTest {
         assertThat(hearingRepository.findAllCourtSchedulerHearingByIds(List.of(allocated.getId(), unallocated.getId()))).hasSize(2);
         assertThat(hearingRepository.findHearingsByListedCaseIds(List.of(caseId))).extracting(Hearing::getId).containsExactly(allocated.getId());
     }
+
+    @Test
+    void removeDeletesTheManagedHearingAndItsChildRows() {
+        final Hearing found = hearingRepository.findBy(allocated.getId());
+
+        hearingRepository.remove(found);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(hearingRepository.findBy(allocated.getId())).isNull();
+        assertThat(hearingRepository.findBy(unallocated.getId())).isNotNull();
+        assertThat(entityManager.createNativeQuery("select count(*) from listed_cases where hearing_id = cast(:id as uuid)")
+                .setParameter("id", allocated.getId().toString()).getSingleResult()).isEqualTo(0L);
+    }
 }

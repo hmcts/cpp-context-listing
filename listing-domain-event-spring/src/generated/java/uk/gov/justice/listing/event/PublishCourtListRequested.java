@@ -8,9 +8,7 @@ import java.lang.Override;
 import java.lang.String;
 import java.time.ZonedDateTime;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.event.publish-court-list-requested")
 public class PublishCourtListRequested implements Serializable {
   private static final long serialVersionUID = 733483537521242322L;
 

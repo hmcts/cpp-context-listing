@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cs:WarnedList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice">
+    <cs:DocumentID>
+        <cs:DocumentName>WARN-FILENAME</cs:DocumentName>
+        <cs:UniqueID>UNIQUEID</cs:UniqueID>
+        <cs:DocumentType>WL</cs:DocumentType>
+        <cs:TimeStamp>#TIME_STAMP#</cs:TimeStamp>
+    </cs:DocumentID>
+    <cs:ListHeader>
+        <cs:ListCategory>Criminal</cs:ListCategory>
+        <cs:StartDate>2019-11-04</cs:StartDate>
+        <cs:EndDate>2019-11-05</cs:EndDate>
+        <cs:Version>NOT VERSIONED</cs:Version>
+        <cs:PublishedTime>2018-01-02T13:04:05Z</cs:PublishedTime>
+    </cs:ListHeader>
+    <cs:CrownCourt>
+        <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+        <cs:CourtHouseCode CourtHouseShortName="MOCK">000</cs:CourtHouseCode>
+        <cs:CourtHouseName>MOCK_CROWN_COURTNAME</cs:CourtHouseName>
+    </cs:CrownCourt>
+    <cs:CourtLists>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>433</cs:CourtHouseCode>
+                <cs:CourtHouseName>LIVERPOOL</cs:CourtHouseName>
+            </cs:CourtHouse>
+        </cs:CourtList>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>433</cs:CourtHouseCode>
+                <cs:CourtHouseName>LIVERPOOL COMMUNITY JUSTICE CENTRE</cs:CourtHouseName>
+            </cs:CourtHouse>
+        </cs:CourtList>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>002</cs:CourtHouseCode>
+                <cs:CourtHouseName>MOCKCOURTNAME2</cs:CourtHouseName>
+            </cs:CourtHouse>
+        </cs:CourtList>
+    </cs:CourtLists>
+</cs:WarnedList>
+

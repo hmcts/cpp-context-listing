@@ -15,11 +15,6 @@ cp:
   audit:
     enabled: false
 
-listing:
-  p22-messaging-probe:
-    # P2.2 only: test inbound handler for the messaging ITs. Remove with P22MessagingProbeHandler (P2.4).
-    enabled: true
-
 management:
   endpoint:
     health:

@@ -1,0 +1,107 @@
+// XHIBIT court-list export for the Spring Boot port (§8 `listing-xhibit`; MBD refactor P2.3.1, ADR 015).
+//
+// - JAXB classes compiled from the EXISTING XSDs (listing-domain/listing-domain-xhibit/src/main/
+//   resources/xhibit/xsd, read in place until P2.6, as the other "-spring" modules read the Maven
+//   sources): same XJC (2.3.7, the version maven-jaxb2-plugin 0.15.2 ran), same flat package
+//   uk.gov.moj.cpp.listing.domain.xhibit.generated, same arguments (-extension -XautoNameResolution
+//   -Xnamespace-prefix, binding.xjb), so the classes and the namespace prefixes (cs/apd/p2/xsi) of
+//   the marshalled XML are the JEE ones. XJC 2.3.7 emits javax.xml.bind; the sources are then
+//   rewritten to jakarta.xml.bind (the API is the same) and compiled against the Jakarta JAXB
+//   runtime: no javax.* on the runtime classpath (§12).
+// - The court-list XML pipeline ported from listing-event-processor xhibit/courtlist (mappers,
+//   metadata, XSD validation) and the WebDAV export (listing-common xhibit), see the package docs.
+// - The XSDs are on the classpath at xhibit/xsd/ for validation, as in the JEE build.
+configurations {
+    xjc
+}
+
+dependencies {
+    api project(':listing-common-spring')
+    api 'jakarta.xml.bind:jakarta.xml.bind-api'
+    runtimeOnly 'org.glassfish.jaxb:jaxb-runtime'
+
+    implementation 'org.slf4j:slf4j-api'
+    implementation 'org.apache.commons:commons-lang3'
+    implementation 'commons-collections:commons-collections:3.2.2'
+    implementation 'com.google.guava:guava:33.6.0-jre'
+    implementation 'com.jayway.jsonpath:json-path'
+    implementation 'net.minidev:json-smart'
+    implementation 'org.springframework.boot:spring-boot'
+
+    xjc 'org.glassfish.jaxb:jaxb-xjc:2.3.7'
+    xjc 'org.jvnet.jaxb2_commons:jaxb2-namespace-prefix:1.3'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.xmlunit:xmlunit-core'
+    testImplementation 'commons-io:commons-io:2.22.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params'
+    testRuntimeOnly 'org.eclipse.parsson:parsson:1.1.9'
+    testRuntimeOnly 'org.glassfish.jaxb:jaxb-runtime'
+}
+
+// XJC resolves the javax.xml.bind 2.3 API from its own classpath only; it never reaches the app.
+// The Spring Boot BOM would move the XJC toolchain to JAXB 4; pin it to the 2.3.7 release set.
+configurations.xjc {
+    resolutionStrategy.eachDependency { details ->
+        switch (details.requested.group) {
+            case 'org.glassfish.jaxb': details.useVersion '2.3.7'; break
+            case 'com.sun.xml.bind.external': details.useVersion '2.3.7'; break
+            case 'com.sun.istack': details.useVersion '3.0.12'; break
+            case 'jakarta.xml.bind': details.useVersion '2.3.3'; break
+            case 'jakarta.activation': details.useVersion '1.2.2'; break
+        }
+    }
+}
+
+def xsdDir = rootProject.file('listing-domain/listing-domain-xhibit/src/main/resources/xhibit/xsd')
+def xjcJavaxDir = layout.buildDirectory.dir('generated/xjc-javax')
+def xjcJakartaDir = layout.buildDirectory.dir('generated/xjc')
+
+def xjcGenerate = tasks.register('xjcGenerate', JavaExec) {
+    description = 'Runs XJC 2.3.7 over the XHIBIT XSDs, as maven-jaxb2-plugin did in listing-domain-xhibit'
+    inputs.dir(xsdDir)
+    outputs.dir(xjcJavaxDir)
+    classpath = configurations.xjc
+    mainClass = 'com.sun.tools.xjc.XJCFacade'
+    doFirst {
+        def out = xjcJavaxDir.get().asFile
+        project.delete(out)
+        out.mkdirs()
+        args = ['-d', out.absolutePath,
+                '-p', 'uk.gov.moj.cpp.listing.domain.xhibit.generated',
+                '-encoding', 'UTF-8',
+                '-nv', '-quiet', '-extension', '-XautoNameResolution', '-Xnamespace-prefix',
+                '-b', new File(xsdDir, 'binding.xjb').absolutePath] +
+                xsdDir.listFiles().findAll { it.isFile() && it.name.endsWith('.xsd') }.sort { it.name }.collect { it.absolutePath }
+    }
+}
+
+def xjcToJakarta = tasks.register('xjcToJakarta', Sync) {
+    description = 'Rewrites the XJC output from javax.xml.bind to jakarta.xml.bind'
+    dependsOn xjcGenerate
+    from(xjcJavaxDir) {
+        include '**/*.java'
+        filter { String line -> line.replace('javax.xml.bind.', 'jakarta.xml.bind.') }
+        // Drop the generator timestamp so the sources are reproducible.
+        filter { String line -> line.startsWith('// Generated on:') ? '//' : line }
+    }
+    into xjcJakartaDir
+}
+
+sourceSets {
+    main {
+        java.srcDir xjcToJakarta
+        resources.srcDirs = ['src/main/resources']
+    }
+}
+
+tasks.named('processResources') {
+    from(xsdDir) {
+        include '*.xsd'
+        into 'xhibit/xsd'
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-parameters'
+}

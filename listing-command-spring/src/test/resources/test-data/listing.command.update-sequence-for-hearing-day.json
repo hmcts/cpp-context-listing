@@ -1,0 +1,17 @@
+{
+  "hearings" : [
+    {
+      "id":"HEARING_ID_1",
+      "sequenceHearingDays": [
+        {
+          "hearingDate":"HEARING_DATE_1",
+          "sequence":"SEQUENCE_1"
+        },
+        {
+          "hearingDate":"HEARING_DATE_2",
+          "sequence":"SEQUENCE_2"
+        }
+      ]
+    }
+  ]
+}

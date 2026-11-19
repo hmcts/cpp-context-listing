@@ -1,0 +1,10 @@
+{
+  "courtCentreId": "COURT_CENTRE_ID",
+  "courtListFileId": "COURT_LIST_FILE_ID",
+  "courtListFileName": "COURT_LIST_FILE_NAME",
+  "publishCourtListType": "FIRM",
+  "producedTime": "PRODUCED_TIME",
+  "publishStatus": "COURT_LIST_PRODUCED",
+  "publishDate": "PUBLISH_DATE",
+  "weekCommencing": false
+}

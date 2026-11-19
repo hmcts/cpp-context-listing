@@ -110,7 +110,6 @@ dependencies {
     // The listing reactor modules the Maven suite depended on, replaced by their Gradle ports (classes only).
     testImplementation(project(':listing-domain-spring')) { transitive = false }
     testImplementation(project(':listing-domain-event-spring')) { transitive = false }
-    testImplementation(project(':listing-domain-aggregate-spring')) { transitive = false }
     testImplementation(project(':listing-viewstore-persistence-spring')) { transitive = false }
     testCompileOnly 'jakarta.persistence:jakarta.persistence-api'
     // JUnit: the Gradle build's JUnit 6 (root build) plus the launcher API (the suite's listeners)

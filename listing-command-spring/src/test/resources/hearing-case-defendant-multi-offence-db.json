@@ -1,0 +1,136 @@
+{
+  "id": "84287b53-34a8-4c18-b097-0b1c98a78cb6",
+  "type": {
+    "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+    "description": "First hearing"
+  },
+  "endDate": "2024-10-02",
+  "allocated": false,
+  "judiciary": [],
+  "startDate": "2024-10-02",
+  "hearingDays": [
+    {
+      "endTime": "2024-10-02T15:35:00.000Z",
+      "sequence": 0,
+      "startTime": "2024-10-02T15:15:00.000Z",
+      "hearingDate": "2024-10-02",
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "durationMinutes": 20
+    }
+  ],
+  "listedCases": [
+    {
+      "id": "82d02d68-518b-46f5-a8ce-2a0816bb6141",
+      "markers": [],
+      "defendants": [
+        {
+          "id": "50b4e0a1-3a50-49a9-b35a-56bef3b4c7f8",
+          "address": {
+            "address1": "9999A9999AAAA",
+            "address2": "Harris Roads",
+            "address3": "McDermottport",
+            "address4": "Avon",
+            "postcode": "DA61 7ND"
+          },
+          "isYouth": false,
+          "lastName": "Ferry",
+          "offences": [
+            {
+              "id": "f8978bf4-b72a-469d-a461-de9a4e6a9993",
+              "count": 0,
+              "startDate": "2019-11-28",
+              "orderIndex": 1,
+              "offenceCode": "CA03012",
+              "shadowListed": false,
+              "offenceWording": "Theft of pedal cycle.",
+              "statementOfOffence": {
+                "title": "Possess / control TV set with intent another use install without a licence",
+                "welshTitle": "Meddu ar/mewn rheolaeth set deledu gan fwriadu i unigolyn arall ei ddefnyddio/osod heb drwydded",
+                "legislation": "Contrary to section 363(3)(b) and (4) of the Communications Act 2003.",
+                "welshLegislation": "Yn groes i adran 363(3)(b) a (4) Deddf Cyfathrebu 2003."
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "4aa94e04-3581-4c7f-ba40-ca6987286d41",
+              "count": 0,
+              "startDate": "2019-11-28",
+              "orderIndex": 2,
+              "offenceCode": "RT88972",
+              "shadowListed": false,
+              "offenceWording": "Aggravated vehicle taking - ( driver did not take ) and vehicle damage of £5000 or over.",
+              "statementOfOffence": {
+                "title": "Drive motor vehicle fail comply with red / green arrow / lane closure light signals - automatic equipment",
+                "welshTitle": "Gyrru c / m a methu â chydymffurfio ag arwyddion golau - saeth goch / saeth werdd / lonydd ar gau – cyfarpar awtomatig",
+                "legislation": "Contrary to section 36(1) of the Road Traffic Act 1988, the Traffic Signs Regulations and General Directions 2016 and Schedule 2 to the Road Traffic Offenders Act 1988.",
+                "welshLegislation": "Yn groes i adran 36(1) Deddf Traffig Ffyrdd 1988, Rheoliadau a Chyfarwyddiadau Cyffredinol Arwyddion Traffig 2016 ac Atodlen 2 Deddf Troseddwyr Traffig Ffyrdd 1988."
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "1d56a9e5-0c96-4099-8ec9-7b5ccd2bcf0a",
+              "count": 0,
+              "startDate": "2019-11-28",
+              "orderIndex": 2,
+              "offenceCode": "SX03010A",
+              "shadowListed": false,
+              "offenceWording": "Attempt to cause a male aged 13 or over to engage in sexual activity - no penetration.",
+              "statementOfOffence": {
+                "title": "Attempt to cause a male aged 13 or over to engage in sexual activity - no penetration",
+                "welshTitle": "Attempt to cause a male aged 13 or over to engage in sexual activity - no penetration",
+                "legislation": "Contrary to section 1(1) of the Criminal Attempts Act 1981."
+              },
+              "reportingRestrictions": [
+                {
+                  "id": "ca9177bd-adc4-45f9-b987-6b8d11f098b3",
+                  "label": "Complainant's anonymity protected by virtue of Section 1 of the Sexual Offences Amendment Act 1992",
+                  "orderedDate": "2024-10-02"
+                }
+              ],
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "Warren",
+          "bailStatus": {
+            "id": "12e69486-4d01-3403-a50a-7419ca040635",
+            "code": "C",
+            "description": "Custody"
+          },
+          "dateOfBirth": "1978-11-11",
+          "masterDefendantId": "50b4e0a1-3a50-49a9-b35a-56bef3b4c7f8",
+          "hearingLanguageNeeds": "ENGLISH",
+          "restrictFromCourtList": false,
+          "courtProceedingsInitiated": "2024-10-02T09:59:42.615Z"
+        }
+      ],
+      "shadowListed": false,
+      "caseIdentifier": {
+        "authorityId": "6ae4b163-658b-3ae2-a66d-43401cac2f96",
+        "authorityCode": "DVLA",
+        "caseReference": "RQ01053460"
+      },
+      "restrictFromCourtList": false
+    }
+  ],
+  "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+  "isSlotsBooked": false,
+  "nonDefaultDays": [
+    {
+      "duration": 20,
+      "startTime": "2024-10-02T15:15:00.000Z",
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26"
+    }
+  ],
+  "nonSittingDays": [],
+  "hearingLanguage": "ENGLISH",
+  "estimatedMinutes": 20,
+  "jurisdictionType": "MAGISTRATES",
+  "courtApplications": [],
+  "courtCentreDetails": {
+    "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+    "defaultDuration": 420,
+    "defaultStartTime": "10:00:00"
+  },
+  "isGroupProceedings": false,
+  "numberOfGroupCases": 1
+}

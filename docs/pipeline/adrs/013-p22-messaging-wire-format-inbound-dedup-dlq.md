@@ -73,7 +73,7 @@ So §15.6 is answered for the producer side: downstream consumers get the envelo
    transaction commits before the JMS session; a failure after the DB commit causes a redelivery
    that the dedup row absorbs. A handler failure rolls back both (dedup row included) and the
    broker redelivers. Handlers for unsubscribed names, or two handlers for one name, fail start-up.
-   A subscribed name with no handler is consumed with a WARN (none have handlers before P2.4).
+   A subscribed name with no handler is consumed with a WARN (none have handlers before P2.4; since P2.4 every name has one).
    Non-`TextMessage`s and bodies that are not envelopes throw, as in the framework (→ DLQ).
    The framework's inbound schema-validation interceptor (DEBUG-only) and MDC interceptor are not
    ported.
@@ -83,7 +83,8 @@ So §15.6 is answered for the producer side: downstream consumers get the envelo
    *Update 2026-11-19 (D26):* 30 days. `InboundDedupPurge` deletes older rows on a daily cron in
    bounded batches, one node at a time under a Postgres advisory lock (settings in §15.3).
    Ordering per hearing (ADR 3's `@Version` / `FOR UPDATE`) is left to the P2.4 handlers, which own
-   the rows they lock.
+   the rows they lock. *(Done in P2.4 with advisory locks in the shared load path; see the P2.4
+   notes.)*
 5. **DLQ / poison messages:** no application-level DLQ. Broker redelivery (transacted rollback) and
    the broker's dead-letter address, as before: CPP brokers `jms.queue.DLQ` after 10 attempts (not
    changed by this port). The IT broker states the same values explicitly in
@@ -103,6 +104,8 @@ So §15.6 is answered for the producer side: downstream consumers get the envelo
    integration profile only) handles `public.progression.case-linked` by writing
    `public.listing.p22-messaging-probe-echo` to the outbox, or throws when the payload has
    `p22AlwaysFail`. **Delete in P2.4** (when the real handler for that event is ported).
+   *Update 2026-11-19 (P2.4): deleted, with `listing.p22-messaging-probe.enabled`; the messaging ITs
+   use real handlers (see "Implementation notes (P2.4)").*
 
 ## Consequences
 
@@ -119,3 +122,51 @@ So §15.6 is answered for the producer side: downstream consumers get the envelo
   again. Broker redelivery happens within seconds, so this only matters for a manual replay.
 - A message dead-lettered from the subscription has `_AMQ_ORIG_QUEUE =
   listing\.event\.processor\.public\.event`, so existing DLQ tooling keeps working.
+
+## Implementation notes (P2.4, 2026-11-19)
+
+**Handlers.** All 28 subscribed names have exactly one handler, in `listing-command-spring`
+`command.inbound` (one class per JEE processor class, `InboundProcessor` base: name → method).
+Each is the JEE `@Handles` method with its logic unchanged: the same payload transformation and the
+same internal command(s), with the event's metadata under the command name
+(`metadataFrom(event.metadata()).withName(…)`, so the command keeps the event's id, user, client
+correlation and causation, as in JEE). The commands are direct calls of the P2.3 command services
+(`ProcessorSender` → `InternalCommands`), in the listener's transaction, so the viewstore changes,
+the outbox rows and the dedup row commit together. The whole handler runs as one `ProcessorQueue`
+command: the decisions of every command it sends first, then their processor steps in raised order
+(the Phase 1 relay order). None of the 28 JEE handlers published a public event itself.
+`InboundHandlerRegistrationTest` checks: handled names = the selector list (28, no duplicates), the
+dispatcher accepts them, the test list equals the `InboundEventHandler` classes on the classpath,
+and every command sent has a command service.
+
+**Ordering per hearing (ADR 3; the open point above).** Every load of rules state takes a
+transaction-scoped Postgres advisory lock first (`pg_advisory_xact_lock(namespace, hash(id))`,
+namespaces hearing / case / application / seeding hearing; `HearingStateStore.load`,
+`RulesStateStore.load*`). Commands (HTTP) and inbound events changing the same instance therefore
+serialise and each decides on what the previous one committed — what the JEE stream version check
+gave. Chosen over `SELECT … FOR UPDATE` / `@Version` because the first command on an instance has no
+row to lock (two hearings of one case listed at once both create `case_rules_state`: lost update),
+and because locking must not create rows for rejected commands. Consequences: transactions that lock
+the same instances in opposite orders (case → hearing vs hearing → case fan-outs) can deadlock;
+Postgres aborts one (an inbound message is redelivered; an HTTP command fails with 500 and is not
+retried — JEE's framework retried on a version conflict). Reads made before the first lock in a
+transaction may be stale in the JPA persistence context: the CPS-prosecutor handler, the only
+inbound handler that reads hearings before its command, clears the context after its search.
+
+**MDC (D24).** `PublicEventListener` puts `correlationId` (`_metadata.correlation.client`, else
+`_metadata.id`, else the JMS message id, else a new UUID; plain tokens only) and a new `requestId`
+in the MDC for each delivery and removes them afterwards (`InboundTracing`). Outbound REST calls
+made while handling propagate the correlation id (`CppRestClientConfig`).
+
+**Probe removed.** `P22MessagingProbeHandler` and its property are gone. `MessagingIntegrationTest`
+(b)–(d) now use real handlers: `public.events.hearing.marked-as-duplicate` (observed through the
+courtscheduler session-release `DELETE` it makes, counted in WireMock's request journal; dedup keeps
+the count at one for a redelivered id) and `public.events.hearing.hearing-resulted` without a
+`hearing` (fails in its handler on every delivery → DLQ). The listing-messaging unit tests keep
+their test-scoped handlers. *Not run in P2.4* (no IT runs in this phase, by instruction).
+
+**P2.3 fix found on the way.** Marking a hearing listing never listed as duplicate (the
+marked-as-duplicate event for an unknown hearing) gave rules state without a hearing id, so the
+state upsert failed on the primary key; the row is now keyed by the stream id
+(`HearingStateStore.save(hearingId, rules)`), as the JEE event stream was.
+

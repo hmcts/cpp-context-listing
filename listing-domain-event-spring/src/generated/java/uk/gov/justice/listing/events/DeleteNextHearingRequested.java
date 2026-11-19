@@ -6,9 +6,7 @@ import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.delete-next-hearing-requested")
 public class DeleteNextHearingRequested implements Serializable {
   private static final long serialVersionUID = 1009950526982039722L;
 

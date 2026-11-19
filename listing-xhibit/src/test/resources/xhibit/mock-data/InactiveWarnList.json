@@ -1,0 +1,318 @@
+{
+  "courtLists": [
+    {
+      "sittings": [
+        {
+          "hearings": [
+            {
+              "endTime": "2025-12-29T11:00",
+              "startTime": "2025-12-29T10:30",
+              "defendants": [
+                {
+                  "id": "3b1042cd-20df-4569-869d-83d719cce8e4",
+                  "address": {
+                    "address1": "21",
+                    "address2": "Furnburry Park Road",
+                    "address3": "London",
+                    "postcode": "SW11 3TQ"
+                  },
+                  "isYouth": false,
+                  "lastName": "Witting",
+                  "offences": [
+                    {
+                      "id": "f8d59113-81fc-458f-8cea-e91f4eaf6b94",
+                      "count": 0,
+                      "startDate": "2022-12-12",
+                      "orderIndex": 1,
+                      "offenceCode": "CA03012",
+                      "shadowListed": false,
+                      "offenceWording": "Cassandre Witting have set up a TV cable without a valid license.",
+                      "seedingHearing": {
+                        "sittingDay": "2025-12-08",
+                        "jurisdictionType": "MAGISTRATES",
+                        "seedingHearingId": "a3e5f58b-7675-42c7-a839-b0f1cd335542"
+                      },
+                      "statementOfOffence": {
+                        "title": "Possess / control TV set with intent another use install without a licence",
+                        "welshTitle": "Meddu ar/mewn rheolaeth set deledu gan fwriadu i unigolyn arall ei ddefnyddio/osod heb drwydded",
+                        "legislation": "Contrary to section 363(3)(b) and (4) of the Communications Act 2003.",
+                        "welshLegislation": "Yn groes i adran 363(3)(b) a (4) Deddf Cyfathrebu 2003."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Cassandre",
+                  "bailStatus": {
+                    "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                    "code": "C",
+                    "description": "Custody"
+                  },
+                  "dateOfBirth": "1991-02-18",
+                  "masterDefendantId": "3b1042cd-20df-4569-869d-83d719cce8e4",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2025-12-03T14:27:47.990Z"
+                }
+              ],
+              "hearingType": {
+                "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+                "description": "Plea"
+              },
+              "hasVideoLink": false,
+              "caseIdentifier": {
+                "authorityId": "9d38428b-7f9d-3aab-8269-f1427dd15c57",
+                "authorityCode": "GLOSPF",
+                "caseReference": "28DI5950047"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "41d81e59-a521-33bb-b559-fc67f4e3fb96",
+          "sittingDate": "2025-12-29",
+          "weekCommencing": false
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2025-12-29T11:15",
+              "startTime": "2025-12-29T10:30",
+              "defendants": [
+                {
+                  "id": "3b1042cd-20df-4569-869d-83d719cce8e4",
+                  "address": {
+                    "address1": "21",
+                    "address2": "Furnburry Park Road",
+                    "address3": "London",
+                    "postcode": "SW11 3TQ"
+                  },
+                  "isYouth": false,
+                  "lastName": "Witting",
+                  "offences": [
+                    {
+                      "id": "f8d59113-81fc-458f-8cea-e91f4eaf6b94",
+                      "count": 0,
+                      "startDate": "2022-12-12",
+                      "orderIndex": 1,
+                      "offenceCode": "CA03012",
+                      "shadowListed": false,
+                      "offenceWording": "Cassandre Witting have set up a TV cable without a valid license.",
+                      "statementOfOffence": {
+                        "title": "Possess / control TV set with intent another use install without a licence",
+                        "welshTitle": "Meddu ar/mewn rheolaeth set deledu gan fwriadu i unigolyn arall ei ddefnyddio/osod heb drwydded",
+                        "legislation": "Contrary to section 363(3)(b) and (4) of the Communications Act 2003.",
+                        "welshLegislation": "Yn groes i adran 363(3)(b) a (4) Deddf Cyfathrebu 2003."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Cassandre",
+                  "bailStatus": {
+                    "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                    "code": "C",
+                    "description": "Custody"
+                  },
+                  "dateOfBirth": "1991-02-18",
+                  "masterDefendantId": "3b1042cd-20df-4569-869d-83d719cce8e4",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2025-12-03T14:27:47.990Z"
+                }
+              ],
+              "hearingType": {
+                "id": "633224da-6db3-4df5-8097-62cee52f7a61",
+                "description": "Bail Application"
+              },
+              "hasVideoLink": false,
+              "caseIdentifier": {
+                "authorityId": "9d38428b-7f9d-3aab-8269-f1427dd15c57",
+                "authorityCode": "GLOSPF",
+                "caseReference": "28DI5950047"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "fdee7cd4-a713-3f54-afad-56822483b3fa",
+          "sittingDate": "2025-12-29",
+          "weekCommencing": false
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2026-01-02T11:15",
+              "subject": {
+                "id": "0d7dcae6-69c9-48ab-ab8b-af6af1c07cff",
+                "address": {
+                  "address1": "21",
+                  "address2": "Furnburry Park Road",
+                  "address3": "London",
+                  "postcode": "SW11 3TQ"
+                },
+                "lastName": "Fahey",
+                "firstName": "Sonny",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "PERSON_DEFENDANT"
+              },
+              "applicant": {
+                "id": "de17e7f2-4262-4bea-93f7-d60f2582a774",
+                "address": {
+                  "address1": "Bishopsgate police station",
+                  "address2": "182, Bishopsgate",
+                  "address5": "London",
+                  "postcode": "EC2M 4NP"
+                },
+                "lastName": "CITYPF",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+              },
+              "startTime": "2026-01-02T10:30",
+              "hearingType": {
+                "id": "633224da-6db3-4df5-8097-62cee52f7a61",
+                "description": "Bail Application"
+              },
+              "respondents": [
+                {
+                  "id": "49a8680e-fe94-47a5-9a12-825836d939f0",
+                  "address": {
+                    "address1": "King Edward Court",
+                    "address2": "Nottingham",
+                    "postcode": "NG1 1EL"
+                  },
+                  "lastName": "CPS-EM",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+                },
+                {
+                  "id": "0d7dcae6-69c9-48ab-ab8b-af6af1c07cff",
+                  "address": {
+                    "address1": "21",
+                    "address2": "Furnburry Park Road",
+                    "address3": "London",
+                    "postcode": "SW11 3TQ"
+                  },
+                  "lastName": "Fahey",
+                  "firstName": "Sonny",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON_DEFENDANT"
+                }
+              ],
+              "hasVideoLink": false,
+              "weekCommencing": false,
+              "applicationReference": "28DI3608136",
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "fdee7cd4-a713-3f54-afad-56822483b3fa",
+          "sittingDate": "2026-01-02",
+          "weekCommencing": false
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2026-01-02T11:00",
+              "startTime": "2026-01-02T10:30",
+              "defendants": [
+                {
+                  "id": "de4019e1-d00f-4d3a-a31e-f940e5e86e7f",
+                  "address": {
+                    "address1": "21",
+                    "address2": "Furnburry Park Road",
+                    "address3": "London",
+                    "postcode": "SW11 3TQ"
+                  },
+                  "isYouth": false,
+                  "lastName": "Fahey",
+                  "offences": [
+                    {
+                      "id": "ff6e5e2c-4865-45ba-9620-6a41cbbeef03",
+                      "count": 0,
+                      "startDate": "2022-12-12",
+                      "orderIndex": 1,
+                      "offenceCode": "CA03012",
+                      "shadowListed": false,
+                      "offenceWording": "Sonny Fahey have set up a TV cable without a valid license.",
+                      "seedingHearing": {
+                        "sittingDay": "2025-12-08",
+                        "jurisdictionType": "MAGISTRATES",
+                        "seedingHearingId": "d5dea730-f6be-41fe-b4f6-4bb8ee584c5f"
+                      },
+                      "statementOfOffence": {
+                        "title": "Possess / control TV set with intent another use install without a licence",
+                        "welshTitle": "Meddu ar/mewn rheolaeth set deledu gan fwriadu i unigolyn arall ei ddefnyddio/osod heb drwydded",
+                        "legislation": "Contrary to section 363(3)(b) and (4) of the Communications Act 2003.",
+                        "welshLegislation": "Yn groes i adran 363(3)(b) a (4) Deddf Cyfathrebu 2003."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Sonny",
+                  "bailStatus": {
+                    "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                    "code": "C",
+                    "description": "Custody"
+                  },
+                  "dateOfBirth": "1991-02-18",
+                  "masterDefendantId": "de4019e1-d00f-4d3a-a31e-f940e5e86e7f",
+                  "proceedingsConcluded": true,
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2025-12-03T14:39:47.480Z"
+                }
+              ],
+              "hearingType": {
+                "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+                "description": "Plea"
+              },
+              "hasVideoLink": false,
+              "caseIdentifier": {
+                "authorityId": "baa2ec52-296b-3f38-922a-9e641c1f94d3",
+                "authorityCode": "CITYPF",
+                "caseReference": "28DI3608136"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "41d81e59-a521-33bb-b559-fc67f4e3fb96",
+          "sittingDate": "2026-01-02",
+          "weekCommencing": false
+        }
+      ],
+      "crestCourtSite": {
+        "id": "68e0e17d-2bcb-38dc-a932-870ad8b2abf0",
+        "oucode": "C13LE00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "429",
+        "crestCourtName": "LEEDS",
+        "crestCourtSiteId": "429",
+        "crestCourtFullName": "LEEDS",
+        "crestCourtSiteCode": "A",
+        "crestCourtSiteName": "LEEDS",
+        "crestCourtShortName": "LEEDS"
+      }
+    },
+    {
+      "sittings": [],
+      "crestCourtSite": {
+        "id": "4ab6b35f-ca05-3faa-9e11-b003b236d2ff",
+        "oucode": "C13LE00",
+        "courtType": "CROWN_COURT",
+        "validFrom": "2022-02-16",
+        "crestCourtId": "31",
+        "crestCourtName": "LEEDS",
+        "crestCourtSiteId": "6429",
+        "crestCourtFullName": "LEEDS",
+        "crestCourtSiteCode": "B",
+        "crestCourtSiteName": "LEEDS CLOTH HALL COURT",
+        "crestCourtShortName": "LEEDS"
+      }
+    }
+  ],
+  "courtCentreId": "e2d7754e-89ba-309f-8da5-08a8283258a7"
+}

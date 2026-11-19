@@ -16,6 +16,22 @@ import java.util.UUID;
  */
 public interface HearingRepositoryCustom {
 
+    /**
+     * DeltaSpike {@code remove(entity)}: {@code EntityManager.remove} of a managed hearing (the JEE
+     * event listener's hearing deletes, ported in P2.3.2). Not Spring Data's {@code delete}, which
+     * first re-reads the entity by id: a by-id load selects the read-only columns only the native
+     * queries return.
+     */
+    void remove(Hearing hearing);
+
+    /**
+     * DeltaSpike {@code save(entity)} as the JEE event listener used it (P2.3.2): a managed hearing
+     * is kept as it is (its changes are flushed with the transaction), a new one is persisted. Not
+     * Spring Data's {@code save}, whose merge of an entity with an assigned id first re-reads it by
+     * id, and a by-id load selects the read-only columns only the native queries return.
+     */
+    <S extends Hearing> S save(S hearing);
+
     List<Hearing> findHearings(boolean allocated,
                                UUID courtCentreId,
                                UUID courtRoomId,

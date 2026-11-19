@@ -6,8 +6,8 @@ import java.util.Set;
 
 /**
  * Handles inbound {@code public.*} events from the {@code public.event} topic (MBD refactor P2.2,
- * ADR 013). P2.4 adds one per legacy processor handler (progression ×16, hearing ×9,
- * {@code public.events.hearing.*} ×2, plus the court-application-deleted handler).
+ * ADR 013). P2.4 ported one per legacy processor handler ({@code listing-command-spring}
+ * {@code command.inbound}): every subscribed name has exactly one handler.
  *
  * <p>{@link #handle} runs inside the listener's database transaction, after the event id was
  * recorded in {@code inbound_event_dedup}; it may write the viewstore and the outbox

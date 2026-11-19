@@ -34,7 +34,6 @@ class OutboxDelivererTest {
     private final EventOutboxJdbcRepository repository = mock(EventOutboxJdbcRepository.class);
     private final PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
     private final OutboxRoute publicRoute = mock(OutboxRoute.class);
-    private final OutboxRoute inProcessRoute = mock(OutboxRoute.class);
     private final EnvelopeCodec codec = new EnvelopeCodec();
     private final MessagingProperties properties = new MessagingProperties();
     private OutboxDeliverer deliverer;
@@ -43,9 +42,8 @@ class OutboxDelivererTest {
     void setUp() {
         when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         when(publicRoute.handles(anyString())).thenAnswer(invocation -> invocation.<String>getArgument(0).startsWith("public."));
-        when(inProcessRoute.handles(anyString())).thenAnswer(invocation -> invocation.getArgument(0).equals("listing.events.handled"));
         properties.getOutbox().getRelay().setMaxAttempts(3);
-        deliverer = new OutboxDeliverer(repository, codec, List.of(publicRoute, inProcessRoute), transactionManager, properties);
+        deliverer = new OutboxDeliverer(repository, codec, List.of(publicRoute), transactionManager, properties);
         when(repository.tryLockForRelay()).thenReturn(true);
     }
 
@@ -83,20 +81,9 @@ class OutboxDelivererTest {
         assertThat(deliverer.deliverNext()).isEqualTo(Result.DELIVERED);
 
         verify(publicRoute).deliver(envelope);
-        verify(inProcessRoute, never()).deliver(any());
         verify(repository).delete(List.of(41L));
     }
 
-    @Test
-    void routesAPrivateEventToItsInProcessHandler() {
-        final Envelope envelope = envelope("listing.events.handled");
-        when(repository.nextBatch(1)).thenReturn(List.of(new OutboxEntry(5, "listing.events.handled", codec.toJson(envelope), 0)));
-
-        assertThat(deliverer.deliverNext()).isEqualTo(Result.DELIVERED);
-
-        verify(inProcessRoute).deliver(envelope);
-        verify(repository).delete(List.of(5L));
-    }
 
     @Test
     void aFailedDeliveryCountsTheAttemptAndKeepsTheEntry() {
@@ -123,7 +110,7 @@ class OutboxDelivererTest {
     }
 
     @Test
-    void anEventWithNoRouteIsAFailedAttempt() {
+    void aNonPublicEntryHasNoRouteAndIsAFailedAttempt() {
         final Envelope envelope = envelope("listing.events.unhandled");
         when(repository.nextBatch(1)).thenReturn(List.of(new OutboxEntry(9, "listing.events.unhandled", codec.toJson(envelope), 0)));
 

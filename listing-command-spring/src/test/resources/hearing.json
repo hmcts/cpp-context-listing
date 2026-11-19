@@ -1,0 +1,222 @@
+{
+  "id": "HEARING_ID1",
+  "type": {
+    "id": "52edf232-3c09-4c74-a6ad-737985c2e662",
+    "description": "PTP"
+  },
+  "endDate": "2020-06-02",
+  "allocated": true,
+  "judiciary": [
+    {
+      "isDeputy": false,
+      "judicialId": "c71ddc14-de28-464d-9d46-52284881ad9e",
+      "judicialRoleType": {
+        "judiciaryType": "MAGISTRATE"
+      }
+    }
+  ],
+  "startDate": "2020-06-01",
+  "courtRoomId": "f5e7b592-bde3-438d-8cfb-a73a79bdeb54",
+  "hearingDays": [
+    {
+      "endTime": "2020-05-21T00:01:00.000Z",
+      "sequence": 0,
+      "startTime": "2020-05-21T00:00:00.000Z",
+      "hearingDate": "2020-05-21",
+      "courtScheduleId": "8e837de0-743a-4a2c-9db3-b2e678c48729",
+      "durationMinutes": 1
+    }
+  ],
+  "listedCases": [
+    {
+      "id": "CASE_ID1",
+      "markers": [
+        {
+          "id": "5a552c32-3003-4dca-9ddd-3dda79ba1e6c",
+          "markerTypeid": "fd001ad3-95fd-4f2d-86c6-a09d0a7dcc8b",
+          "markerTypeCode": "C",
+          "markerTypeDescription": "Description"
+        }
+      ],
+      "defendants": [
+        {
+          "id": "DEF_ID1",
+          "address": {
+            "address1": "address1",
+            "address2": "address2",
+            "address3": "address3",
+            "address4": "address4",
+            "address5": "address5",
+            "postcode": "CR1 4BX"
+          },
+          "isYouth": true,
+          "lastName": "KUXhFQYJmK",
+          "offences": [
+            {
+              "id": "OFF_ID1",
+              "startDate": "2020-06-01",
+              "offenceCode": "iPLOETXTaZ",
+              "offenceWording": "fyqsmINaaO",
+              "laaApplnReference": {
+                "statusId": "2f9691c2-2a3b-40aa-a7ee-6f547c04b905",
+                "statusCode": "19YNjJThO2",
+                "statusDate": "2020-06-01",
+                "statusDescription": "khy5oMuTbm",
+                "applicationReference": "DcmqpyQ0Gm"
+              },
+              "statementOfOffence": {
+                "title": "OYjuLgwOpF",
+                "welshTitle": "OYjuLgwOpF"
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "WP1pFgXxDd",
+          "bailStatus": {
+            "id": "34443c87-fa6f-34c0-897f-0cce45773df5",
+            "code": "P",
+            "description": "Custody or remanded into custody"
+          },
+          "dateOfBirth": "1999-06-01",
+          "masterDefendantId": "5ed03dca-a7f2-4272-aca3-3ab33b7ba1ed",
+          "restrictFromCourtList": false,
+          "nationalityDescription": "British",
+          "courtProceedingsInitiated": "2020-06-01T18:49:46.549Z"
+        }
+      ],
+      "caseIdentifier": {
+        "authorityId": "950f1472-2087-4ee4-83f9-e5ec1d9b4363",
+        "authorityCode": "apdFabHGyl",
+        "caseReference": "9SmRqTZJi1"
+      },
+      "restrictFromCourtList": false
+    },
+    {
+      "id": "CASE_ID2",
+      "markers": [
+        {
+          "id": "5a552c32-3003-4dca-9ddd-3dda79ba1e6c",
+          "markerTypeid": "fd001ad3-95fd-4f2d-86c6-a09d0a7dcc8b",
+          "markerTypeCode": "C",
+          "markerTypeDescription": "Description"
+        }
+      ],
+      "defendants": [
+        {
+          "id": "DEF_ID2",
+          "address": {
+            "address1": "address1",
+            "address2": "address2",
+            "address3": "address3",
+            "address4": "address4",
+            "address5": "address5",
+            "postcode": "CR1 4BX"
+          },
+          "isYouth": true,
+          "lastName": "KUXhFQYJmK",
+          "offences": [
+            {
+              "id": "OFF_ID2",
+              "startDate": "2020-06-01",
+              "offenceCode": "iPLOETXTaZ",
+              "offenceWording": "fyqsmINaaO",
+              "laaApplnReference": {
+                "statusId": "2f9691c2-2a3b-40aa-a7ee-6f547c04b905",
+                "statusCode": "19YNjJThO2",
+                "statusDate": "2020-06-01",
+                "statusDescription": "khy5oMuTbm",
+                "applicationReference": "DcmqpyQ0Gm"
+              },
+              "statementOfOffence": {
+                "title": "OYjuLgwOpF",
+                "welshTitle": "OYjuLgwOpF"
+              },
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "OFF_ID3",
+              "startDate": "2020-06-01",
+              "offenceCode": "iPLOETXTaZ",
+              "offenceWording": "fyqsmINaaO",
+              "laaApplnReference": {
+                "statusId": "2f9691c2-2a3b-40aa-a7ee-6f547c04b905",
+                "statusCode": "19YNjJThO2",
+                "statusDate": "2020-06-01",
+                "statusDescription": "khy5oMuTbm",
+                "applicationReference": "DcmqpyQ0Gm"
+              },
+              "statementOfOffence": {
+                "title": "OYjuLgwOpF",
+                "welshTitle": "OYjuLgwOpF"
+              },
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "WP1pFgXxDd",
+          "bailStatus": {
+            "id": "34443c87-fa6f-34c0-897f-0cce45773df5",
+            "code": "P",
+            "description": "Custody or remanded into custody"
+          },
+          "dateOfBirth": "1999-06-01",
+          "masterDefendantId": "5ed03dca-a7f2-4272-aca3-3ab33b7ba1ed",
+          "restrictFromCourtList": false,
+          "nationalityDescription": "British",
+          "courtProceedingsInitiated": "2020-06-01T18:49:46.549Z"
+        }
+      ],
+      "caseIdentifier": {
+        "authorityId": "950f1472-2087-4ee4-83f9-e5ec1d9b4363",
+        "authorityCode": "apdFabHGyl",
+        "caseReference": "9SmRqTZJi1"
+      },
+      "restrictFromCourtList": false
+    }
+  ],
+  "courtCentreId": "ca15880d-7487-4636-9721-53b91cefb8ab",
+  "nonDefaultDays": [
+    {
+      "oucode": "B01EF00",
+      "session": "AD",
+      "duration": 1,
+      "startTime": "2020-05-21T00:00:00.000Z",
+      "courtRoomId": 793,
+      "courtScheduleId": "8e837de0-743a-4a2c-9db3-b2e678c48729"
+    }
+  ],
+  "nonSittingDays": [],
+  "hearingLanguage": "ENGLISH",
+  "estimatedMinutes": 30,
+  "jurisdictionType": "CROWN",
+  "adjournedFromDate": "2020-06-01",
+  "courtApplications": [
+    {
+      "id": "8211cbd7-281f-42bf-a86d-20e6ababcea2",
+      "applicant": {
+        "id": "bfca15bb-1b31-4cfa-9f1e-ce91070e57f0",
+        "lastName": "4MYlUOoPgR",
+        "firstName": "lKX6MiOlky",
+        "isRespondent": false,
+        "restrictFromCourtList": false,
+        "courtApplicationPartyType": "PERSON"
+      },
+      "respondents": [
+        {
+          "id": "f7fabfe5-b473-460f-91ae-4658330f6a59",
+          "lastName": "XmauJlj5WK",
+          "firstName": "jPTVKxSgg5",
+          "isRespondent": true,
+          "restrictFromCourtList": false,
+          "courtApplicationPartyType": "PERSON"
+        }
+      ],
+      "linkedCaseId": "108c9b27-bfda-4e2e-8aab-d123d3989062",
+      "applicationType": "dNjMlzzAgR",
+      "parentApplicationId": "dd9fd9a9-cf62-4d02-bb22-c2c3cff1e623",
+      "applicationReference": "r5wPhVRI0B",
+      "restrictFromCourtList": false,
+      "restrictCourtApplicationType": false
+    }
+  ],
+  "reportingRestrictionReason": "e7QyZecOHc"
+}

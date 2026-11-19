@@ -5,9 +5,7 @@ import java.io.Serializable;
 import java.lang.Object;
 import java.lang.Override;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.hearing-marked-as-deleted")
 public class HearingMarkedAsDeleted implements Serializable {
   private static final long serialVersionUID = 3635797117544827167L;
 

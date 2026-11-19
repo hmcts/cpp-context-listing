@@ -6,9 +6,7 @@ import java.lang.Boolean;
 import java.lang.Object;
 import java.lang.Override;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.start-date-removed-for-hearing")
 public class StartDateRemovedForHearing implements Serializable {
   private static final long serialVersionUID = -5916793171023091435L;
 

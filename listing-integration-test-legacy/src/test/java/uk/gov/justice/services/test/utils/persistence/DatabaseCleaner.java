@@ -24,6 +24,9 @@ import org.slf4j.LoggerFactory;
  *     {@code processed_event}, {@code stream_buffer}, {@code stream_error*}) are skipped; the
  *     others ({@code hearing}, {@code listing_notes}, {@code event_outbox},
  *     {@code aggregate_snapshot}, ...) are truncated as before;</li>
+ *     <li>truncating {@code hearing} also truncates {@code hearing_rules_state} (P2.3.2, ADR 015:
+ *     the command-side state and tombstones of the hearings, which replaced the Hearing aggregate's
+ *     {@code aggregate_snapshot} rows that the scenarios already truncate);</li>
  *     <li>the publish relay is the viewstore {@code event_outbox} only
  *     ({@link #awaitPublishQueuesEmpty}, {@link #publishQueueDepth}).</li>
  * </ul>
@@ -33,6 +36,9 @@ public class DatabaseCleaner {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseCleaner.class);
 
     private static final long PUBLISH_DRAIN_POLL_INTERVAL_MILLIS = 100;
+
+    /** The Hearing command-side state (changeset 033), cleaned with {@code hearing}. */
+    private static final String HEARING_RULES_STATE = "hearing_rules_state";
 
     private final TestJdbcConnectionProvider testJdbcConnectionProvider;
 
@@ -119,6 +125,9 @@ public class DatabaseCleaner {
         final List<String> names = new ArrayList<>();
         names.add(tableName);
         names.addAll(asList(additionalTableNames));
+        if (names.contains("hearing") && !names.contains(HEARING_RULES_STATE)) {
+            names.add(HEARING_RULES_STATE);
+        }
         //noinspection deprecation
         cleanViewStoreTables(contextName, names);
     }

@@ -1,0 +1,119 @@
+{
+  "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+  "courtLists": [
+    {
+      "crestCourtSite": {
+        "extraData1": "extraData1",
+        "id": "8d577791-8a0a-3e94-8455-bc03aa220b79",
+        "oucode": "C01CY00",
+        "crestCourtId": "418",
+        "crestCourtSiteId": "418",
+        "crestCourtSiteName": "CROYDON",
+        "crestCourtName": "CROYDON",
+        "crestCourtShortName": "CROYD",
+        "crestCourtFullName": "CROYDON",
+        "crestCourtSiteCode": "A",
+        "courtType": "CROWN_COURT"
+      },
+      "sittings": [
+        {
+          "extraData1": "extraData1",
+          "sittingDate": "2023-02-20",
+          "weekCommencing": false,
+          "courtRoomId": "731816c1-5ee4-373a-9bda-840e13a5bcb0",
+          "judiciary": [],
+          "hearings": [
+            {
+              "endTime": "2025-02-04T10:20",
+              "applicant": {
+                "id": "2eaba97e-8b20-441f-9773-b10ef2c602cf",
+                "address": {
+                  "address1": "No fixed abode"
+                },
+                "lastName": "SHARPE",
+                "firstName": "Dean",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "PERSON_DEFENDANT"
+              },
+              "startTime": "2025-02-04T10:10",
+              "hearingType": {
+                "id": "f730b853-f9bb-4d46-8c1e-cc3af5a13fe8",
+                "description": "Mention"
+              },
+              "respondents": [],
+              "hasVideoLink": true,
+              "publicListNote": "MENTION UNDER SLIP RULE - RESERVED HHJ SLATER",
+              "weekCommencing": false,
+              "applicationReference": "14XS1672624",
+              "restrictFromCourtList": false
+            },
+            {
+              "extraData1": "extraData1",
+              "startTime": "2023-02-20T10:00",
+              "hearingType": {
+                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+                "description": "First hearing"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "hasVideoLink": true,
+              "endTime": "2023-02-20T10:20",
+              "caseIdentifier": {
+                "authorityId": "764bff92-a135-34cb-b858-8bb6b4b66301",
+                "authorityCode": "SURRPF",
+                "caseReference": "15FEB000005"
+              },
+              "defendants": [
+                {
+                  "extraData1": "extraData1",
+                  "id": "c4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "address": {
+                    "address1": "56saon",
+                    "address2": "56Police House",
+                    "address3": "StreetDescription1",
+                    "address4": "Locality1",
+                    "address5": "Town2",
+                    "postcode": "TW14 9XD"
+                  },
+                  "lastName": "Saxon",
+                  "offences": [
+                    {
+                      "id": "cec4b1f8-0fbc-474c-b14a-f4e274ac4224",
+                      "count": 0,
+                      "endDate": "2020-09-17",
+                      "startDate": "2020-09-18",
+                      "orderIndex": 1,
+                      "offenceCode": "TH68023",
+                      "shadowListed": false,
+                      "offenceWording": "Robbery",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Ysbeilio/Lladrad",
+                        "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+                        "welshLegislation": "Yn groes i adran 8(1) Deddf Dwyn 1968."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Tim",
+                  "bailStatus": {
+                    "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                    "code": "C",
+                    "description": "Custody"
+                  },
+                  "dateOfBirth": "2000-08-08",
+                  "masterDefendantId": "c4fbed8f-790d-4480-86c8-bb1b8a49cf78",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "proceedingsConcluded": false,
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-02-15T14:50:08.189Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

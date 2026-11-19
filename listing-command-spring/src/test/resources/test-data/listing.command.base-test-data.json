@@ -1,0 +1,69 @@
+{
+  "testData": {
+    "common": {
+      "hearingId": "HEARING_ID",
+      "caseId": "CASE_ID",
+      "defendantId": "DEFENDANT_ID",
+      "offenceId": "OFFENCE_ID",
+      "courtCentreId": "COURT_CENTRE_ID",
+      "courtRoomId": "COURT_ROOM_ID",
+      "judicialId": "JUDICIAL_ID",
+      "jurisdictionType": "JURISDICTION_TYPE",
+      "earliestStartTime": "EARLIEST_START_TIME",
+      "prosecutorDatesToAvoid": "PROSECUTOR_DATES_TO_AVOID",
+      "listingDirections": "LISTING_DIRECTIONS"
+    },
+    "hearing": {
+      "type": {
+        "id": "6e1bef55-7e13-4615-b3ba-8663f4438e16",
+        "description": "Trial"
+      },
+      "courtCentre": {
+        "id": "COURT_CENTRE_ID",
+        "name": "Carmarthen Magistrates' Court",
+        "welshName": "Llys Ynadon Caernarfon",
+        "roomId": "COURT_ROOM_ID",
+        "roomName": "Room 1",
+        "welshRoomName": "Ystafell 1"
+      },
+      "estimatedMinutes": 640,
+      "estimatedDuration": "1 week",
+      "reportingRestrictionReason": "Automatic anonymity under the Sexual Offences (Amendment) Act 1992"
+    },
+    "defendant": {
+      "personDetails": {
+        "title": "MR",
+        "firstName": "Harry",
+        "middleName": "Jack",
+        "lastName": "Kane",
+        "dateOfBirth": "1995-01-01",
+        "gender": "MALE",
+        "nationalityCode": "GBR",
+        "additionalNationalityCode": "USA",
+        "interpreterLanguageNeeds": "Welsh",
+        "documentationLanguageNeeds": "WELSH",
+        "nationalInsuranceNumber": "NH222222B",
+        "occupation": "Footballer",
+        "occupationCode": "F"
+      }
+    },
+    "offence": {
+      "id": "OFFENCE_ID",
+      "offenceDefinitionId": "490dce00-8591-49af-b2d0-1e161e7d0c36",
+      "offenceCode": "AAA",
+      "offenceTitle": "a title",
+      "offenceTitleWelsh": "a title in Welsh",
+      "offenceLegislation": "legislation",
+      "offenceLegislationWelsh": "legislation in Welsh",
+      "wording": "No Travel Card",
+      "wordingWelsh": "No Travel Card In Welsh",
+      "startDate": "2018-01-01",
+      "endDate": "2018-01-01",
+      "arrestDate": "2018-01-01",
+      "chargeDate": "2018-01-01",
+      "laidDate": "2019-05-01",
+      "orderIndex": 0,
+      "count": 1
+    }
+  }
+} 

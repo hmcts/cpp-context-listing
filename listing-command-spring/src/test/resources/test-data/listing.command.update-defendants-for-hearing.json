@@ -1,0 +1,24 @@
+{
+  "caseId": "CASE_ID",
+  "defendants": [
+    {
+      "bailStatus": {
+        "id":"12e69486-4d01-3403-a50a-7419ca040635",
+        "code":"C",
+        "description":"Custody or remanded into custody"
+      },
+      "custodyTimeLimit": "2017-10-05",
+      "dateOfBirth": "1980-07-15",
+      "defenceOrganisation": "withOrganisationName",
+      "firstName": "Harry",
+      "id": "DEFENDANT_ID",
+      "masterDefendantId": "DEFENDANT_ID",
+      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
+      "lastName": "Kane Junior",
+      "offences": [],
+      "organisationName": "withOrganisationName",
+      "specificRequirements": "Screen"
+    }
+  ],
+  "hearingId": "HEARING_ID"
+}

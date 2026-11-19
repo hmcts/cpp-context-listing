@@ -1,0 +1,275 @@
+package uk.gov.moj.cpp.listing.command.hearing.listener;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static java.util.UUID.fromString;
+import static java.util.UUID.randomUUID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static uk.gov.justice.listing.events.JudicialRole.judicialRole;
+import static uk.gov.justice.listing.events.JudiciaryRemovedFromHearing.judiciaryRemovedFromHearing;
+
+import uk.gov.justice.listing.events.JudiciaryAssignmentSource;
+import uk.gov.justice.listing.events.JudicialRole;
+import uk.gov.justice.listing.events.JudicialRoleType;
+import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
+import uk.gov.justice.listing.events.JudiciaryChangedForHearing;
+import uk.gov.justice.listing.events.JudiciaryRemovedFromHearing;
+import uk.gov.moj.cpp.listing.domain.json.ObjectToJsonObjectConverter;
+import uk.gov.moj.cpp.listing.command.hearing.flow.RaisedEvent;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+
+import java.io.StringReader;
+import java.util.UUID;
+
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class JudiciaryForHearingEventListenerTest {
+
+    private static final UUID HEARING_ID = randomUUID();
+    private static final String JUDICIARY = "judiciary";
+    private static final String JUDICIARY_ASSIGNMENT_SOURCE = "judiciaryAssignmentSource";
+    private static final String JUDICIARY_ASSIGNMENT_SOURCE_VALUE = "MANUAL";
+    private static final UUID JUDICIAL_ROLE_ID = randomUUID();
+    private static final String TEST_JSON = "{ \"" + JUDICIARY + "\": {\"test\": \"test\"} }";
+    private static final String TEST_JSON_WITH_JUDICIARY_ASSIGNMENT_SOURCE = "{ \"" + JUDICIARY + "\": {\"test\": \"test\"}, \"" + JUDICIARY_ASSIGNMENT_SOURCE + "\": \"" + JUDICIARY_ASSIGNMENT_SOURCE_VALUE + "\" }";
+
+    @Mock
+    ObjectToJsonObjectConverter objectToJsonObjectConverter;
+
+    @Mock
+    private HearingRepository hearingRepository;
+
+    @Mock
+    private ObjectNode properties;
+
+    @Mock
+    Hearing hearing;
+
+    @InjectMocks
+    private JudiciaryForHearingEventListener judiciaryForHearingEventListener;
+
+    @Test
+    public void shouldAssignJudiciaryToHearing() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode properties = (ObjectNode) objectMapper.readTree(TEST_JSON);
+        RaisedEvent<JudiciaryAssignedToHearing>  envelope = (RaisedEvent<JudiciaryAssignedToHearing>) mock(RaisedEvent.class);
+        JudicialRole judicialRole = judicialRole()
+                .withIsBenchChairman(true)
+                .withIsDeputy(false)
+                .withJudicialId(fromString("5a4ce2e5-4b4e-43bd-963c-b98c2150b74d"))
+                .withJudicialRoleType(JudicialRoleType.judicialRoleType()
+                        .withJudiciaryType("CIRCUIT_JUDGE")
+                        .withJudicialRoleTypeId(null)
+                        .build())
+                .build();
+
+        JudiciaryAssignedToHearing hearingData = JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
+                .withJudiciary(singletonList(judicialRole))
+                .withHearingId(HEARING_ID)
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+
+        judiciaryForHearingEventListener.judiciaryAssignedToHearing(envelope);
+
+        verify(hearingRepository).save(hearing);
+        assertFalse(properties.has(JUDICIARY_ASSIGNMENT_SOURCE));
+    }
+
+    @Test
+    public void shouldAssignJudiciaryToHearingWithJudiciaryAssignmentSource() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode properties = (ObjectNode) objectMapper.readTree(TEST_JSON);
+        RaisedEvent<JudiciaryAssignedToHearing> envelope = (RaisedEvent<JudiciaryAssignedToHearing>) mock(RaisedEvent.class);
+        JudicialRole judicialRole = judicialRole()
+                .withIsBenchChairman(true)
+                .withIsDeputy(false)
+                .withJudicialId(fromString("5a4ce2e5-4b4e-43bd-963c-b98c2150b74d"))
+                .withJudicialRoleType(JudicialRoleType.judicialRoleType()
+                        .withJudiciaryType("CIRCUIT_JUDGE")
+                        .withJudicialRoleTypeId(null)
+                        .build())
+                .build();
+
+        JudiciaryAssignedToHearing hearingData = JudiciaryAssignedToHearing.judiciaryAssignedToHearing()
+                .withJudiciary(singletonList(judicialRole))
+                .withHearingId(HEARING_ID)
+                .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueOf(JUDICIARY_ASSIGNMENT_SOURCE_VALUE))
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+
+        judiciaryForHearingEventListener.judiciaryAssignedToHearing(envelope);
+
+        verify(hearingRepository).save(hearing);
+        assertEquals(JUDICIARY_ASSIGNMENT_SOURCE_VALUE, properties.get(JUDICIARY_ASSIGNMENT_SOURCE).asText());
+    }
+
+    @Test
+    public void shouldChangeJudiaciaryForHearing() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode properties = (ObjectNode) objectMapper.readTree(TEST_JSON);
+        RaisedEvent<JudiciaryChangedForHearing> envelope = (RaisedEvent<JudiciaryChangedForHearing>) mock(RaisedEvent.class);
+        JudicialRole judicialRole = judicialRole()
+                .withIsBenchChairman(true)
+                .withIsDeputy(false)
+                .withJudicialId(JUDICIAL_ROLE_ID)
+                .withJudicialRoleType(JudicialRoleType.judicialRoleType()
+                        .withJudiciaryType("CIRCUIT_JUDGE")
+                        .withJudicialRoleTypeId(null)
+                        .build())
+                .build();
+
+        JudiciaryChangedForHearing hearingData = JudiciaryChangedForHearing.judiciaryChangedForHearing()
+                .withJudiciary(singletonList(judicialRole))
+                .withHearingId(HEARING_ID)
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+
+        judiciaryForHearingEventListener.judiciaryChangedForHearing(envelope);
+
+        verify(hearingRepository).save(hearing);
+        assertFalse(properties.has(JUDICIARY_ASSIGNMENT_SOURCE));
+    }
+
+    @Test
+    public void shouldChangeJudiciaryForHearingWithJudiciaryAssignmentSource() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode properties = (ObjectNode) objectMapper.readTree(TEST_JSON);
+        RaisedEvent<JudiciaryChangedForHearing> envelope = (RaisedEvent<JudiciaryChangedForHearing>) mock(RaisedEvent.class);
+        JudicialRole judicialRole = judicialRole()
+                .withIsBenchChairman(true)
+                .withIsDeputy(false)
+                .withJudicialId(JUDICIAL_ROLE_ID)
+                .withJudicialRoleType(JudicialRoleType.judicialRoleType()
+                        .withJudiciaryType("CIRCUIT_JUDGE")
+                        .withJudicialRoleTypeId(null)
+                        .build())
+                .build();
+
+        JudiciaryChangedForHearing hearingData = JudiciaryChangedForHearing.judiciaryChangedForHearing()
+                .withJudiciary(singletonList(judicialRole))
+                .withHearingId(HEARING_ID)
+                .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueOf(JUDICIARY_ASSIGNMENT_SOURCE_VALUE))
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+
+        judiciaryForHearingEventListener.judiciaryChangedForHearing(envelope);
+
+        verify(hearingRepository).save(hearing);
+        assertEquals(JUDICIARY_ASSIGNMENT_SOURCE_VALUE, properties.get(JUDICIARY_ASSIGNMENT_SOURCE).asText());
+    }
+
+    @Test
+    public void shouldSetJudiciaryAssignmentSourceToAutoWhenJudiciaryChangedToEmptyList() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode properties = (ObjectNode) objectMapper.readTree(TEST_JSON);
+        RaisedEvent<JudiciaryChangedForHearing> envelope = (RaisedEvent<JudiciaryChangedForHearing>) mock(RaisedEvent.class);
+
+        JudiciaryChangedForHearing hearingData = JudiciaryChangedForHearing.judiciaryChangedForHearing()
+                .withJudiciary(emptyList())
+                .withHearingId(HEARING_ID)
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+
+        judiciaryForHearingEventListener.judiciaryChangedForHearing(envelope);
+
+        verify(hearingRepository).save(hearing);
+        assertEquals("AUTO", properties.get(JUDICIARY_ASSIGNMENT_SOURCE).asText());
+    }
+
+    @Test
+    public void shouldSetJudiciaryAssignmentSourceToAutoWhenJudiciaryChangedToEmptyListEvenIfEventCarriesManual() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode properties = (ObjectNode) objectMapper.readTree(TEST_JSON);
+        RaisedEvent<JudiciaryChangedForHearing> envelope = (RaisedEvent<JudiciaryChangedForHearing>) mock(RaisedEvent.class);
+
+        JudiciaryChangedForHearing hearingData = JudiciaryChangedForHearing.judiciaryChangedForHearing()
+                .withJudiciary(emptyList())
+                .withHearingId(HEARING_ID)
+                .withJudiciaryAssignmentSource(JudiciaryAssignmentSource.valueOf(JUDICIARY_ASSIGNMENT_SOURCE_VALUE))
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+
+        judiciaryForHearingEventListener.judiciaryChangedForHearing(envelope);
+
+        verify(hearingRepository).save(hearing);
+        assertEquals("AUTO", properties.get(JUDICIARY_ASSIGNMENT_SOURCE).asText());
+    }
+
+    @Test
+    public void shouldRemoveJudiciaryFromHearing() throws Exception {
+        RaisedEvent<JudiciaryRemovedFromHearing> envelope = (RaisedEvent<JudiciaryRemovedFromHearing>) mock(RaisedEvent.class);
+        JudiciaryRemovedFromHearing hearingData = judiciaryRemovedFromHearing()
+                .withHearingId(HEARING_ID)
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode properties = (ObjectNode) objectMapper.readTree(TEST_JSON);
+        given(hearing.getProperties()).willReturn(properties);
+
+        judiciaryForHearingEventListener.judiciaryRemovedFromHearing(envelope);
+
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldSetJudiciaryAssignmentSourceToAutoWhenRemovingJudiciaryFromHearing() throws Exception {
+        RaisedEvent<JudiciaryRemovedFromHearing> envelope = (RaisedEvent<JudiciaryRemovedFromHearing>) mock(RaisedEvent.class);
+        JudiciaryRemovedFromHearing hearingData = judiciaryRemovedFromHearing()
+                .withHearingId(HEARING_ID)
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode properties = (ObjectNode) objectMapper.readTree(TEST_JSON_WITH_JUDICIARY_ASSIGNMENT_SOURCE);
+        given(hearing.getProperties()).willReturn(properties);
+
+        judiciaryForHearingEventListener.judiciaryRemovedFromHearing(envelope);
+
+        verify(hearingRepository).save(hearing);
+        assertEquals("AUTO", properties.get(JUDICIARY_ASSIGNMENT_SOURCE).asText());
+    }
+
+    private JsonObject createTestJsonObject() {
+        try (final JsonReader jsonReader =  Json.createReader(new StringReader("{\"test\": \"test\"}"))) {
+            return jsonReader.readObject();
+        }
+    }
+
+}

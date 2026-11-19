@@ -1,0 +1,8 @@
+{
+  "publishCourtListRequestId": "PUBLISH_COURT_LIST_REQUEST_ID",
+  "failedTime": "FAILED_TIME",
+  "errorMessage": "ERROR_MESSAGE",
+  "publishStatus": "EXPORT_FAILED",
+  "publishDate": "2016-07-11",
+  "weekCommencing": false
+}

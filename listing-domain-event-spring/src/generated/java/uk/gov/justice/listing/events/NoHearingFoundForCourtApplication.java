@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import java.io.Serializable;
 import java.lang.Object;
 import java.lang.Override;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.no-hearing-found-for-court-application")
 public class NoHearingFoundForCourtApplication implements Serializable {
   private static final long serialVersionUID = -7170759488945484008L;
 

@@ -1,0 +1,278 @@
+{
+  "id": "HEARING_ID",
+  "type": {
+    "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+    "description": "First hearing"
+  },
+  "panel": "ADULT",
+  "endDate": "2024-10-15",
+  "allocated": true,
+  "judiciary": [],
+  "startDate": "2024-10-15",
+  "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+  "hearingDays": [
+    {
+      "endTime": "2024-10-15T09:20:00.000Z",
+      "sequence": 1,
+      "startTime": "2024-10-15T09:00:00.000Z",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDate": "2024-10-15",
+      "isCancelled": false,
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "courtScheduleId": "ff65eba6-dd6e-39fe-ba5a-58fbabbcd37c",
+      "durationMinutes": 20
+    }
+  ],
+  "listedCases": [
+    {
+      "id": "CASE_ID",
+      "markers": [],
+      "defendants": [
+        {
+          "id": "DEFENDANT_ID1",
+          "address": {
+            "address1": "24",
+            "address2": "Ismael Spur",
+            "address3": "South Clotildemouth",
+            "address4": "Avon",
+            "postcode": "DA6 7ND"
+          },
+          "isYouth": true,
+          "lastName": "Heidenreich",
+          "offences": [
+            {
+              "id": "OFFENCE_ID1",
+              "count": 0,
+              "startDate": "2019-11-28",
+              "orderIndex": 1,
+              "offenceCode": "CE79034",
+              "shadowListed": false,
+              "offenceWording": "Improperly import a controlled drug of Class A to which a prohibition / restriction applies into the United Kingdom.",
+              "statementOfOffence": {
+                "title": "Import a controlled drug of Class A to which a prohibition applies",
+                "welshTitle": "Import a controlled drug of Class A to which a prohibition applies",
+                "legislation": "Contrary to section 50(3), (4), (5) of, and Schedule 1 to, the Customs and Excise Management Act 1979."
+              },
+              "reportingRestrictions": [
+                {
+                  "id": "588ca6e2-f28d-44d8-8212-b72abd582383",
+                  "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                  "orderedDate": "2024-10-02"
+                }
+              ],
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "OFFENCE_ID2",
+              "count": 0,
+              "startDate": "2019-11-28",
+              "orderIndex": 1,
+              "offenceCode": "RT88164",
+              "shadowListed": false,
+              "offenceWording": "Holder of a full Passenger Carrying Vehicle licence being under 21 years of age fail to comply with condition of licence.",
+              "statementOfOffence": {
+                "title": "Holder of a full Passenger Carrying Vehicle licence being under 21 years of age fail to comply with condition of licence",
+                "welshTitle": "Holder of a full Passenger Carrying Vehicle licence being under 21 years of age fail to comply with condition of licence",
+                "legislation": "Contrary to section 114(1) of the Road Traffic Act 1988 and Schedule 2 to the Road Traffic Offenders Act 1988."
+              },
+              "reportingRestrictions": [
+                {
+                  "id": "8a1db583-0d8f-40dd-b41a-0be2922ac22e",
+                  "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                  "orderedDate": "2024-10-02"
+                }
+              ],
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "Karina",
+          "bailStatus": {
+            "id": "12e69486-4d01-3403-a50a-7419ca040635",
+            "code": "C",
+            "description": "Custody"
+          },
+          "dateOfBirth": "2007-11-10",
+          "masterDefendantId": "43bfe777-10e0-4daa-b9dc-f0f3f2e03aa5",
+          "hearingLanguageNeeds": "ENGLISH",
+          "restrictFromCourtList": false,
+          "courtProceedingsInitiated": "2024-10-02T15:08:33.160Z"
+        },
+        {
+          "id": "DEFENDANT_ID2",
+          "address": {
+            "address1": "931",
+            "address2": "Dillon Causeway",
+            "address3": "Tonawanda",
+            "address4": "Avon",
+            "postcode": "DA6 7ND"
+          },
+          "isYouth": true,
+          "lastName": "Dicki",
+          "offences": [
+            {
+              "id": "OFFENCE_ID3",
+              "count": 0,
+              "startDate": "2019-11-28",
+              "orderIndex": 1,
+              "offenceCode": "CE79034",
+              "shadowListed": false,
+              "offenceWording": "Improperly import a controlled drug of Class A to which a prohibition / restriction applies into the United Kingdom.",
+              "statementOfOffence": {
+                "title": "Import a controlled drug of Class A to which a prohibition applies",
+                "welshTitle": "Import a controlled drug of Class A to which a prohibition applies",
+                "legislation": "Contrary to section 50(3), (4), (5) of, and Schedule 1 to, the Customs and Excise Management Act 1979."
+              },
+              "reportingRestrictions": [
+                {
+                  "id": "c6a23cb6-8ad6-4d8c-a8fa-c4f654d657f4",
+                  "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                  "orderedDate": "2024-10-02"
+                }
+              ],
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "OFFENCE_ID4",
+              "count": 0,
+              "startDate": "2019-11-28",
+              "orderIndex": 1,
+              "offenceCode": "BA12070",
+              "shadowListed": false,
+              "offenceWording": "Fail to comply with direction by airport official / constable regulating traffic / pedestrians at Bristol Airport.",
+              "statementOfOffence": {
+                "title": "Fail to comply with direction by airport official / constable regulating traffic / pedestrians at Bristol Airport",
+                "welshTitle": "Fail to comply with direction by airport official / constable regulating traffic / pedestrians at Bristol Airport",
+                "legislation": "Contrary to byelaws 6.9.3 and 3.4 of the Bristol Airport Byelaws 2012 and sections 63 and 64 of the Airports Act 1986."
+              },
+              "reportingRestrictions": [
+                {
+                  "id": "ff5e2e3f-4007-4022-b42f-7e146d189203",
+                  "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                  "orderedDate": "2024-10-02"
+                }
+              ],
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "Emie",
+          "bailStatus": {
+            "id": "12e69486-4d01-3403-a50a-7419ca040635",
+            "code": "C",
+            "description": "Custody"
+          },
+          "dateOfBirth": "2007-09-09",
+          "masterDefendantId": "29c797fa-06a8-4ce3-a443-000e31e412c3",
+          "hearingLanguageNeeds": "ENGLISH",
+          "restrictFromCourtList": false,
+          "courtProceedingsInitiated": "2024-10-02T15:08:33.160Z"
+        },
+        {
+          "id": "182cef53-907e-47c4-b8f8-de4d30b71a15",
+          "address": {
+            "address1": "927",
+            "address2": "Dameon Camp",
+            "address3": "Ashaburgh",
+            "address4": "Avon",
+            "postcode": "DA6 7ND"
+          },
+          "isYouth": true,
+          "lastName": "Balistreri",
+          "offences": [
+            {
+              "id": "OFFENCE_ID5",
+              "count": 0,
+              "startDate": "2019-11-28",
+              "orderIndex": 1,
+              "offenceCode": "CE79034",
+              "shadowListed": false,
+              "offenceWording": "Improperly import a controlled drug of Class A to which a prohibition / restriction applies into the United Kingdom.",
+              "statementOfOffence": {
+                "title": "Import a controlled drug of Class A to which a prohibition applies",
+                "welshTitle": "Import a controlled drug of Class A to which a prohibition applies",
+                "legislation": "Contrary to section 50(3), (4), (5) of, and Schedule 1 to, the Customs and Excise Management Act 1979."
+              },
+              "reportingRestrictions": [
+                {
+                  "id": "8f1bfbbd-ca30-4825-b59b-cbf69e0bd7e3",
+                  "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                  "orderedDate": "2024-10-02"
+                }
+              ],
+              "restrictFromCourtList": false
+            },
+            {
+              "id": "OFFENCE_ID6",
+              "count": 0,
+              "startDate": "2019-11-28",
+              "orderIndex": 1,
+              "offenceCode": "CE79034",
+              "shadowListed": false,
+              "offenceWording": "Improperly import a controlled drug of Class A to which a prohibition / restriction applies into the United Kingdom.",
+              "statementOfOffence": {
+                "title": "Import a controlled drug of Class A to which a prohibition applies",
+                "welshTitle": "Import a controlled drug of Class A to which a prohibition applies",
+                "legislation": "Contrary to section 50(3), (4), (5) of, and Schedule 1 to, the Customs and Excise Management Act 1979."
+              },
+              "reportingRestrictions": [
+                {
+                  "id": "3f815152-cb80-4692-8dda-c2eee8c5456b",
+                  "label": "Section 49 of the Children and Young Persons Act 1933 applies",
+                  "orderedDate": "2024-10-02"
+                }
+              ],
+              "restrictFromCourtList": false
+            }
+          ],
+          "firstName": "Ozella",
+          "bailStatus": {
+            "id": "12e69486-4d01-3403-a50a-7419ca040635",
+            "code": "C",
+            "description": "Custody"
+          },
+          "dateOfBirth": "2007-04-15",
+          "masterDefendantId": "182cef53-907e-47c4-b8f8-de4d30b71a15",
+          "hearingLanguageNeeds": "ENGLISH",
+          "restrictFromCourtList": false,
+          "courtProceedingsInitiated": "2024-10-02T15:08:33.160Z"
+        }
+      ],
+      "shadowListed": false,
+      "caseIdentifier": {
+        "authorityId": "8c0b34e5-750d-3de6-a0c9-8c0bd075cb46",
+        "authorityCode": "ESXPF",
+        "caseReference": "TR70325359"
+      },
+      "restrictFromCourtList": false
+    }
+  ],
+  "hasVideoLink": true,
+  "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+  "isSlotsBooked": false,
+  "isVacatedTrial": false,
+  "nonDefaultDays": [
+    {
+      "oucode": "B01LY00",
+      "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "session": "AM",
+      "duration": 20,
+      "startTime": "2024-10-15T09:00:00.000Z",
+      "courtRoomId": 2330,
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "courtScheduleId": "ff65eba6-dd6e-39fe-ba5a-58fbabbcd37c"
+    }
+  ],
+  "nonSittingDays": [],
+  "publicListNote": "",
+  "hearingLanguage": "ENGLISH",
+  "estimatedMinutes": 20,
+  "jurisdictionType": "MAGISTRATES",
+  "courtApplications": [],
+  "courtCentreDetails": {
+    "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+    "defaultDuration": 420,
+    "defaultStartTime": "10:00:00"
+  },
+  "isGroupProceedings": false,
+  "numberOfGroupCases": 1,
+  "vacatedTrialReasonId": ""
+}

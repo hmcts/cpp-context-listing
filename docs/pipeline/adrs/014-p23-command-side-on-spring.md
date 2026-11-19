@@ -1,6 +1,12 @@
 # ADR 014 — P2.3.0: command-side infrastructure on Spring, legacy IT harness, listing notes
 
-- **Status:** Proposed (2026-11-19), for review with P2.3.0
+> **Superseded by ADR 015** (2026-11-19). The Spring app keeps no aggregates and no private
+> events: `AggregateStore`, `EventRecorder`/`EventProjection(s)`, `ProcessorSender`, the
+> `PrivateEventHandler` outbox route and `listing-domain-aggregate-spring` were removed in P2.3.1.
+> The legacy IT harness (`listing-integration-test-legacy`) and `CommandRequests` described here
+> are kept.
+
+- **Status:** Superseded by ADR 015 (was: Proposed 2026-11-19, for review with P2.3.0)
 - **Context:** MBD refactor (`docs/MBD_REFACTOR_PROMPT.md` §4, §5, §9, §10.1 P2.3, D1, D5, D10, D13).
   Carries ADR 011 (aggregates as snapshots, listener in-process) into Phase 2; builds on ADR 002
   (outbox) and ADR 013 (relay, `PrivateEventHandler`).

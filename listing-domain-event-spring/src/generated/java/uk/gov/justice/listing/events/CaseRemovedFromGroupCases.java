@@ -6,9 +6,7 @@ import java.lang.Integer;
 import java.lang.Object;
 import java.lang.Override;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.case-removed-from-group-cases")
 public class CaseRemovedFromGroupCases implements Serializable {
   private static final long serialVersionUID = -2415439462079282658L;
 

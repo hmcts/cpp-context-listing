@@ -8,6 +8,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -20,8 +22,25 @@ public class HearingRepositoryImpl implements HearingRepositoryCustom {
 
     private final HearingJdbcRepository hearingJdbcRepository;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     public HearingRepositoryImpl(final HearingJdbcRepository hearingJdbcRepository) {
         this.hearingJdbcRepository = hearingJdbcRepository;
+    }
+
+    @Override
+    @Transactional
+    public <S extends Hearing> S save(final S hearing) {
+        if (!entityManager.contains(hearing)) {
+            entityManager.persist(hearing);
+        }
+        return hearing;
+    }
+
+    @Transactional
+    public void remove(final Hearing hearing) {
+        entityManager.remove(hearing);
     }
 
     @Override

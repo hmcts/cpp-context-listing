@@ -4,7 +4,22 @@
 #  - gateway: haproxy with cpp-developers-docker's path rewrites (/listing-query-api/... -> /listing-service/...),
 #    on host port 8192 (the legacy harness's base URI);
 #  - the Artemis console (Jolokia) on host port 8171, which the harness uses to quiesce and purge queues.
+#  - WireMock without the Spring suite's courtscheduler file mappings (below).
 services:
+  wiremock:
+    # The Spring suite's file mappings (listing-integration-test-spring/src/test/resources/wiremock/mappings)
+    # are not part of the JEE harness: cpp-developers-docker's wiremock-service starts with none, and
+    # WireMock's reset() (AbstractIT.setUp) reloads them before every legacy test. The courtscheduler
+    # ones (no priority, i.e. 5) outrank the legacy catch-alls (CourtSchedulerServiceStub.stubCourtSchedulerCatchAll,
+    # priority 10): GET /sessions answered every search-by-id with session 0205eb29-... instead of
+    # {"courtSchedules":[]}, so CROWN single-day enrichment listed that session, courtscheduler's stubbed
+    # list response did not carry it, and the command failed with "Missing courtScheduleIds" (500).
+    # Blank them for the legacy run by mounting an empty multi-mapping file over each.
+    volumes:
+      - ../../listing-integration-test-legacy/docker/wiremock/no-mappings.json:/home/wiremock/mappings/courtscheduler-sessions.json:ro
+      - ../../listing-integration-test-legacy/docker/wiremock/no-mappings.json:/home/wiremock/mappings/courtscheduler-hearing-slots.json:ro
+      - ../../listing-integration-test-legacy/docker/wiremock/no-mappings.json:/home/wiremock/mappings/courtscheduler-validate-session-availability.json:ro
+
   artemis:
     ports:
       - "61626:61616"

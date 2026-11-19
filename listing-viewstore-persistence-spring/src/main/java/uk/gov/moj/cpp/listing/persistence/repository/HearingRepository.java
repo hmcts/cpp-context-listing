@@ -873,6 +873,10 @@ public interface HearingRepository extends JpaRepository<Hearing, UUID>, Hearing
     @Query(value = "select *, 1 as totalCount , " + NULL_FLAT_HEARING_FIELDS + " from hearing where id = cast(cast(?1 as varchar) as uuid)", nativeQuery = true)
     Hearing findByHearingId(final String hearingId);
 
+    /** Implemented by {@link HearingRepositoryImpl#save} (no by-id re-read; see {@link HearingRepositoryCustom#save}). */
+    @Override
+    <S extends Hearing> S save(S hearing);
+
     /** DeltaSpike {@code findBy(id)} alias: the hearing, or {@code null}. */
     default Hearing findBy(final UUID hearingId) {
         return findByHearingId(hearingId.toString());

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <!--
+        MBD refactor P2.3.3 (ADR 015 §3, implementation notes "Case, Application, SeedHearing"): the
+        state of the JEE Case, Application and SeedHearingAggregate aggregates, which the viewstore
+        does not hold. One row per aggregate instance the Spring command services decided on, keyed
+        by the former stream id; `state` is the aggregate's fields as JSON (field mapping in ADR 015):
+        - case_rules_state.state: hearingIds, currentDefendants, defendantsToBeUpdated;
+        - application_rules_state.state: hearingIds (insertion order, duplicates kept);
+        - seed_hearing_rules_state.state: the seeded / existing hearing ids per sitting day, the
+          previous and current next-hearing ids and the seeding hearing id.
+        No foreign keys: the ids are those of other contexts' cases/applications, or of hearings that
+        may be deleted. Additive only: the JEE app never reads or writes these tables.
+    -->
+    <changeSet author="listing" id="034-create-case-application-seed-rules-state" logicalFilePath="034-create-case-application-seed-rules-state.xml">
+        <createTable tableName="case_rules_state">
+            <column name="case_id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="case_rules_state_pk" nullable="false"/>
+            </column>
+            <column name="state" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="application_rules_state">
+            <column name="application_id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="application_rules_state_pk" nullable="false"/>
+            </column>
+            <column name="state" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="seed_hearing_rules_state">
+            <column name="seeding_hearing_id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="seed_hearing_rules_state_pk" nullable="false"/>
+            </column>
+            <column name="state" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="seed_hearing_rules_state"/>
+            <dropTable tableName="application_rules_state"/>
+            <dropTable tableName="case_rules_state"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

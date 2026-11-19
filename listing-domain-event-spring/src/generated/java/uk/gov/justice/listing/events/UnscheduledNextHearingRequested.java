@@ -7,9 +7,7 @@ import java.lang.Override;
 import java.lang.String;
 import java.util.List;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.unscheduled-next-hearing-requested")
 public class UnscheduledNextHearingRequested implements Serializable {
   private static final long serialVersionUID = -7512644503274841725L;
 

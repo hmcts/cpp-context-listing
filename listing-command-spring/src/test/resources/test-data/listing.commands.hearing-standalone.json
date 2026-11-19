@@ -1,0 +1,56 @@
+{
+  "id": "ced2d8e5-9fe2-4003-a40b-cee8d1f235d8",
+  "type": {
+    "id": "6e1bef55-7e13-4615-b3ba-8663f4438e16",
+    "description": "Trial"
+  },
+  "jurisdictionType": "MAGISTRATES",
+  "courtCentre": {
+    "id": "75eb4a5f-556f-4020-bada-ceeba8c73086",
+    "name": "Carmarthen Magistrates' Court",
+    "welshName": "Llys Ynadon Caernarfon",
+    "roomId": "ad5f9d57-075c-4d40-8d32-75209bd2cbd9",
+    "roomName": "Room 1",
+    "welshRoomName": "Ystafell 1"
+  },
+  "earliestStartDateTime": "2012-12-12T01:02:33Z",
+  "estimatedMinutes": 640,
+  "prosecutorDatesToAvoid": "thursdays",
+  "listingDirections": "wheelchair access required",
+  "reportingRestrictionReason": "Automatic anonymity under the Sexual Offences (Amendment) Act 1992",
+  "courtApplications": [
+    {
+      "type": {
+        "id": "c2088aae-f4aa-44d4-a705-3ac9768a5e33",
+        "applicationCode": "AE71502",
+        "applicationType": "Complaint for Attachment of Earnings Order",
+        "applicationLegislation": "In accordance with section 3 of the Attachment of Earnings Act 1971",
+        "applicationCategory": "VP",
+        "requiresCourtHearing": true,
+        "requiresResponse": false,
+        "linkType": "STANDALONE",
+        "applicantSynonym": "APPELLANT",
+        "respondentSynonym": "PROBATION",
+        "applicationJurisdictionType": "MAGISTRATES",
+        "isTimeRestricted": false
+      },
+      "id": "5dccf0a8-f048-4694-b28a-bf0dcc490d08",
+      "applicationStatus": "DRAFT",
+      "applicationReceivedDate": "2019-05-21",
+      "applicationParticulars": "Test",
+      "applicant": {
+        "id": "47b910e4-9d47-4070-b274-09f338f4a5bd",
+        "personDetails": {
+          "firstName": "Testfdd",
+          "lastName": "secff",
+          "address": {
+            "address1": "21",
+            "postcode": "rg24 9xg"
+          },
+          "gender": "NOT_SPECIFIED"
+        }
+      },
+      "applicationReference": "O7AU0UVCFX"
+    }
+  ]
+}

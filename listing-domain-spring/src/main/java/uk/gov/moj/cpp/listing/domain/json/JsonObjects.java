@@ -69,6 +69,11 @@ public final class JsonObjects {
         return getJsonString(object, names).map(JsonString::getString);
     }
 
+    /** The framework's {@code JsonObjects.getList}: the array at {@code names}, each element of {@code clazz} converted. */
+    public static <T extends JsonValue, R> Optional<List<R>> getList(final JsonObject object, final Class<T> clazz, final Function<T, R> converter, final String... names) {
+        return getJsonArray(object, names).map(array -> array.getValuesAs(clazz).stream().map(converter).collect(java.util.stream.Collectors.toList()));
+    }
+
     public static Optional<UUID> getUUID(final JsonObject object, final String... names) {
         return getString(object, names).map(UUID::fromString);
     }

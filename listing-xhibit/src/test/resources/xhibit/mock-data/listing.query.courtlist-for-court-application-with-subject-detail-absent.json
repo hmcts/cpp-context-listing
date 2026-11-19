@@ -1,0 +1,149 @@
+{
+  "courtCentreId": "e2d7754e-89ba-309f-8da5-08a8283258a7",
+  "courtLists": [
+    {
+      "crestCourtSite": {
+        "id": "68e0e17d-2bcb-38dc-a932-870ad8b2abf0",
+        "oucode": "C13LE00",
+        "crestCourtId": "429",
+        "crestCourtSiteId": "429",
+        "crestCourtSiteName": "LEEDS",
+        "crestCourtName": "LEEDS",
+        "crestCourtShortName": "LEEDS",
+        "crestCourtFullName": "LEEDS",
+        "crestCourtSiteCode": "A",
+        "courtType": "CROWN_COURT"
+      },
+      "sittings": [
+        {
+          "sittingDate": "2025-11-29",
+          "weekCommencing": false,
+          "courtRoomId": "41d81e59-a521-33bb-b559-fc67f4e3fb96",
+          "judiciary": [],
+          "hearings": [
+            {
+              "startTime": "2025-11-29T11:11",
+              "hearingType": {
+                "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+                "description": "Plea"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "hasVideoLink": false,
+              "endTime": "2025-11-29T11:11",
+              "caseIdentifier": {
+                "authorityId": "8f8024ca-ff7c-3829-a0d2-35d37492aebb",
+                "authorityCode": "METPF",
+                "caseReference": "XG11689619"
+              },
+              "defendants": [
+                {
+                  "id": "ef54af5a-a6bc-46d4-bede-36818dba3bfd",
+                  "address": {
+                    "address1": "8",
+                    "address2": "StreetDescription",
+                    "address3": "driven drudge",
+                    "postcode": "NE5 3LD"
+                  },
+                  "isYouth": false,
+                  "lastName": "Reichert",
+                  "offences": [
+                    {
+                      "id": "4f3c08b6-8ef2-4134-b38f-288fecb11d98",
+                      "count": 0,
+                      "startDate": "2020-02-09",
+                      "orderIndex": 1,
+                      "offenceCode": "RR84707",
+                      "shadowListed": false,
+                      "offenceWording": "Theft and handling of stolen goods",
+                      "seedingHearing": {
+                        "sittingDay": "2025-11-15",
+                        "jurisdictionType": "MAGISTRATES",
+                        "seedingHearingId": "c919d33d-daf4-4dbe-bf0f-0d721e14b693"
+                      },
+                      "statementOfOffence": {
+                        "title": "Speeding - exceed 30 mph on restricted road in England - automatic camera device",
+                        "welshTitle": "Goryrru - mynd yn gyflymach na 30 milltir yr awr ar ffordd â chyfyngiad - dyfais camera awtomatig",
+                        "legislation": "Contrary to section 81(1) and 89(1) of the Road Traffic Regulation Act 1984 and Schedule 2 to the Road Traffic Offenders Act 1988.",
+                        "welshLegislation": "Yn groes i adran 81(1) ac 89(1) Deddf Rheoleiddio Traffig Ffyrdd 1984 ac Atodlen 2 Deddf Troseddwyr Traffig Ffyrdd 1988."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Anabelle",
+                  "bailStatus": {
+                    "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                    "code": "C",
+                    "description": "Custody"
+                  },
+                  "dateOfBirth": "1978-06-29",
+                  "masterDefendantId": "ef54af5a-a6bc-46d4-bede-36818dba3bfd",
+                  "proceedingsConcluded": true,
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2025-11-11T15:13:49.365Z"
+                }
+              ]
+            },
+            {
+              "startTime": "2025-11-29T11:11",
+              "hearingType": {
+                "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+                "description": "Plea"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "hasVideoLink": false,
+              "endTime": "2025-11-29T11:11",
+              "applicationReference": "XG11689619",
+              "applicant": {
+                "id": "88a8b808-2e8b-40ca-8590-3750cd1f3b34",
+                "address": {
+                  "address1": "New Scotland Yard",
+                  "address2": "Victoria Embankment",
+                  "address3": "London",
+                  "postcode": "SW1A 2JL"
+                },
+                "lastName": "Applicant-lastName",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "PROSECUTING_AUTHORITY"
+              },
+              "respondents": [
+                {
+                  "id": "77fc15cf-fd88-4337-ba39-e51524bb8019",
+                  "address": {
+                    "address1": "8",
+                    "address2": "StreetDescription",
+                    "address3": "driven drudge",
+                    "postcode": "NE5 3LD"
+                  },
+                  "lastName": "Reichert",
+                  "firstName": "Anabelle",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON_DEFENDANT"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "crestCourtSite": {
+        "id": "4ab6b35f-ca05-3faa-9e11-b003b236d2ff",
+        "oucode": "C13LE00",
+        "crestCourtId": "31",
+        "crestCourtSiteId": "6429",
+        "crestCourtSiteName": "LEEDS CLOTH HALL COURT",
+        "validFrom": "2022-02-16",
+        "crestCourtName": "LEEDS",
+        "crestCourtShortName": "LEEDS",
+        "crestCourtFullName": "LEEDS",
+        "crestCourtSiteCode": "B",
+        "courtType": "CROWN_COURT"
+      },
+      "sittings": []
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+package uk.gov.moj.cpp.listing.command.hearing.processor.command;
+
+import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
+
+import uk.gov.justice.listing.events.HearingMarkedForPartialUpdate;
+import uk.gov.moj.cpp.listing.domain.json.JsonObjectToObjectConverter;
+import uk.gov.moj.cpp.listing.domain.json.ObjectMapperProducer;
+import uk.gov.moj.cpp.listing.command.hearing.processor.utils.EventBuilder;
+
+import jakarta.json.JsonObject;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class UpdateUnallocatedHearingPartiallyCommandConverterTest {
+
+    private UpdateUnallocatedHearingPartiallyCommandConverter updateOffencesForHearingCommandCollectionConverter = new UpdateUnallocatedHearingPartiallyCommandConverter();
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+
+    @Spy
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectToObjectConverter();
+
+    @InjectMocks
+    private EventBuilder eventBuilder;
+
+    @Test
+    public void convertFromDefendantsToBeUpdatedEventToListOfUpdateDefendantsForHearingCommands() throws Exception {
+        //given
+        HearingMarkedForPartialUpdate hearingMarkedForPartialUpdate = eventBuilder.buildHearingMarkedForPartialUpdate();
+
+        //when
+        JsonObject actualList = updateOffencesForHearingCommandCollectionConverter.convertPartialUpdateEventToCommand(hearingMarkedForPartialUpdate);
+
+        //then
+        String expected =
+                "{\n" +
+                        "  \"hearingIdToBeUpdated\": \"298ce137-11bc-41dc-8274-484ca70ce5ee\",\n" +
+                        "  \"prosecutionCasesToRemove\": [\n" +
+                        "    {\n" +
+                        "      \"caseId\": \"8d327d53-7a25-465c-bdcc-1d37cd3cf3b8\",\n" +
+                        "      \"defendantsToRemove\": [\n" +
+                        "        {\n" +
+                        "          \"defendantId\": \"2e6e7bc4-1796-47cd-b56a-947e585884e4\",\n" +
+                        "          \"offencesToRemove\": [\n" +
+                        "            {\n" +
+                        "              \"offenceId\": \"c5d79c65-c256-41bc-9016-23dd178a6dcb\"\n" +
+                        "            }\n" +
+                        "          ]\n" +
+                        "        }\n" +
+                        "      ]\n" +
+                        "    }\n" +
+                        "  ]\n" +
+                        "}";
+
+        assertEquals(expected, objectMapper.writeValueAsString(actualList), true);
+    }
+}

@@ -6,9 +6,7 @@ import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.application-ejected")
 public class ApplicationEjected implements Serializable {
   private static final long serialVersionUID = 8116724383796635143L;
 

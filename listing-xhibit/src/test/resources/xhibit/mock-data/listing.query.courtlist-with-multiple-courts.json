@@ -1,0 +1,623 @@
+{
+  "courtLists": [
+    {
+      "sittings": [
+        {
+          "hearings": [
+            {
+              "endTime": "2023-09-25T00:00",
+              "startTime": "2023-09-18T00:00",
+              "defendants": [
+                {
+                  "id": "17154edd-2b0b-47c7-b2c6-cf70dd83c295",
+                  "address": {
+                    "address1": "799",
+                    "address2": "StreetDescription",
+                    "address3": "Locality2O",
+                    "postcode": "CR0 1XG"
+                  },
+                  "isYouth": false,
+                  "lastName": "gadag",
+                  "offences": [
+                    {
+                      "id": "9c016c78-2dbe-4146-838a-b85e7b367615",
+                      "count": 0,
+                      "startDate": "2022-10-01",
+                      "orderIndex": 1,
+                      "offenceCode": "CC74008",
+                      "shadowListed": false,
+                      "offenceWording": "Canvassing debtor-creditor agreements off trade premises",
+                      "seedingHearing": {
+                        "sittingDay": "2023-08-03",
+                        "jurisdictionType": "MAGISTRATES",
+                        "seedingHearingId": "64f1e87b-0736-43c8-b677-f7a705451f09"
+                      },
+                      "statementOfOffence": {
+                        "title": "Canvassing debtor-creditor agreements off trade premises",
+                        "welshTitle": "Canfasio cytundebau dyledwr-credydwr oddi ar eiddo masnachu",
+                        "legislation": "Contrary to section 49(1) of, and Schedule 1 to, the Consumer Credit Act 1974.",
+                        "welshLegislation": "Yn groes i adran 49(1) ac Atodlen 1 Deddf Credyd Defnyddwyr 1974."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Raju",
+                  "bailStatus": {
+                    "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                    "code": "A",
+                    "description": "Not applicable"
+                  },
+                  "dateOfBirth": "1978-11-20",
+                  "masterDefendantId": "37e8a7b3-8da7-4086-8b43-75fbeaa7148d",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-08-03T11:32:45.052Z"
+                }
+              ],
+              "hearingType": {
+                "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+                "description": "Plea"
+              },
+              "hasVideoLink": false,
+              "caseIdentifier": {
+                "authorityId": "f2bccb8f-47d8-3a3b-8f35-266eea32b2ac",
+                "authorityCode": "WARPF",
+                "caseReference": "SNI-4033-44"
+              },
+              "weekCommencing": true,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "7cb54363-7178-3a2f-8b88-2af660f841dc",
+          "sittingDate": "2023-09-18",
+          "weekCommencing": true
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2023-09-25T00:00",
+              "startTime": "2023-09-18T00:00",
+              "defendants": [
+                {
+                  "id": "ce284e4d-4da3-458d-a1bf-c000a51bd660",
+                  "address": {
+                    "address1": "799",
+                    "address2": "StreetDescription",
+                    "address3": "Locality2O",
+                    "postcode": "CR0 1XG"
+                  },
+                  "lastName": "gadag",
+                  "offences": [
+                    {
+                      "id": "2e269024-3935-4869-9bb9-2ef8f82a655f",
+                      "count": 0,
+                      "startDate": "2022-10-01",
+                      "orderIndex": 1,
+                      "offenceCode": "CC74008",
+                      "shadowListed": false,
+                      "offenceWording": "Canvassing debtor-creditor agreements off trade premises",
+                      "seedingHearing": {
+                        "sittingDay": "2023-08-03",
+                        "jurisdictionType": "MAGISTRATES",
+                        "seedingHearingId": "de251416-1759-4bf0-a081-411b4bca5b81"
+                      },
+                      "statementOfOffence": {
+                        "title": "Canvassing debtor-creditor agreements off trade premises",
+                        "welshTitle": "Canfasio cytundebau dyledwr-credydwr oddi ar eiddo masnachu",
+                        "legislation": "Contrary to section 49(1) of, and Schedule 1 to, the Consumer Credit Act 1974.",
+                        "welshLegislation": "Yn groes i adran 49(1) ac Atodlen 1 Deddf Credyd Defnyddwyr 1974."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Raju",
+                  "bailStatus": {
+                    "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                    "code": "A",
+                    "description": "Not applicable"
+                  },
+                  "dateOfBirth": "1978-11-20",
+                  "masterDefendantId": "37e8a7b3-8da7-4086-8b43-75fbeaa7148d",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-08-03T11:32:15.097Z"
+                }
+              ],
+              "hearingType": {
+                "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+                "description": "Plea"
+              },
+              "hasVideoLink": false,
+              "caseIdentifier": {
+                "authorityId": "f2bccb8f-47d8-3a3b-8f35-266eea32b2ac",
+                "authorityCode": "WARPF",
+                "caseReference": "SNI-4033-42"
+              },
+              "weekCommencing": true,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "79be563e-9e9c-3082-a219-6f70b830cdcb",
+          "sittingDate": "2023-09-18",
+          "weekCommencing": true
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2023-09-25T00:00",
+              "startTime": "2023-09-18T00:00",
+              "defendants": [
+                {
+                  "id": "979e5f68-7c45-42ad-ba97-5803aefc624a",
+                  "address": {
+                    "address1": "799",
+                    "address2": "StreetDescription",
+                    "address3": "Locality2O",
+                    "postcode": "CR0 1XG"
+                  },
+                  "isYouth": false,
+                  "lastName": "gadag",
+                  "offences": [
+                    {
+                      "id": "89868612-79bd-48f0-afd4-3f0143dec418",
+                      "count": 0,
+                      "startDate": "2022-10-01",
+                      "orderIndex": 1,
+                      "offenceCode": "CC74008",
+                      "shadowListed": false,
+                      "offenceWording": "Canvassing debtor-creditor agreements off trade premises",
+                      "seedingHearing": {
+                        "sittingDay": "2023-08-03",
+                        "jurisdictionType": "MAGISTRATES",
+                        "seedingHearingId": "89f41d68-41d2-4a6e-a603-38a5582c7806"
+                      },
+                      "statementOfOffence": {
+                        "title": "Canvassing debtor-creditor agreements off trade premises",
+                        "welshTitle": "Canfasio cytundebau dyledwr-credydwr oddi ar eiddo masnachu",
+                        "legislation": "Contrary to section 49(1) of, and Schedule 1 to, the Consumer Credit Act 1974.",
+                        "welshLegislation": "Yn groes i adran 49(1) ac Atodlen 1 Deddf Credyd Defnyddwyr 1974."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Raju",
+                  "bailStatus": {
+                    "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                    "code": "A",
+                    "description": "Not applicable"
+                  },
+                  "dateOfBirth": "1978-11-20",
+                  "masterDefendantId": "37e8a7b3-8da7-4086-8b43-75fbeaa7148d",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-08-03T11:32:44.521Z"
+                }
+              ],
+              "hearingType": {
+                "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+                "description": "Plea"
+              },
+              "hasVideoLink": false,
+              "caseIdentifier": {
+                "authorityId": "f2bccb8f-47d8-3a3b-8f35-266eea32b2ac",
+                "authorityCode": "WARPF",
+                "caseReference": "SNI-4033-43"
+              },
+              "weekCommencing": true,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "ddd62bca-2e46-3581-b5cc-f4cd0c9ea6b8",
+          "sittingDate": "2023-09-18",
+          "weekCommencing": true
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2023-09-25T00:00",
+              "startTime": "2023-09-18T00:00",
+              "defendants": [
+                {
+                  "id": "e671c6bf-f6bf-490e-84cf-db0916eddd00",
+                  "address": {
+                    "address1": "799",
+                    "address2": "StreetDescription",
+                    "address3": "Locality2O",
+                    "postcode": "CR0 1XG"
+                  },
+                  "lastName": "gadag",
+                  "offences": [
+                    {
+                      "id": "ff03c006-8dd9-4b30-919f-26fa75381348",
+                      "count": 0,
+                      "startDate": "2022-10-01",
+                      "orderIndex": 1,
+                      "offenceCode": "CC74008",
+                      "shadowListed": false,
+                      "offenceWording": "Canvassing debtor-creditor agreements off trade premises",
+                      "seedingHearing": {
+                        "sittingDay": "2023-08-03",
+                        "jurisdictionType": "MAGISTRATES",
+                        "seedingHearingId": "8bb6b1b2-4fef-4fda-bab9-4c9fddb2bc87"
+                      },
+                      "statementOfOffence": {
+                        "title": "Canvassing debtor-creditor agreements off trade premises",
+                        "welshTitle": "Canfasio cytundebau dyledwr-credydwr oddi ar eiddo masnachu",
+                        "legislation": "Contrary to section 49(1) of, and Schedule 1 to, the Consumer Credit Act 1974.",
+                        "welshLegislation": "Yn groes i adran 49(1) ac Atodlen 1 Deddf Credyd Defnyddwyr 1974."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Raju",
+                  "bailStatus": {
+                    "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                    "code": "A",
+                    "description": "Not applicable"
+                  },
+                  "dateOfBirth": "1978-11-20",
+                  "masterDefendantId": "37e8a7b3-8da7-4086-8b43-75fbeaa7148d",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-08-03T11:32:10.106Z"
+                }
+              ],
+              "hearingType": {
+                "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+                "description": "Plea"
+              },
+              "hasVideoLink": false,
+              "caseIdentifier": {
+                "authorityId": "f2bccb8f-47d8-3a3b-8f35-266eea32b2ac",
+                "authorityCode": "WARPF",
+                "caseReference": "SNI-4033-41"
+              },
+              "weekCommencing": true,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "9d7b6e2a-0582-3bf6-beea-27e4559a7dd2",
+          "sittingDate": "2023-09-18",
+          "weekCommencing": true
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2023-09-25T00:00",
+              "startTime": "2023-09-18T00:00",
+              "defendants": [
+                {
+                  "id": "ced6f3a7-d3e2-4d66-8538-5818776cb139",
+                  "address": {
+                    "address1": "799",
+                    "address2": "StreetDescription",
+                    "address3": "Locality2O",
+                    "postcode": "CR0 1XG"
+                  },
+                  "lastName": "gadag",
+                  "offences": [
+                    {
+                      "id": "c0f8d9c7-b414-486a-8edc-bf49c5c36da3",
+                      "count": 0,
+                      "startDate": "2022-10-01",
+                      "orderIndex": 1,
+                      "offenceCode": "CC74008",
+                      "shadowListed": false,
+                      "offenceWording": "Canvassing debtor-creditor agreements off trade premises",
+                      "seedingHearing": {
+                        "sittingDay": "2023-08-03",
+                        "jurisdictionType": "MAGISTRATES",
+                        "seedingHearingId": "1b973747-cbdf-4f85-b39f-8e0fb151e596"
+                      },
+                      "statementOfOffence": {
+                        "title": "Canvassing debtor-creditor agreements off trade premises",
+                        "welshTitle": "Canfasio cytundebau dyledwr-credydwr oddi ar eiddo masnachu",
+                        "legislation": "Contrary to section 49(1) of, and Schedule 1 to, the Consumer Credit Act 1974.",
+                        "welshLegislation": "Yn groes i adran 49(1) ac Atodlen 1 Deddf Credyd Defnyddwyr 1974."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Raju",
+                  "bailStatus": {
+                    "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                    "code": "A",
+                    "description": "Not applicable"
+                  },
+                  "dateOfBirth": "1978-11-20",
+                  "masterDefendantId": "37e8a7b3-8da7-4086-8b43-75fbeaa7148d",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-08-03T11:32:46.023Z"
+                }
+              ],
+              "hearingType": {
+                "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+                "description": "Plea"
+              },
+              "hasVideoLink": false,
+              "caseIdentifier": {
+                "authorityId": "f2bccb8f-47d8-3a3b-8f35-266eea32b2ac",
+                "authorityCode": "WARPF",
+                "caseReference": "SNI-4033-45"
+              },
+              "weekCommencing": true,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "3a29e5f2-1ff0-363c-b19c-12f9519104e9",
+          "sittingDate": "2023-09-18",
+          "weekCommencing": true
+        }
+      ],
+      "crestCourtSite": {
+        "id": "01e67d39-f3e6-3384-a5ab-268c48a8e516",
+        "oucode": "C36NR00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "443",
+        "crestCourtName": "NORWICH",
+        "crestCourtSiteId": "443",
+        "crestCourtFullName": "NORWICH",
+        "crestCourtSiteCode": "A",
+        "crestCourtSiteName": "NORWICH",
+        "crestCourtShortName": "NORWI"
+      }
+    },
+    {
+      "sittings": [
+        {
+          "hearings": [
+            {
+              "endTime": "2023-09-25T00:00",
+              "startTime": "2023-09-18T00:00",
+              "defendants": [
+                {
+                  "id": "be46a0c4-6096-4c58-bada-9af3a39fc6c2",
+                  "address": {
+                    "address1": "799",
+                    "address2": "StreetDescription",
+                    "address3": "Locality2O",
+                    "postcode": "CR0 1XG"
+                  },
+                  "lastName": "gadag",
+                  "offences": [
+                    {
+                      "id": "ed9911c3-8aec-4256-afe4-d226428cb4c4",
+                      "count": 0,
+                      "startDate": "2022-10-01",
+                      "orderIndex": 1,
+                      "offenceCode": "CC74008",
+                      "shadowListed": false,
+                      "offenceWording": "Canvassing debtor-creditor agreements off trade premises",
+                      "seedingHearing": {
+                        "sittingDay": "2023-08-03",
+                        "jurisdictionType": "MAGISTRATES",
+                        "seedingHearingId": "5c806da7-7792-464d-81dd-e665f18d5eef"
+                      },
+                      "statementOfOffence": {
+                        "title": "Canvassing debtor-creditor agreements off trade premises",
+                        "welshTitle": "Canfasio cytundebau dyledwr-credydwr oddi ar eiddo masnachu",
+                        "legislation": "Contrary to section 49(1) of, and Schedule 1 to, the Consumer Credit Act 1974.",
+                        "welshLegislation": "Yn groes i adran 49(1) ac Atodlen 1 Deddf Credyd Defnyddwyr 1974."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Raju",
+                  "bailStatus": {
+                    "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                    "code": "A",
+                    "description": "Not applicable"
+                  },
+                  "dateOfBirth": "1978-11-20",
+                  "masterDefendantId": "37e8a7b3-8da7-4086-8b43-75fbeaa7148d",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-08-03T11:32:05.047Z"
+                }
+              ],
+              "hearingType": {
+                "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+                "description": "Plea"
+              },
+              "hasVideoLink": false,
+              "caseIdentifier": {
+                "authorityId": "f2bccb8f-47d8-3a3b-8f35-266eea32b2ac",
+                "authorityCode": "WARPF",
+                "caseReference": "SNI-4033-40"
+              },
+              "weekCommencing": true,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "3f6873d9-ee43-3d9e-97f9-a1c3ee2a3515",
+          "sittingDate": "2023-09-18",
+          "weekCommencing": true
+        }
+      ],
+      "crestCourtSite": {
+        "id": "b89094ba-3333-3b76-9eb3-885ca63947bc",
+        "oucode": "C36NR00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "443",
+        "crestCourtName": "NORWICH",
+        "crestCourtSiteId": "443",
+        "crestCourtFullName": "NORWICH",
+        "crestCourtSiteCode": "B",
+        "crestCourtSiteName": "KINGS LYNN",
+        "crestCourtShortName": "NORWI"
+      }
+    },
+    {
+      "sittings": [],
+      "crestCourtSite": {
+        "id": "3795a097-6448-3b2d-8822-e69a720fba51",
+        "oucode": "C36NR00",
+        "courtType": "CROWN_COURT",
+        "validFrom": "2022-08-18",
+        "crestCourtId": "443",
+        "crestCourtName": "NORWICH",
+        "crestCourtSiteId": "6444",
+        "crestCourtFullName": "NORWICH",
+        "crestCourtSiteCode": "D",
+        "crestCourtSiteName": "NORWICH WHITEFRIARS",
+        "crestCourtShortName": "NORWI"
+      }
+    },
+    {
+      "sittings": [
+        {
+          "hearings": [
+            {
+              "endTime": "2023-09-25T00:00",
+              "startTime": "2023-09-18T00:00",
+              "defendants": [
+                {
+                  "id": "c775510d-4ce8-43fe-a5d3-1e39d34e7c19",
+                  "address": {
+                    "address1": "799",
+                    "address2": "StreetDescription",
+                    "address3": "Locality2O",
+                    "postcode": "CR0 1XG"
+                  },
+                  "lastName": "gadag",
+                  "offences": [
+                    {
+                      "id": "62da05e2-80bf-4f6a-bf8a-5bc8e37e3ac9",
+                      "count": 0,
+                      "startDate": "2022-10-01",
+                      "orderIndex": 1,
+                      "offenceCode": "CC74008",
+                      "shadowListed": false,
+                      "offenceWording": "Canvassing debtor-creditor agreements off trade premises",
+                      "seedingHearing": {
+                        "sittingDay": "2023-08-03",
+                        "jurisdictionType": "MAGISTRATES",
+                        "seedingHearingId": "13b09e11-dff9-4e81-ac08-223686599538"
+                      },
+                      "statementOfOffence": {
+                        "title": "Canvassing debtor-creditor agreements off trade premises",
+                        "welshTitle": "Canfasio cytundebau dyledwr-credydwr oddi ar eiddo masnachu",
+                        "legislation": "Contrary to section 49(1) of, and Schedule 1 to, the Consumer Credit Act 1974.",
+                        "welshLegislation": "Yn groes i adran 49(1) ac Atodlen 1 Deddf Credyd Defnyddwyr 1974."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Raju",
+                  "bailStatus": {
+                    "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                    "code": "A",
+                    "description": "Not applicable"
+                  },
+                  "dateOfBirth": "1978-11-20",
+                  "masterDefendantId": "37e8a7b3-8da7-4086-8b43-75fbeaa7148d",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-08-03T11:32:57.574Z"
+                }
+              ],
+              "hearingType": {
+                "id": "633224da-6db3-4df5-8097-62cee52f7a61",
+                "description": "Bail Application"
+              },
+              "hasVideoLink": false,
+              "caseIdentifier": {
+                "authorityId": "f2bccb8f-47d8-3a3b-8f35-266eea32b2ac",
+                "authorityCode": "WARPF",
+                "caseReference": "SNI-4033-47"
+              },
+              "weekCommencing": true,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "0d4b05be-2e4a-3bc1-b18c-c49ae4a29041",
+          "sittingDate": "2023-09-18",
+          "weekCommencing": true
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2023-09-25T00:00",
+              "startTime": "2023-09-18T00:00",
+              "defendants": [
+                {
+                  "id": "8a2ee8e9-71be-4203-aeda-ec87347fa8a3",
+                  "address": {
+                    "address1": "799",
+                    "address2": "StreetDescription",
+                    "address3": "Locality2O",
+                    "postcode": "CR0 1XG"
+                  },
+                  "lastName": "gadag",
+                  "offences": [
+                    {
+                      "id": "2a7e1542-9538-46b8-a265-5f3051ea39ac",
+                      "count": 0,
+                      "startDate": "2022-10-01",
+                      "orderIndex": 1,
+                      "offenceCode": "CC74008",
+                      "shadowListed": false,
+                      "offenceWording": "Canvassing debtor-creditor agreements off trade premises",
+                      "seedingHearing": {
+                        "sittingDay": "2023-08-03",
+                        "jurisdictionType": "MAGISTRATES",
+                        "seedingHearingId": "b429f270-bdb9-4da4-9768-b576dfd17ffd"
+                      },
+                      "statementOfOffence": {
+                        "title": "Canvassing debtor-creditor agreements off trade premises",
+                        "welshTitle": "Canfasio cytundebau dyledwr-credydwr oddi ar eiddo masnachu",
+                        "legislation": "Contrary to section 49(1) of, and Schedule 1 to, the Consumer Credit Act 1974.",
+                        "welshLegislation": "Yn groes i adran 49(1) ac Atodlen 1 Deddf Credyd Defnyddwyr 1974."
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Raju",
+                  "bailStatus": {
+                    "id": "86009c70-759d-3308-8de4-194886ff9a77",
+                    "code": "A",
+                    "description": "Not applicable"
+                  },
+                  "dateOfBirth": "1978-11-20",
+                  "masterDefendantId": "37e8a7b3-8da7-4086-8b43-75fbeaa7148d",
+                  "restrictFromCourtList": false,
+                  "courtProceedingsInitiated": "2023-08-03T11:32:53.536Z"
+                }
+              ],
+              "hearingType": {
+                "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+                "description": "Plea"
+              },
+              "hasVideoLink": false,
+              "caseIdentifier": {
+                "authorityId": "f2bccb8f-47d8-3a3b-8f35-266eea32b2ac",
+                "authorityCode": "WARPF",
+                "caseReference": "SNI-4033-46"
+              },
+              "weekCommencing": true,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [],
+          "courtRoomId": "4c016bfe-9897-3c7f-8f74-dcc6d26d094b",
+          "sittingDate": "2023-09-18",
+          "weekCommencing": true
+        }
+      ],
+      "crestCourtSite": {
+        "id": "9276bc6d-3fc0-38ea-bd71-c54260f26e13",
+        "oucode": "C36NR00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "443",
+        "crestCourtName": "NORWICH",
+        "crestCourtSiteId": "1445",
+        "crestCourtFullName": "NORWICH",
+        "crestCourtSiteCode": "N",
+        "crestCourtSiteName": "NORWICH MAGISTRATES' COURT",
+        "crestCourtShortName": "NORWI"
+      }
+    }
+  ],
+  "courtCentreId": "07c66c4d-5af4-3ae6-9201-55e047e30364"
+}

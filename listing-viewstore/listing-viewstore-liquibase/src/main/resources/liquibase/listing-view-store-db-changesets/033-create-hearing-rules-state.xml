@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <!--
+        MBD refactor P2.3.2 (ADR 015 §3, implementation notes "Hearing core"): the command-side state
+        of a hearing that the viewstore does not hold (the JEE Hearing aggregate's fields with no
+        viewstore equivalent, or with listener rules that differ from the aggregate's). One row per
+        hearing the Spring command services decided on, keyed by the hearing id.
+        - duplicate / deleted: the tombstone. The listener port still deletes the hearing row (as the
+          JEE listener did), so the P2.1 queries never see such a hearing; this row is what makes the
+          command guards reject later commands for it. No foreign key to hearing for that reason.
+        - state: the remaining fields as JSON (HearingRulesStateCodec); the field-to-path mapping is
+          in ADR 015.
+        Additive only: the JEE app never reads or writes this table.
+    -->
+    <changeSet author="listing" id="033-create-hearing-rules-state" logicalFilePath="033-create-hearing-rules-state.xml">
+        <createTable tableName="hearing_rules_state">
+            <column name="hearing_id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="hearing_rules_state_pk" nullable="false"/>
+            </column>
+            <column name="duplicate" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="deleted" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="state" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="hearing_rules_state"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

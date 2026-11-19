@@ -7,9 +7,7 @@ import java.lang.Override;
 import java.lang.String;
 import java.util.List;
 import java.util.UUID;
-import uk.gov.justice.domain.annotation.Event;
 
-@Event("listing.events.case-ejected-for-hearings")
 public class CaseEjectedForHearings implements Serializable {
   private static final long serialVersionUID = 3759558673721310400L;
 

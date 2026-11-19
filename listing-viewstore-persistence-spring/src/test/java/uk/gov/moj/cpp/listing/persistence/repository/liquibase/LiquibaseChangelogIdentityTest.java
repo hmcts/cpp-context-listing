@@ -42,7 +42,10 @@ class LiquibaseChangelogIdentityTest extends AbstractRepositoryTest {
 
     /** Changesets newer than the JEE capture (id|author|filename). */
     private static final Set<String> ADDED_AFTER_CAPTURE = Set.of(
-            "031-create-inbound-event-dedup|listing|031-create-inbound-event-dedup.xml");
+            "031-create-inbound-event-dedup|listing|031-create-inbound-event-dedup.xml",
+            "032-create-publish-court-list-request|listing|032-create-publish-court-list-request.xml",
+            "033-create-hearing-rules-state|listing|033-create-hearing-rules-state.xml",
+            "034-create-case-application-seed-rules-state|listing|034-create-case-application-seed-rules-state.xml");
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

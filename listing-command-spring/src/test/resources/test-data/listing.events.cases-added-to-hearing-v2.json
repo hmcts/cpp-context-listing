@@ -1,0 +1,951 @@
+{
+  "hearingId": "a16372d4-d800-45ed-881d-acf807c966fc",
+  "unAllocatedListedCases": [
+    {
+      "caseIdentifier": {
+        "authorityCode": "NOTTPF",
+        "authorityId": "bfb966de-5265-35b6-9019-79352548aeff",
+        "caseReference": "31CF0656021"
+      },
+      "caseStatus": "ACTIVE",
+      "defendants": [
+        {
+          "address": {
+            "address1": "1 London Road",
+            "address2": "BISHOP",
+            "address3": "London",
+            "address4": "London",
+            "postcode": "TW32 3DF"
+          },
+          "bailStatus": {
+            "code": "U",
+            "description": "Unconditional bail",
+            "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513"
+          },
+          "courtProceedingsInitiated": "2024-01-18T13:52:32.492Z",
+          "dateOfBirth": "1993-08-30",
+          "defenceOrganisation": "LOYAL SOLICITORS",
+          "firstName": "AYE",
+          "id": "6668f43e-db46-4ded-9f84-9fe9c3837b18",
+          "isYouth": false,
+          "lastName": " WHY",
+          "masterDefendantId": "6668f43e-db46-4ded-9f84-9fe9c3837b18",
+          "offences": [
+            {
+              "endDate": "2021-01-31",
+              "id": "c47b5fb5-85c4-4ef1-be45-f7ce5ce19356",
+              "laaApplnReference": {
+                "applicationReference": "7825136",
+                "effectiveEndDate": "2024-02-21",
+                "effectiveStartDate": "2024-02-21",
+                "statusCode": "GR",
+                "statusDate": "2024-02-21",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "PC02020C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired together, with Kenny Ward and with others unknow to transfer criminal property, namely motor vehicles. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'PC02020C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to conceal / disguise / convert / transfer / remove criminal property",
+                "welshTitle": "Conspire to conceal / disguise / convert / transfer / remove criminal property"
+              }
+            },
+            {
+              "endDate": "2021-01-31",
+              "id": "f4b0a090-342c-41b4-b841-856eb6d489cc",
+              "laaApplnReference": {
+                "applicationReference": "7825136",
+                "effectiveEndDate": "2024-02-21",
+                "effectiveStartDate": "2024-02-21",
+                "statusCode": "GR",
+                "statusDate": "2024-02-21",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "TH68026C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired with each other, Kenny Ward and others unknown to enter as trespassers dwelling houses and to steal therein. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'TH68026C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to commit a burglary dwelling with intent to steal",
+                "welshTitle": "Conspire to commit a burglary dwelling with intent to steal"
+              }
+            }
+          ],
+          "restrictFromCourtList": false
+        }
+      ],
+      "id": "38bfca02-271f-4abb-b6f5-98c771e90b06",
+      "markers": [
+
+      ],
+      "restrictFromCourtList": false,
+      "shadowListed": false
+    },
+    {
+      "caseIdentifier": {
+        "authorityCode": "NOTTPF",
+        "authorityId": "bfb966de-5265-35b6-9019-79352548aeff",
+        "caseReference": "31CF0656021"
+      },
+      "caseStatus": "ACTIVE",
+      "defendants": [
+        {
+          "address": {
+            "address1": "HM LONDON",
+            "address2": "LONODN ROAD",
+            "address3": "LODNON",
+            "address4": "LONDON CITY",
+            "postcode": "KG2 3AG"
+          },
+          "bailStatus": {
+            "code": "C",
+            "description": "Custody",
+            "id": "12e69486-4d01-3403-a50a-7419ca040635"
+          },
+          "courtProceedingsInitiated": "2024-03-06T13:42:05.148Z",
+          "dateOfBirth": "1991-01-01",
+          "defenceOrganisation": "LOYAL SOLICITORS",
+          "firstName": "KAMIE",
+          "id": "5cb5245e-c7b6-4568-8808-58a2f09cc94d",
+          "isYouth": false,
+          "lastName": "ANTLY",
+          "masterDefendantId": "ab5cbaa9-54dd-4e6e-bdb7-b570073cf0da",
+          "offences": [
+            {
+              "endDate": "2021-01-31",
+              "id": "92c6d6a7-f97e-4a1a-bc12-53925cd24c13",
+              "laaApplnReference": {
+                "applicationReference": "7840772",
+                "effectiveEndDate": "2024-03-12",
+                "effectiveStartDate": "2024-03-12",
+                "statusCode": "GR",
+                "statusDate": "2024-03-12",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "PC02020C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired together, with Kenny Ward and with others unknow to transfer criminal property, namely motor vehicles. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'PC02020C'",
+              "restrictFromCourtList": false,
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to conceal / disguise / convert / transfer / remove criminal property",
+                "welshTitle": "Conspire to conceal / disguise / convert / transfer / remove criminal property"
+              }
+            },
+            {
+              "endDate": "2021-01-31",
+              "id": "aaa5855b-83fd-48b2-bff3-7164f6e8e794",
+              "laaApplnReference": {
+                "applicationReference": "7840772",
+                "effectiveEndDate": "2024-03-12",
+                "effectiveStartDate": "2024-03-12",
+                "statusCode": "GR",
+                "statusDate": "2024-03-12",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "TH68026C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired with each other, Kenny Ward and others unknown to enter as trespassers dwelling houses and to steal therein. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'TH68026C'",
+              "restrictFromCourtList": false,
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to commit a burglary dwelling with intent to steal",
+                "welshTitle": "Conspire to commit a burglary dwelling with intent to steal"
+              }
+            }
+          ],
+          "restrictFromCourtList": false
+        }
+      ],
+      "id": "38bfca02-271f-4abb-b6f5-98c771e90b06",
+      "markers": [
+
+      ],
+      "restrictFromCourtList": false,
+      "shadowListed": false
+    },
+    {
+      "caseIdentifier": {
+        "authorityCode": "NOTTPF",
+        "authorityId": "bfb966de-5265-35b6-9019-79352548aeff",
+        "caseReference": "31CF0656021"
+      },
+      "caseStatus": "ACTIVE",
+      "defendants": [
+        {
+          "address": {
+            "address1": "1 LONDON ROAD",
+            "address2": "LODON",
+            "address3": "LODNON CITY",
+            "postcode": "NE2 7AH"
+          },
+          "bailStatus": {
+            "code": "U",
+            "description": "Unconditional bail",
+            "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513"
+          },
+          "courtProceedingsInitiated": "2024-01-18T13:52:29.000Z",
+          "dateOfBirth": "2001-02-13",
+          "defenceOrganisation": "THE DEVEOP ORG",
+          "firstName": "JONNY",
+          "id": "82a0582d-8837-483e-8579-5036819ff884",
+          "isYouth": false,
+          "lastName": "CHAP",
+          "masterDefendantId": "82a0582d-8837-483e-8579-5036819ff884",
+          "offences": [
+            {
+              "endDate": "2021-01-31",
+              "id": "ff4927c9-8d32-4bf3-8fb1-764dc27cbcc3",
+              "laaApplnReference": {
+                "applicationReference": "7825894",
+                "effectiveEndDate": "2024-02-22",
+                "effectiveStartDate": "2024-02-22",
+                "statusCode": "GR",
+                "statusDate": "2024-02-22",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "TH68026C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired with each other, Kenny Ward and others unknown to enter as trespassers dwelling houses and to steal therein. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'TH68026C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to commit a burglary dwelling with intent to steal",
+                "welshTitle": "Conspire to commit a burglary dwelling with intent to steal"
+              }
+            },
+            {
+              "endDate": "2021-01-31",
+              "id": "0d80fa3b-4203-4415-bb82-b1bfda4d9ba2",
+              "laaApplnReference": {
+                "applicationReference": "7825894",
+                "effectiveEndDate": "2024-02-22",
+                "effectiveStartDate": "2024-02-22",
+                "statusCode": "GR",
+                "statusDate": "2024-02-22",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "PC02020C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired together, with Kenny Ward and with others unknow to transfer criminal property, namely motor vehicles. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'PC02020C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to conceal / disguise / convert / transfer / remove criminal property",
+                "welshTitle": "Conspire to conceal / disguise / convert / transfer / remove criminal property"
+              }
+            }
+          ],
+          "restrictFromCourtList": false
+        }
+      ],
+      "id": "38bfca02-271f-4abb-b6f5-98c771e90b06",
+      "markers": [
+
+      ],
+      "restrictFromCourtList": false,
+      "shadowListed": false
+    },
+    {
+      "caseIdentifier": {
+        "authorityCode": "NOTTPF",
+        "authorityId": "bfb966de-5265-35b6-9019-79352548aeff",
+        "caseReference": "31CF0656021"
+      },
+      "caseStatus": "ACTIVE",
+      "defendants": [
+        {
+          "address": {
+            "address1": "WELLS ROAD",
+            "address2": "LONODN ROAD",
+            "address3": "LODNON",
+            "address4": "NORTH",
+            "postcode": "ND3 2NX"
+          },
+          "bailStatus": {
+            "code": "C",
+            "description": "Custody",
+            "id": "12e69486-4d01-3403-a50a-7419ca040635"
+          },
+          "courtProceedingsInitiated": "2024-01-18T13:58:04.996Z",
+          "dateOfBirth": "1999-11-07",
+          "defenceOrganisation": "LEGAL LAW SOLICITORS",
+          "firstName": "DELAY",
+          "id": "60486b7f-087a-4de4-9c8a-40227bc655be",
+          "isYouth": false,
+          "lastName": "FAST",
+          "masterDefendantId": "60486b7f-087a-4de4-9c8a-40227bc655be",
+          "offences": [
+            {
+              "endDate": "2021-01-31",
+              "id": "6f428c1c-a47e-445a-bec8-c121efd642df",
+              "laaApplnReference": {
+                "applicationReference": "7804897",
+                "effectiveEndDate": "2024-01-29",
+                "effectiveStartDate": "2024-01-29",
+                "statusCode": "GR",
+                "statusDate": "2024-01-29",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "TH68026C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired with each other, Kenny Ward and others unknown to enter as trespassers dwelling houses and to steal therein. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'TH68026C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to commit a burglary dwelling with intent to steal",
+                "welshTitle": "Conspire to commit a burglary dwelling with intent to steal"
+              }
+            },
+            {
+              "endDate": "2021-01-31",
+              "id": "4500a325-fb12-4a4a-8202-18cdb0c48cab",
+              "laaApplnReference": {
+                "applicationReference": "7804897",
+                "effectiveEndDate": "2024-01-29",
+                "effectiveStartDate": "2024-01-29",
+                "statusCode": "GR",
+                "statusDate": "2024-01-29",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "PC02020C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired together, with KENNY Ward and with others unknow to transfer criminal property, namely motor vehicles. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'PC02020C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to conceal / disguise / convert / transfer / remove criminal property",
+                "welshTitle": "Conspire to conceal / disguise / convert / transfer / remove criminal property"
+              }
+            }
+          ],
+          "restrictFromCourtList": false
+        }
+      ],
+      "id": "38bfca02-271f-4abb-b6f5-98c771e90b06",
+      "markers": [
+
+      ],
+      "restrictFromCourtList": false,
+      "shadowListed": false
+    },
+    {
+      "caseIdentifier": {
+        "authorityCode": "NOTTPF",
+        "authorityId": "bfb966de-5265-35b6-9019-79352548aeff",
+        "caseReference": "31CF0656021"
+      },
+      "caseStatus": "ACTIVE",
+      "defendants": [
+        {
+          "address": {
+            "address1": "80 LONDON Lane, ",
+            "address3": "Suzzare",
+            "address4": "London, ",
+            "postcode": "NKY 6FN"
+          },
+          "courtProceedingsInitiated": "2024-01-18T13:52:24.992Z",
+          "dateOfBirth": "2003-03-15",
+          "defenceOrganisation": "LOYAL SOLICITORS",
+          "firstName": "SORRY",
+          "id": "7ba2c385-34d7-4325-a2ce-28d1819ba031",
+          "isYouth": false,
+          "lastName": "WEALED",
+          "masterDefendantId": "7ba2c385-34d7-4325-a2ce-28d1819ba031",
+          "offences": [
+            {
+              "endDate": "2021-01-31",
+              "id": "15c25e3e-783b-45da-9dbc-74e4d0ebc5ae",
+              "laaApplnReference": {
+                "applicationReference": "7798664",
+                "effectiveEndDate": "2024-01-22",
+                "effectiveStartDate": "2024-01-22",
+                "statusCode": "GR",
+                "statusDate": "2024-01-22",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "PC02020C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired together, with Kenny Ward and with others unknow to transfer criminal property, namely motor vehicles. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'PC02020C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to conceal / disguise / convert / transfer / remove criminal property",
+                "welshTitle": "Conspire to conceal / disguise / convert / transfer / remove criminal property"
+              }
+            },
+            {
+              "endDate": "2021-01-31",
+              "id": "62e80688-4cb4-4026-9650-2f21d486633c",
+              "laaApplnReference": {
+                "applicationReference": "7798664",
+                "effectiveEndDate": "2024-01-22",
+                "effectiveStartDate": "2024-01-22",
+                "statusCode": "GR",
+                "statusDate": "2024-01-22",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "TH68026C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired with each other, Kenny Ward and others unknown to enter as trespassers dwelling houses and to steal therein. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'TH68026C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to commit a burglary dwelling with intent to steal",
+                "welshTitle": "Conspire to commit a burglary dwelling with intent to steal"
+              }
+            }
+          ],
+          "restrictFromCourtList": false
+        }
+      ],
+      "id": "38bfca02-271f-4abb-b6f5-98c771e90b06",
+      "markers": [
+
+      ],
+      "restrictFromCourtList": false,
+      "shadowListed": false
+    },
+    {
+      "caseIdentifier": {
+        "authorityCode": "NOTTPF",
+        "authorityId": "bfb966de-5265-35b6-9019-79352548aeff",
+        "caseReference": "31CF0656021"
+      },
+      "caseStatus": "ACTIVE",
+      "defendants": [
+        {
+          "address": {
+            "address1": "1 London Road",
+            "address2": "BISHOP",
+            "address3": "London",
+            "address4": "London",
+            "postcode": "TW32 3DF"
+          },
+          "bailStatus": {
+            "code": "U",
+            "description": "Unconditional bail",
+            "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513"
+          },
+          "courtProceedingsInitiated": "2024-01-18T13:52:29.527Z",
+          "dateOfBirth": "1997-05-02",
+          "defenceOrganisation": "LOYAL SOLICITORS",
+          "firstName": "STEPHEN",
+          "id": "47574c6c-eaab-4d95-9f8d-d916baca1e06",
+          "isYouth": false,
+          "lastName": "JOHNNY",
+          "masterDefendantId": "cab6770f-bfb7-49ac-8ef4-f1758392bd98",
+          "offences": [
+            {
+              "endDate": "2021-01-31",
+              "id": "2a4a81b6-6bb8-4d38-b644-30ea5c91f7eb",
+              "laaApplnReference": {
+                "applicationReference": "7799205",
+                "effectiveEndDate": "2024-01-23",
+                "effectiveStartDate": "2024-01-23",
+                "statusCode": "GR",
+                "statusDate": "2024-01-23",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "PC02020C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired together, with Kenny Ward and with others unknow to transfer criminal property, namely motor vehicles. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'PC02020C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to conceal / disguise / convert / transfer / remove criminal property",
+                "welshTitle": "Conspire to conceal / disguise / convert / transfer / remove criminal property"
+              }
+            },
+            {
+              "endDate": "2021-01-31",
+              "id": "a957840f-1c5d-4df7-8e9f-e1e6b25e8d1f",
+              "laaApplnReference": {
+                "applicationReference": "7799205",
+                "effectiveEndDate": "2024-01-23",
+                "effectiveStartDate": "2024-01-23",
+                "statusCode": "GR",
+                "statusDate": "2024-01-23",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "TH68026C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired with each other, Kenny Ward and others unknown to enter as trespassers dwelling houses and to steal therein. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'TH68026C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to commit a burglary dwelling with intent to steal",
+                "welshTitle": "Conspire to commit a burglary dwelling with intent to steal"
+              }
+            }
+          ],
+          "restrictFromCourtList": false
+        }
+      ],
+      "id": "38bfca02-271f-4abb-b6f5-98c771e90b06",
+      "markers": [
+
+      ],
+      "restrictFromCourtList": false,
+      "shadowListed": false
+    },
+    {
+      "caseIdentifier": {
+        "authorityCode": "NOTTPF",
+        "authorityId": "bfb966de-5265-35b6-9019-79352548aeff",
+        "caseReference": "31CF0656021"
+      },
+      "caseStatus": "ACTIVE",
+      "defendants": [
+        {
+          "address": {
+            "address1": "12 VILLA Place, ",
+            "address2": "Lodnon",
+            "address3": "LONDON CITY",
+            "postcode": "NK3 9DH"
+          },
+          "bailStatus": {
+            "code": "U",
+            "description": "Unconditional bail",
+            "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513"
+          },
+          "courtProceedingsInitiated": "2024-01-18T13:52:29.774Z",
+          "dateOfBirth": "2001-06-07",
+          "defenceOrganisation": "LOYAL SOLICITORS",
+          "firstName": "RICE",
+          "id": "d323a831-0b26-4526-a636-8d94052bbb78",
+          "isYouth": false,
+          "lastName": "JOKER",
+          "masterDefendantId": "8c82832d-4d02-41b6-be63-ee4596420808",
+          "offences": [
+            {
+              "endDate": "2021-01-31",
+              "id": "c93b579f-621b-4fbe-a282-53c89b498240",
+              "laaApplnReference": {
+                "applicationReference": "7798638",
+                "effectiveEndDate": "2024-01-22",
+                "effectiveStartDate": "2024-01-22",
+                "statusCode": "GR",
+                "statusDate": "2024-01-22",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "PC02020C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired together, with Kenny Ward and with others unknow to transfer criminal property, namely motor vehicles. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'PC02020C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to conceal / disguise / convert / transfer / remove criminal property",
+                "welshTitle": "Conspire to conceal / disguise / convert / transfer / remove criminal property"
+              }
+            },
+            {
+              "endDate": "2021-01-31",
+              "id": "3148bfd8-4edc-4ee2-a7ea-4e1a24d67793",
+              "laaApplnReference": {
+                "applicationReference": "7798638",
+                "effectiveEndDate": "2024-01-22",
+                "effectiveStartDate": "2024-01-22",
+                "statusCode": "GR",
+                "statusDate": "2024-01-22",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "TH68026C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired with each other, Kenny Ward and others unknown to enter as trespassers dwelling houses and to steal therein. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'TH68026C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to commit a burglary dwelling with intent to steal",
+                "welshTitle": "Conspire to commit a burglary dwelling with intent to steal"
+              }
+            }
+          ],
+          "restrictFromCourtList": false
+        }
+      ],
+      "id": "38bfca02-271f-4abb-b6f5-98c771e90b06",
+      "markers": [
+
+      ],
+      "restrictFromCourtList": false,
+      "shadowListed": false
+    },
+    {
+      "caseIdentifier": {
+        "authorityCode": "NOTTPF",
+        "authorityId": "bfb966de-5265-35b6-9019-79352548aeff",
+        "caseReference": "31CF0656021"
+      },
+      "caseStatus": "ACTIVE",
+      "defendants": [
+        {
+          "address": {
+            "address1": "12 LODNON ROAD",
+            "address2": "LONDON",
+            "address3": "LONDON",
+            "address4": "LODNON",
+            "postcode": "NX22 3LX"
+          },
+          "bailStatus": {
+            "code": "U",
+            "description": "Unconditional bail",
+            "id": "eaf18bf8-9569-3656-a4ab-64299f9bd513"
+          },
+          "courtProceedingsInitiated": "2024-01-18T13:52:31.989Z",
+          "dateOfBirth": "2002-10-11",
+          "defenceOrganisation": "ABBEY LAW SOLICITORS",
+          "firstName": "DYLAN",
+          "id": "b8843abc-e2c1-4199-9540-fb007346991d",
+          "isYouth": false,
+          "lastName": "STONE",
+          "masterDefendantId": "e875608a-070a-442a-883a-381797d090bf",
+          "offences": [
+            {
+              "endDate": "2021-01-31",
+              "id": "b9cc873a-128d-48c4-8997-f78c05dbb85e",
+              "laaApplnReference": {
+                "applicationReference": "7798127",
+                "effectiveEndDate": "2024-01-22",
+                "effectiveStartDate": "2024-01-22",
+                "statusCode": "GR",
+                "statusDate": "2024-01-22",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "TH68026C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired with each other, Kenny Ward and others unknown to enter as trespassers dwelling houses and to steal therein. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'TH68026C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to commit a burglary dwelling with intent to steal",
+                "welshTitle": "Conspire to commit a burglary dwelling with intent to steal"
+              }
+            },
+            {
+              "endDate": "2021-01-31",
+              "id": "eb804fb8-ed6d-49f9-ae4e-9b98a0e25aa4",
+              "laaApplnReference": {
+                "applicationReference": "7798127",
+                "effectiveEndDate": "2024-01-22",
+                "effectiveStartDate": "2024-01-22",
+                "statusCode": "GR",
+                "statusDate": "2024-01-22",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "PC02020C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired together, with Kenny Ward and with others unknow to transfer criminal property, namely motor vehicles. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'PC02020C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to conceal / disguise / convert / transfer / remove criminal property",
+                "welshTitle": "Conspire to conceal / disguise / convert / transfer / remove criminal property"
+              }
+            }
+          ],
+          "restrictFromCourtList": false
+        }
+      ],
+      "id": "38bfca02-271f-4abb-b6f5-98c771e90b06",
+      "markers": [
+
+      ],
+      "restrictFromCourtList": false,
+      "shadowListed": false
+    },
+    {
+      "caseIdentifier": {
+        "authorityCode": "NOTTPF",
+        "authorityId": "bfb966de-5265-35b6-9019-79352548aeff",
+        "caseReference": "31CF0656021"
+      },
+      "caseStatus": "ACTIVE",
+      "defendants": [
+        {
+          "address": {
+            "address1": "108, LONDON Lane, ",
+            "address3": "LONDON",
+            "address4": "London, ",
+            "postcode": "NK3 6FN"
+          },
+          "courtProceedingsInitiated": "2024-01-18T13:52:24.992Z",
+          "dateOfBirth": "2003-03-15",
+          "defenceOrganisation": "LOYAL SOLICITORS",
+          "firstName": "SORRY",
+          "id": "7ba2c385-34d7-4325-a2ce-28d1819ba031",
+          "isYouth": false,
+          "lastName": "KORY",
+          "masterDefendantId": "7ba2c385-34d7-4325-a2ce-28d1819ba031",
+          "offences": [
+            {
+              "endDate": "2021-01-31",
+              "id": "15c25e3e-783b-45da-9dbc-74e4d0ebc5ae",
+              "laaApplnReference": {
+                "applicationReference": "7798664",
+                "effectiveEndDate": "2024-01-22",
+                "effectiveStartDate": "2024-01-22",
+                "statusCode": "GR",
+                "statusDate": "2024-01-22",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "PC02020C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired together, with Kenny Ward and with others unknow to transfer criminal property, namely motor vehicles. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'PC02020C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to conceal / disguise / convert / transfer / remove criminal property",
+                "welshTitle": "Conspire to conceal / disguise / convert / transfer / remove criminal property"
+              }
+            },
+            {
+              "endDate": "2021-01-31",
+              "id": "62e80688-4cb4-4026-9650-2f21d486633c",
+              "laaApplnReference": {
+                "applicationReference": "7798664",
+                "effectiveEndDate": "2024-01-22",
+                "effectiveStartDate": "2024-01-22",
+                "statusCode": "GR",
+                "statusDate": "2024-01-22",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "TH68026C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired with each other, Kenny Ward and others unknown to enter as trespassers dwelling houses and to steal therein. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'TH68026C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to commit a burglary dwelling with intent to steal",
+                "welshTitle": "Conspire to commit a burglary dwelling with intent to steal"
+              }
+            }
+          ],
+          "restrictFromCourtList": false
+        }
+      ],
+      "id": "38bfca02-271f-4abb-b6f5-98c771e90b06",
+      "markers": [
+
+      ],
+      "restrictFromCourtList": false,
+      "shadowListed": false
+    },
+    {
+      "caseIdentifier": {
+        "authorityCode": "NOTTPF",
+        "authorityId": "bfb966de-5265-35b6-9019-79352548aeff",
+        "caseReference": "31CF0656021"
+      },
+      "caseStatus": "ACTIVE",
+      "defendants": [
+        {
+          "address": {
+            "address1": "301 WELLES",
+            "address2": "LONDON ROAD",
+            "address3": "LONDON",
+            "address4": "LONDON",
+            "postcode": "NK8 2NX"
+          },
+          "bailStatus": {
+            "code": "C",
+            "description": "Custody",
+            "id": "12e69486-4d01-3403-a50a-7419ca040635"
+          },
+          "courtProceedingsInitiated": "2024-01-18T13:52:31.540Z",
+          "dateOfBirth": "1999-11-19",
+          "defenceOrganisation": "XYZ LAW LTD",
+          "firstName": "LOCKKY",
+          "id": "ff8bbfc9-29f1-479c-b122-181dc757d0a6",
+          "isYouth": false,
+          "lastName": "SORRY",
+          "masterDefendantId": "3c05a37f-9dd5-4381-b535-4e19f5ec3c60",
+          "offences": [
+            {
+              "endDate": "2021-01-31",
+              "id": "3259c4d9-17b8-45b2-8bf8-1d2e847e0896",
+              "laaApplnReference": {
+                "applicationReference": "7814298",
+                "effectiveEndDate": "2024-02-08",
+                "effectiveStartDate": "2024-02-08",
+                "statusCode": "GR",
+                "statusDate": "2024-02-08",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "PC02020C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired together, with Kenny Ward and with others unknow to transfer criminal property, namely motor vehicles. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'PC02020C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to conceal / disguise / convert / transfer / remove criminal property",
+                "welshTitle": "Conspire to conceal / disguise / convert / transfer / remove criminal property"
+              }
+            },
+            {
+              "endDate": "2021-01-31",
+              "id": "81aca4fc-bd42-486d-9099-8c1e9a4e5520",
+              "laaApplnReference": {
+                "applicationReference": "7814298",
+                "effectiveEndDate": "2024-02-08",
+                "effectiveStartDate": "2024-02-08",
+                "statusCode": "GR",
+                "statusDate": "2024-02-08",
+                "statusDescription": "Granted (One Advocate)",
+                "statusId": "98e86937-9652-32a3-a9fb-dbd01eda86a5"
+              },
+              "offenceCode": "TH68026C",
+              "offenceWording": "Between the 1st day of September 2020 and the 31st day of January 2021 conspired with each other, Kenny Ward and others unknown to enter as trespassers dwelling houses and to steal therein. \n\n'Contrary to section 1(1) of the Criminal Law Act 1977.'\n -- CCCJS CODE: 'TH68026C'",
+              "restrictFromCourtList": false,
+              "seedingHearing": {
+                "jurisdictionType": "CROWN",
+                "seedingHearingId": "f549ab51-05e4-493f-9421-cbc05f6aaaca",
+                "sittingDay": "2024-03-28"
+              },
+              "shadowListed": false,
+              "startDate": "2020-09-01",
+              "statementOfOffence": {
+                "legislation": "Contrary to section 1(1) of the Criminal Law Act 1977.",
+                "title": "Conspire to commit a burglary dwelling with intent to steal",
+                "welshTitle": "Conspire to commit a burglary dwelling with intent to steal"
+              }
+            }
+          ],
+          "restrictFromCourtList": false
+        }
+      ],
+      "id": "38bfca02-271f-4abb-b6f5-98c771e90b06",
+      "markers": [
+
+      ],
+      "restrictFromCourtList": false,
+      "shadowListed": false
+    }
+  ]
+}

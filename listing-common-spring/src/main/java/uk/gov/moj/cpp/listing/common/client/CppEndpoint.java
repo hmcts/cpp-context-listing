@@ -38,6 +38,8 @@ public record CppEndpoint(String contextRoot, String pathTemplate, Set<String> q
             Map.entry("referencedata.query.all-hearing-types", new CppEndpoint(REFERENCEDATA, "/hearing-types", Set.of())),
             Map.entry("referencedata.query.hearing-types", new CppEndpoint(REFERENCEDATA, "/hearing-types", Set.of())),
             Map.entry("referencedata.query.courtroom", new CppEndpoint(REFERENCEDATA, "/courtrooms/{id}", Set.of())),
+            // P2.3.2: the Hearing processor port (public hearing-confirmed / hearing-updated court centre).
+            Map.entry("referencedata.query.organisation-unit", new CppEndpoint(REFERENCEDATA, "/organisation-units/{id}", Set.of())),
             Map.entry("referencedata.query.courtrooms", new CppEndpoint(REFERENCEDATA, "/courtrooms",
                     Set.of("oucodeL1Code", "oucode", "ouCourtRoomCode", "ouCourtRoomName", "courtId", "courtCentreId"))),
             Map.entry("referencedata.query.cp-xhibit-court-mappings", new CppEndpoint(REFERENCEDATA, "/cp-xhibit-court-mappings", Set.of("ouId", "crestCourtId"))),

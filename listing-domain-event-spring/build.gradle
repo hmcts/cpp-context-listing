@@ -1,22 +1,26 @@
-// Listing domain event POJOs for the Spring Boot port (MBD refactor P2.3.0, ADR 014; §8
-// `listing-domain`, "-spring" while the Maven listing-domain-event module still exists).
+// Listing payload DTOs for the Spring Boot port (MBD refactor; §8 `listing-domain`, "-spring" while
+// the Maven listing-domain-event module still exists).
 //
-// The sources under src/generated/java are VENDORED, not hand-written: they are the output of the
-// framework's pojo-generation-plugin as the Maven module listing-domain-event runs it (from the
-// listener's event JSON schemas: uk.gov.justice.listing.{events,event,commands,courts} and the
-// uk.gov.justice.core.courts types they reference). There is no Gradle port of that generator;
-// jsonschema2pojo produces different classes (builders, nullability, class names), and the
-// aggregates and the Java-serialised aggregate snapshots depend on these exact classes
-// (serialVersionUIDs included). Refresh with ./refresh-generated-sources.sh whenever a listener
-// event schema changes (until P2.6, when the schemas move here and the Maven module is deleted).
+// ADR 015: the Spring application has no aggregates and no private events. These generated POJOs
+// are kept ONLY as payload DTOs (e.g. the core.courts types and the court-list public message
+// shape, uk.gov.justice.listing.courts.events.CourtLists, which the JEE processor round-tripped the
+// public payload through). Private-event classes (uk.gov.justice.listing.event(s).*) are still in
+// the vendored set because the core/listing types reference each other, but they are never
+// stored or published: EventOutbox accepts public.* names only.
+//
+// The sources under src/generated/java are VENDORED, not hand-written: the output of the
+// framework's pojo-generation-plugin as the Maven modules run it (listing-domain-event, plus the
+// five classes of uk.gov.justice.listing.courts.events that listing-event-processor generates from
+// public.listing.court-list-published.json), with the framework's @Event annotation stripped so
+// that framework-api-domain is not on the classpath (§12, D32). There is no Gradle port of that
+// generator (jsonschema2pojo produces different classes). Refresh with
+// ./refresh-generated-sources.sh whenever a schema changes (until P2.6).
 //
 // PublishCourtListType and PublishStatus (package uk.gov.justice.listing.event) are not vendored
 // here: listing-domain-spring already has them (P2.1), identical.
-// The Maven module's hand-written classes (CourtToEventConverter and four staging-HMI events)
-// are compiled from its directory, unchanged, next to the vendored generated ones.
 sourceSets {
     main {
-        java.srcDirs = ['src/generated/java', rootProject.file('listing-domain/listing-domain-event/src/main/java')]
+        java.srcDirs = ['src/generated/java']
         resources.srcDirs = []
     }
 }
@@ -26,10 +30,6 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3'
     implementation 'commons-collections:commons-collections:3.2.2'
     api 'com.fasterxml.jackson.core:jackson-annotations'
-    // @Event (uk.gov.justice.domain.annotation) on the event classes, and Aggregate/EventSwitcher
-    // for the aggregates: the framework's pure-Java domain API (7 classes, no CDI/JMS/event store).
-    // Resolved from the local Maven repository / the HMCTS feed (ADR 014).
-    api "uk.gov.justice.framework-api:framework-api-domain:${frameworkApiDomainVersion}"
 
     testImplementation 'org.assertj:assertj-core'
 }

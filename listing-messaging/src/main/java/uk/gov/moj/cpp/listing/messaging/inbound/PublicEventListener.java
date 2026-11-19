@@ -24,8 +24,12 @@ import org.springframework.stereotype.Component;
  *     {@code max-delivery-attempts} (CPP brokers: Artemis default 10, DLQ {@code jms.queue.DLQ});</li>
  *     <li>only {@code TextMessage}s are accepted, as {@code DefaultSubscriptionJmsProcessor} did.</li>
  * </ul>
- * Not ported: the framework's inbound JSON-schema validation interceptor (it only logged failures at
- * DEBUG for this subscription) and the MDC logger interceptor.
+ * Each message is handled with {@code correlationId} and {@code requestId} in the MDC
+ * ({@link InboundTracing}, P2.4), cleared afterwards.
+ *
+ * <p>Not ported: the framework's inbound JSON-schema validation interceptor (it only logged
+ * failures at DEBUG for this subscription); its MDC logger interceptor is replaced by
+ * {@link InboundTracing}.
  */
 @Component
 @ConditionalOnProperty(name = "listing.messaging.enabled", havingValue = "true", matchIfMissing = true)
@@ -51,8 +55,14 @@ public class PublicEventListener {
         if (!(message instanceof TextMessage textMessage)) {
             throw new IllegalArgumentException("Message is not an instance of TextMessage " + message.getJMSMessageID());
         }
-        final String cppName = message.getStringProperty(CPPNAME);
-        LOGGER.debug("Received {} {}", cppName, message.getJMSMessageID());
-        processor.process(textMessage.getText(), cppName);
+        final String body = textMessage.getText();
+        InboundTracing.begin(body, message.getJMSMessageID());
+        try {
+            final String cppName = message.getStringProperty(CPPNAME);
+            LOGGER.debug("Received {} {}", cppName, message.getJMSMessageID());
+            processor.process(body, cppName);
+        } finally {
+            InboundTracing.end();
+        }
     }
 }

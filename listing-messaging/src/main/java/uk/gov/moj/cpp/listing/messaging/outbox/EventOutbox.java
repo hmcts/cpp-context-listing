@@ -25,11 +25,15 @@ import org.springframework.transaction.annotation.Transactional;
  * The transactional outbox writer for Spring services (MBD refactor P2.2; ADR 002, ADR 013).
  * Replaces the Phase 1 JEE {@code EventOutboxWriter}.
  *
- * <p>P2.3 services call {@link #write} (or {@link #append}) at the end of their
+ * <p>Command services call {@link #write} (or {@link #append}) at the end of their
  * {@code @Transactional} method: the rows commit atomically with the service's viewstore changes
- * ({@code MANDATORY}: there must be a caller transaction), and {@link OutboxRelay} delivers them
+ * ({@code MANDATORY}: there must be a caller transaction), and {@link OutboxRelay} publishes them
  * after commit. The insert is a plain {@code INSERT}; nothing is caught and retried inside the
  * caller's transaction (§11 pitfall 2).
+ *
+ * <p>ADR 015: the outbox carries <em>only</em> public messages ({@code public.*}), exactly the ones
+ * the JEE event processor emitted. There are no private events in the Spring application; any
+ * other name is rejected here, before it can be stored.
  *
  * <p>Metadata follows the framework convention for events raised while handling a command or an
  * event (as Phase 1): the cause's metadata (user, session, client correlation, …) with a new
@@ -39,6 +43,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Transactional(propagation = MANDATORY)
 public class EventOutbox {
+
+    static final String PUBLIC_PREFIX = "public.";
 
     private final EventOutboxJdbcRepository repository;
     private final EnvelopeCodec codec;
@@ -65,23 +71,11 @@ public class EventOutbox {
     /** Appends an envelope that is already complete (id, name, createdAt set). */
     public void append(final Envelope envelope) {
         final Metadata metadata = envelope.metadata();
+        requirePublic(metadata.name());
         repository.append(metadata.id(), metadata.name(), metadata.streamId().orElse(null), codec.toJson(envelope),
                 metadata.createdAt().orElseGet(this::now));
     }
 
-    /**
-     * Appends a complete envelope unless an event with the same id is already in the outbox
-     * ({@code ON CONFLICT DO NOTHING}). For events whose id is derived from their cause (P2.3,
-     * ADR 014: public events written by processor handlers), so a redelivered cause cannot append
-     * them twice.
-     *
-     * @return {@code true} if the envelope was appended
-     */
-    public boolean appendIfAbsent(final Envelope envelope) {
-        final Metadata metadata = envelope.metadata();
-        return repository.appendIfAbsent(metadata.id(), metadata.name(), metadata.streamId().orElse(null), codec.toJson(envelope),
-                metadata.createdAt().orElseGet(this::now));
-    }
 
     /** The envelope for {@code event}, caused by the command or event with metadata {@code causedBy}. */
     @Transactional(propagation = SUPPORTS)
@@ -98,6 +92,13 @@ public class EventOutbox {
             metadata.withStreamId(event.streamId());
         }
         return new Envelope(metadata.build(), payloadOf(event.payload()));
+    }
+
+    /** ADR 015: only public messages ({@code public.*}) are ever stored in the outbox. */
+    static void requirePublic(final String name) {
+        if (!name.startsWith(PUBLIC_PREFIX)) {
+            throw new IllegalArgumentException("Only public messages (public.*) go to the outbox (ADR 015), not " + name);
+        }
     }
 
     private JsonObject payloadOf(final Object payload) {
