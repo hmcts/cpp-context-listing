@@ -30,6 +30,7 @@ public class EventOutboxJdbcRepository {
 
     private static final String INSERT =
             "INSERT INTO event_outbox (event_id, event_name, stream_id, envelope, created_at) VALUES (?, ?, ?, ?, ?)";
+    private static final String INSERT_IF_ABSENT = INSERT + " ON CONFLICT (event_id) DO NOTHING";
     private static final String TRY_LOCK = "SELECT pg_try_advisory_xact_lock(?)";
     private static final String SELECT_BATCH = "SELECT id, event_name, envelope, attempts FROM event_outbox ORDER BY id LIMIT ?";
     private static final String INCREMENT_ATTEMPTS = "UPDATE event_outbox SET attempts = attempts + 1 WHERE id = ?";
@@ -43,8 +44,26 @@ public class EventOutboxJdbcRepository {
 
     public void append(final UUID eventId, final String eventName, final UUID streamId,
                        final String envelopeJson, final ZonedDateTime createdAt) {
+        insert(INSERT, eventId, eventName, streamId, envelopeJson, createdAt);
+    }
+
+    /**
+     * As {@link #append}, but a row with the same {@code event_id} already in the outbox is kept
+     * and this call does nothing ({@code INSERT ... ON CONFLICT DO NOTHING}, §11 pitfall 2). For
+     * events whose id is derived from the event that caused them (P2.3, ADR 014): a redelivered
+     * cause then cannot append its consequences twice while they are still in the outbox.
+     *
+     * @return {@code true} if the row was inserted
+     */
+    public boolean appendIfAbsent(final UUID eventId, final String eventName, final UUID streamId,
+                                  final String envelopeJson, final ZonedDateTime createdAt) {
+        return insert(INSERT_IF_ABSENT, eventId, eventName, streamId, envelopeJson, createdAt) == 1;
+    }
+
+    private int insert(final String sql, final UUID eventId, final String eventName, final UUID streamId,
+                       final String envelopeJson, final ZonedDateTime createdAt) {
         try {
-            jdbcTemplate.update(INSERT, ps -> {
+            return jdbcTemplate.update(sql, ps -> {
                 ps.setObject(1, eventId);
                 ps.setString(2, eventName);
                 ps.setObject(3, streamId);

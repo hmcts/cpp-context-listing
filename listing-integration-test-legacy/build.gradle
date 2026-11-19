@@ -1,0 +1,201 @@
+// The legacy *IT suite (Maven module listing-integration-test) run against the Spring Boot app on the
+// docker-compose IT stack (MBD refactor P2.3.0; §9, D1, D10; ADR 014). Tests only.
+//
+// Sources: NOT copied. The scenarios are compiled from the Maven module's src/test/java and
+// src/test/resources (one source of truth while the JEE suite is still the parity baseline, D13).
+// The harness classes this module overrides (src/test/java here, same package and class name) are
+// left out of the Maven sources by a Sync into build/legacy-it/, so each class exists once. The
+// overrides are the §9 "harness only" changes: base URI and ports, WireMock in its own container,
+// the Artemis connection, the viewstore-only database (no event store). Listed in ADR 014.
+//
+// Generated inputs (src/generated/java, legacy-it-dependencies.txt): refresh-legacy-inputs.sh.
+//
+// Run: ./runSpringIntegrationTests.sh legacy [-- --offline] or
+//      ./gradlew :listing-integration-test-legacy:legacyIntegrationTest [-PitClasses=ListingNoteIT,HearingIT] [--tests ...]
+// The stack uses the same fixed container names and ports as listing-integration-test-spring, so the
+// two suites do not run at the same time.
+plugins {
+    id 'java-library'
+    id 'com.avast.gradle.docker-compose'
+}
+
+def mavenItDir = rootProject.file('listing-integration-test/src/test')
+def legacySources = layout.buildDirectory.dir('legacy-it/java')
+// Under build/legacy-it/src/test/resources: the suite's FileUtil reads 'src/test/resources/...' relative
+// to the working directory (the Maven module dir under failsafe); the test task runs in build/legacy-it.
+def legacyResources = layout.buildDirectory.dir('legacy-it/src/test/resources')
+
+// Every class under src/test/java here that also exists in the Maven module replaces it.
+def overriddenSources = providers.provider {
+    fileTree('src/test/java').matching { include '**/*.java' }.files
+            .collect { file('src/test/java').toPath().relativize(it.toPath()).toString().replace(File.separatorChar, '/' as char) }
+            .findAll { new File(mavenItDir, "java/${it}").exists() }
+}
+
+def syncLegacySources = tasks.register('syncLegacySources', Sync) {
+    description = 'Copies the Maven legacy IT sources, minus the classes this module overrides'
+    from(new File(mavenItDir, 'java'))
+    exclude { details -> overriddenSources.get().contains(details.relativePath.pathString) }
+    into legacySources
+}
+
+def syncLegacyResources = tasks.register('syncLegacyResources', Sync) {
+    description = 'Copies the Maven legacy IT resources, with the base URI of the Spring stack gateway'
+    from(new File(mavenItDir, 'resources'))
+    // §9 base URI: endpoint.properties' base-uri (was http://localhost:8080, the cpp-developers-docker gateway).
+    filesMatching('endpoint.properties') {
+        filter { String line -> line.startsWith('base-uri=') ? "base-uri=${project.findProperty('legacy.baseUri') ?: 'http://localhost:8192'}" : line }
+    }
+    into legacyResources
+}
+
+sourceSets {
+    main {
+        java.srcDirs = []
+        resources.srcDirs = []
+    }
+    test {
+        java.srcDirs = [legacySources, 'src/test/java', 'src/generated/java']
+        // listing-json's schemas were on the Maven test classpath (listing-json jar).
+        resources.srcDirs = [legacyResources, 'src/test/resources', rootProject.file('listing-json/src/main/resources')]
+    }
+}
+
+tasks.named('compileTestJava') {
+    dependsOn syncLegacySources
+    options.compilerArgs.remove('-Xlint:unchecked')
+    options.compilerArgs << '-nowarn'
+    options.encoding = 'UTF-8'
+}
+tasks.named('processTestResources') {
+    dependsOn syncLegacyResources
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+jar { enabled = false }
+
+// The framework/HMCTS test jars (uk.gov.*) are resolved as plain artifacts: their POMs inherit from
+// service-parent-pom / platform-libraries-bom, which Gradle cannot parse offline, and the list is
+// already the flat, resolved Maven classpath. Everything else resolves normally.
+repositories.clear()
+repositories {
+    maven {
+        name = 'localMavenArtifactsOnly'
+        url = new File(System.getProperty('user.home'), '.m2/repository').toURI()
+        metadataSources { artifact() }
+        content { includeGroupByRegex 'uk\\.gov\\..*' }
+    }
+    maven {
+        name = 'hmctsArtifactsOnly'
+        url = rootProject.ext.azureADOArtifactRepository
+        metadataSources { artifact() }
+        content { includeGroupByRegex 'uk\\.gov\\..*' }
+        if (rootProject.ext.azureADOArtifactActor && rootProject.ext.azureADOArtifactToken) {
+            credentials {
+                username = rootProject.ext.azureADOArtifactActor
+                password = rootProject.ext.azureADOArtifactToken
+            }
+        }
+    }
+    mavenLocal { content { excludeGroupByRegex 'uk\\.gov\\..*' } }
+    mavenCentral()
+}
+
+dependencies {
+    // The Maven module's test classpath, exact versions, non-transitive (refresh-legacy-inputs.sh).
+    file('legacy-it-dependencies.txt').readLines()
+            .findAll { it && !it.startsWith('#') }
+            .each { coordinates -> testImplementation(coordinates) { transitive = false } }
+
+    // The listing reactor modules the Maven suite depended on, replaced by their Gradle ports (classes only).
+    testImplementation(project(':listing-domain-spring')) { transitive = false }
+    testImplementation(project(':listing-domain-event-spring')) { transitive = false }
+    testImplementation(project(':listing-domain-aggregate-spring')) { transitive = false }
+    testImplementation(project(':listing-viewstore-persistence-spring')) { transitive = false }
+    testCompileOnly 'jakarta.persistence:jakarta.persistence-api'
+    // JUnit: the Gradle build's JUnit 6 (root build) plus the launcher API (the suite's listeners)
+    // and JUnit 4's Assert (used by a few steps; no JUnit 4 tests).
+    testImplementation 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params'
+    testImplementation('junit:junit:4.13.2') { transitive = false }
+}
+
+/* ---------------- Docker Compose: the Spring IT stack + the legacy overlay ---------------- */
+tasks.named('composeBuild') { dependsOn project(':listing-api').tasks.named('bootJar') }
+
+dockerCompose {
+    useComposeFiles = ['../listing-integration-test-spring/docker/docker-compose.integration.yml',
+                       'docker/docker-compose.legacy.yml']
+    startedServices = ['app', 'db', 'wiremock', 'artemis', 'gateway']
+
+    buildBeforeUp = true
+    waitForTcpPorts = false
+    upAdditionalArgs = ['--wait', '--wait-timeout', '180']
+
+    captureContainersOutputToFiles = project.layout.buildDirectory.dir('legacy-it/container-logs').get().asFile
+    removeOrphans = true
+    stopContainers = true
+    removeContainers = true
+
+    projectName = "${rootProject.name}-legacy-it".replaceAll('[^A-Za-z0-9]', '')
+
+    useDockerComposeV2 = true
+    dockerExecutable = 'docker'
+}
+
+// The legacy suite is NOT part of `./gradlew build` (it is red until the remaining command slices are
+// ported, P2.3.x): it has its own task, run explicitly. `test` only compiles (build stays green).
+tasks.named('test') { enabled = false }
+
+def legacyIntegrationTest = tasks.register('legacyIntegrationTest', Test) {
+    description = 'Runs the legacy *IT suite (Maven listing-integration-test scenarios) against the Spring stack'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    // The suite runs against a freshly started stack: never up to date.
+    outputs.upToDateWhen { false }
+    dependsOn syncLegacyResources
+    workingDir = layout.buildDirectory.dir('legacy-it').get().asFile
+
+    dependsOn tasks.named('composeUp')
+    finalizedBy tasks.named('composeDown')
+
+    // As the Maven failsafe run: *IT classes only (not the *SpiScenario classes), no reruns.
+    include '**/*IT.class'
+    exclude '**/*SpiScenario*'
+    failFast = false
+    ignoreFailures = project.hasProperty('legacyIgnoreFailures')
+
+    // -PitClasses=ListingNoteIT,HearingIT runs a subset by simple class name (or use --tests).
+    def itClasses = project.findProperty('itClasses')
+    if (itClasses) {
+        filter {
+            itClasses.toString().split(',').collect { it.trim() }.findAll { it }.each { includeTestsMatching("*.${it}") }
+        }
+    }
+
+    // As failsafe: the IT JVM reads UTC (the server's zone), en_GB; optional frozen clock (ItClock).
+    systemProperty 'user.timezone', 'UTC'
+    systemProperty 'user.language', 'en'
+    systemProperty 'user.country', 'GB'
+    systemProperty 'it.clock', project.findProperty('it.clock') ?: ''
+
+    // The Spring stack (LegacyStack): gateway, WireMock, Artemis (+ Jolokia), viewstore DB.
+    systemProperty 'legacy.baseUri', project.findProperty('legacy.baseUri') ?: 'http://localhost:8192'
+    systemProperty 'legacy.wiremock.host', 'localhost'
+    systemProperty 'legacy.wiremock.port', '8191'
+    systemProperty 'legacy.artemis.url', 'tcp://localhost:61626?user=listing&password=listing'
+    systemProperty 'legacy.jolokia.url', 'http://localhost:8171/console/jolokia/'
+    systemProperty 'legacy.db.url', 'jdbc:postgresql://localhost:55436/listing'
+    // ServerLogTestMarkerExtension writes its markers here instead of WildFly's server.log (the app's
+    // log is captured per container under build/legacy-it/container-logs).
+    systemProperty 'server.log.path', layout.buildDirectory.file('legacy-it/test-markers.log').get().asFile.path
+
+    jvmArgs = ['-Xshare:off']
+    reports.junitXml.outputPerTestCase = false
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat = 'short'
+        showStandardStreams = false
+    }
+}

@@ -59,6 +59,8 @@ dependencies {
     runtimeOnly project(':listing-viewstore-liquibase')
     // P2.2: domain messaging (ADR 013).
     implementation project(':listing-messaging')
+    // P2.3: command services, aggregates, event recorder, processor handlers (ADR 014).
+    implementation project(':listing-command-spring')
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.postgresql:postgresql'
     implementation 'org.liquibase:liquibase-core'

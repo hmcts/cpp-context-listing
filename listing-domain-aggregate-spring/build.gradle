@@ -1,0 +1,32 @@
+// The six listing aggregates for the Spring Boot port (MBD refactor P2.3.0, ADR 014; ADR 011
+// carried into Phase 2). The classes are compiled UNCHANGED from the Maven module's sources
+// (listing-domain/listing-domain-aggregate/src/main/java), not copied: one source of truth for the
+// aggregate rules while the JEE app is the parity baseline. Build output stays in this module's
+// build/ directory. At P2.6 (Maven modules deleted) the sources move here.
+//
+// The aggregates are framework-free apart from framework-api-domain (Aggregate, EventSwitcher),
+// which comes through listing-domain-event-spring. Their state is stored Java-serialised in
+// aggregate_snapshot (AggregateStore, listing-command-spring): the classes, packages and
+// serialVersionUIDs must stay identical to the Phase 1 JEE build, which compiling the same
+// sources guarantees (listing-command-spring's AggregateSnapshotCompatibilityTest reads snapshots the JEE app wrote).
+sourceSets {
+    main {
+        java.srcDirs = [rootProject.file('listing-domain/listing-domain-aggregate/src/main/java')]
+        resources.srcDirs = []
+    }
+}
+
+dependencies {
+    api project(':listing-domain-event-spring')
+    api project(':listing-domain-spring')
+
+    implementation 'org.apache.commons:commons-lang3'
+    implementation 'commons-collections:commons-collections:3.2.2'
+    implementation 'com.google.guava:guava:33.6.0-jre'
+    implementation 'org.slf4j:slf4j-api'
+
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-parameters'
+}

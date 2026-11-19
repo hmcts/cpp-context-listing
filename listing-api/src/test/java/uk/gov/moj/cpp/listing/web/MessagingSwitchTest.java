@@ -25,7 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * is UP although no broker is reachable. The outbox writer is still there. Same properties as
  * {@link WebPlumbingTest}, so the Spring test context is shared.
  */
-@SpringBootTest(properties = {"listing.p20-skeleton.enabled=true", "listing.messaging.enabled=false"})
+@SpringBootTest(properties = {"listing.messaging.enabled=false"})
 @AutoConfigureMockMvc
 class MessagingSwitchTest extends PostgresContainerSupport {
 

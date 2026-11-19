@@ -46,7 +46,7 @@ public abstract class AbstractIntegrationTest {
     /** A hearing of the P2.1 viewstore fixture (fixtures/viewstore.sql), served by the real query. */
     public static final String HEARING_ID = "2f6f2b0a-0b0c-4f43-9d1c-5f4e7f6d8a01";
     public static final String HEARING_PATH = QUERY_API + "/hearings/" + HEARING_ID;
-    /** The P2.0 skeleton command endpoint (integration profile only, until P2.3). */
+    /** The create-listing-note command (P2.3: the real endpoint; it writes a note and publishes public.listing.created-listing-note). */
     public static final String LISTING_NOTE_PATH = COMMAND_API + "/listing-note";
     public static final String VALID_LISTING_NOTE =
             "{\"hearingDate\":\"2020-01-09\",\"courtRoomId\":\"a299cf49-d14a-496f-895f-59c46859b4a9\",\"noteDescription\":\"note\"}";

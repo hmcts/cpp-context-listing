@@ -16,9 +16,6 @@ cp:
     enabled: false
 
 listing:
-  p20-skeleton:
-    # P2.0 only: canned endpoints for the foundation ITs. Remove with P20SkeletonApi (P2.1/P2.3).
-    enabled: true
   p22-messaging-probe:
     # P2.2 only: test inbound handler for the messaging ITs. Remove with P22MessagingProbeHandler (P2.4).
     enabled: true

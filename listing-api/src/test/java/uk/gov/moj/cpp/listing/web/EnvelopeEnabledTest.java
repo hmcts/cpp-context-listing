@@ -21,7 +21,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** {@code listing.envelope.enabled=true} restores courtscheduler's {@code _metadata} envelope. */
-@SpringBootTest(properties = {"listing.p20-skeleton.enabled=true", "listing.envelope.enabled=true",
+@SpringBootTest(properties = {"listing.envelope.enabled=true",
         "listing.messaging.enabled=false"})
 @AutoConfigureMockMvc
 class EnvelopeEnabledTest extends PostgresContainerSupport {

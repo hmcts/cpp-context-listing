@@ -8,11 +8,15 @@
 rootProject.name = 'cpp-context-listing'
 
 include 'listing-domain-spring'
+include 'listing-domain-event-spring'
+include 'listing-domain-aggregate-spring'
 include 'listing-viewstore-persistence-spring'
 include 'listing-common-spring'
 include 'listing-messaging'
+include 'listing-command-spring'
 include 'listing-api'
 include 'listing-integration-test-spring'
+include 'listing-integration-test-legacy'
 
 // The existing Liquibase changelogs are reused unchanged (§6): this resources-only Gradle project
 // points at the Maven module's directory. Its build output is redirected under the root build/

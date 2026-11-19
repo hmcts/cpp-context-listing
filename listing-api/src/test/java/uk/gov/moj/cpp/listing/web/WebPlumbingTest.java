@@ -27,11 +27,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 /**
- * The web plumbing in one Spring context, with the P2.0 skeleton command endpoint, the query
+ * The web plumbing in one Spring context, with the real listing-note command endpoint (P2.3), the query
  * service mocked (P2.1) and authz off
  * (authz is proven end-to-end in the integration tests against WireMock).
  */
-@SpringBootTest(properties = {"listing.p20-skeleton.enabled=true", "listing.messaging.enabled=false"})
+@SpringBootTest(properties = {"listing.messaging.enabled=false"})
 @AutoConfigureMockMvc
 class WebPlumbingTest extends PostgresContainerSupport {
 
@@ -107,6 +107,12 @@ class WebPlumbingTest extends PostgresContainerSupport {
         mvc.perform(inContext(post(NOTE)).contentType(CREATE_NOTE).content(VALID_NOTE))
                 .andExpect(status().isAccepted())
                 .andExpect(content().string(""));
+    }
+
+    @Test
+    void aTrailingSlashIsIgnoredAsOnWildFly() throws Exception {
+        mvc.perform(inContext(post(NOTE + "/")).contentType(CREATE_NOTE).content(VALID_NOTE))
+                .andExpect(status().isAccepted());
     }
 
     @Test

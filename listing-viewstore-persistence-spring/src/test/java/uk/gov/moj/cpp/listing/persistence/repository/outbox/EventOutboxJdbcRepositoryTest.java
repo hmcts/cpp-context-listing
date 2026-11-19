@@ -37,4 +37,14 @@ class EventOutboxJdbcRepositoryTest extends AbstractRepositoryTest {
         repository.delete(List.of(batch.get(0).id()));
         assertThat(repository.nextBatch(10)).extracting(OutboxEntry::id).containsExactly(batch.get(1).id());
     }
+
+    @Test
+    void appendIfAbsentKeepsTheFirstRowForAnEventId() {
+        final java.util.UUID eventId = randomUUID();
+
+        assertThat(repository.appendIfAbsent(eventId, "public.listing.one", null, "{\"n\":1}", ZonedDateTime.now())).isTrue();
+        assertThat(repository.appendIfAbsent(eventId, "public.listing.one", null, "{\"n\":2}", ZonedDateTime.now())).isFalse();
+
+        assertThat(repository.nextBatch(10)).extracting(OutboxEntry::envelopeJson).containsExactly("{\"n\":1}");
+    }
 }

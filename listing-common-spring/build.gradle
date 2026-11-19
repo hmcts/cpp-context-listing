@@ -5,6 +5,8 @@
 // outbound REST clients (Spring RestClient on the JDK HttpClient, §6).
 dependencies {
     api project(':listing-domain-spring')
+    // P2.3: the generated listing event POJOs the command-side domain services raise (ADR 014).
+    api project(':listing-domain-event-spring')
     api project(':listing-viewstore-persistence-spring')
     api 'org.springframework:spring-web'
     api 'org.springframework:spring-context'

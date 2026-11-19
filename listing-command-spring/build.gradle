@@ -1,0 +1,33 @@
+// Command side of the Spring Boot port (MBD refactor P2.3, ADR 014; ADR 011 carried into Phase 2).
+// "-spring" while the Maven listing-command module still exists.
+//
+// - command.aggregate: AggregateStore — the aggregates' Java-serialised state in aggregate_snapshot
+//   (same table and format as Phase 1), loaded with SELECT ... FOR UPDATE in the command transaction.
+// - command.recorder: EventRecorder — for each raised event, in the command transaction, runs the
+//   ported listener projections (EventProjection) and writes the event to the outbox when a ported
+//   processor handler (listing-messaging PrivateEventHandler) subscribes to it.
+// - command.<slice>: the command services the controllers call (one @Transactional method per
+//   command: parse the payload, enrich, update the aggregate / domain service, record events).
+// - event.processor: the ported event-processor handlers (PrivateEventHandlers, run by the outbox
+//   relay after commit) and ProcessorSender, which replaces the framework Sender.
+//
+// Framework-free (§5): no JsonEnvelope, no uk.gov.justice.services.*; the only framework jar is
+// framework-api-domain (Aggregate, EventSwitcher, @Event), through the aggregates.
+dependencies {
+    api project(':listing-common-spring')
+    api project(':listing-messaging')
+    api project(':listing-domain-aggregate-spring')
+    api 'org.springframework:spring-context'
+    api 'org.springframework:spring-tx'
+    api 'jakarta.json:jakarta.json-api:2.1.3'
+
+    implementation 'org.slf4j:slf4j-api'
+    runtimeOnly 'org.eclipse.parsson:parsson:1.1.9'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.eclipse.parsson:parsson:1.1.9'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-parameters'
+}

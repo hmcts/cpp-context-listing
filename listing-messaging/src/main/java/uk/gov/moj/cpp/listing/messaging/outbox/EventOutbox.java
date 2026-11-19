@@ -69,6 +69,20 @@ public class EventOutbox {
                 metadata.createdAt().orElseGet(this::now));
     }
 
+    /**
+     * Appends a complete envelope unless an event with the same id is already in the outbox
+     * ({@code ON CONFLICT DO NOTHING}). For events whose id is derived from their cause (P2.3,
+     * ADR 014: public events written by processor handlers), so a redelivered cause cannot append
+     * them twice.
+     *
+     * @return {@code true} if the envelope was appended
+     */
+    public boolean appendIfAbsent(final Envelope envelope) {
+        final Metadata metadata = envelope.metadata();
+        return repository.appendIfAbsent(metadata.id(), metadata.name(), metadata.streamId().orElse(null), codec.toJson(envelope),
+                metadata.createdAt().orElseGet(this::now));
+    }
+
     /** The envelope for {@code event}, caused by the command or event with metadata {@code causedBy}. */
     @Transactional(propagation = SUPPORTS)
     public Envelope envelopeFor(final Metadata causedBy, final DomainEvent event) {

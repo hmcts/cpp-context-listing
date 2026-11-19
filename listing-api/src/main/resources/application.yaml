@@ -47,9 +47,6 @@ listing:
     # Listing's WildFly query API returned the payload only (no _metadata), see
     # EnvelopeResponseBodyAdvice. Keep false unless a client is proven to need the envelope.
     enabled: ${LISTING_ENVELOPE_ENABLED:false}
-  p20-skeleton:
-    # Test-only canned command endpoint used by the P2.0 integration tests (P20SkeletonApi). Never true outside ITs.
-    enabled: false
   p22-messaging-probe:
     # Test-only inbound handler used by the P2.2 messaging ITs (P22MessagingProbeHandler). Never true outside ITs.
     enabled: false

@@ -498,7 +498,7 @@ paths:
       parameters:
         - { in: query, name: panel, required: true, schema: { type: string } }
         - { in: query, name: sessionStartDate, required: true, schema: { type: string } }
-        - { in: query, name: sessionEndDate, required: true, schema: { type: string } }
+        - { in: query, name: sessionEndDate, required: false, schema: { type: string } }
         - { in: query, name: hearingStartTime, required: false, schema: { type: string } }
         - { in: query, name: oucodeL2Code, required: false, schema: { type: string } }
         - { in: query, name: ouCode, required: false, schema: { type: string } }

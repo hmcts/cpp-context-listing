@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import uk.gov.moj.cpp.listing.common.domain.DomainEvent;
 import uk.gov.moj.cpp.listing.messaging.envelope.Envelope;
@@ -85,6 +86,16 @@ class EventOutboxTest {
                 eq(ZonedDateTime.ofInstant(NOW, ZoneOffset.UTC)));
         verify(repository).append(eq(written.get(1).metadata().id()), eq("listing.events.two"), isNull(), anyString(), any());
         assertThat(codec.parse(json.getValue())).isEqualTo(written.get(0));
+    }
+
+    @Test
+    void appendIfAbsentPassesTheEnvelopeAndReportsWhetherItWasInserted() {
+        final Envelope envelope = outbox.envelopeFor(command, new DomainEvent("public.listing.x", STREAM, Json.createObjectBuilder().build()));
+        when(repository.appendIfAbsent(eq(envelope.metadata().id()), eq("public.listing.x"), eq(STREAM), anyString(), any()))
+                .thenReturn(true, false);
+
+        assertThat(outbox.appendIfAbsent(envelope)).isTrue();
+        assertThat(outbox.appendIfAbsent(envelope)).isFalse();
     }
 
     public record Payload(String value, ZonedDateTime at, String absent) {

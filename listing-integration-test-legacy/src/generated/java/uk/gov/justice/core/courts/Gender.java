@@ -1,0 +1,34 @@
+package uk.gov.justice.core.courts;
+
+import java.lang.Override;
+import java.lang.String;
+import java.util.Optional;
+
+public enum Gender {
+  NOT_KNOWN("NOT_KNOWN"),
+
+  NOT_SPECIFIED("NOT_SPECIFIED"),
+
+  MALE("MALE"),
+
+  FEMALE("FEMALE");
+
+  private final String value;
+
+  Gender(String value) {
+    this.value = value;
+  }
+
+  @Override
+  public String toString() {
+    return value;
+  }
+
+  public static Optional<Gender> valueFor(final String value) {
+    if(NOT_KNOWN.value.equals(value)) { return Optional.of(NOT_KNOWN); };
+    if(NOT_SPECIFIED.value.equals(value)) { return Optional.of(NOT_SPECIFIED); };
+    if(MALE.value.equals(value)) { return Optional.of(MALE); };
+    if(FEMALE.value.equals(value)) { return Optional.of(FEMALE); };
+    return Optional.empty();
+  }
+}

@@ -3,7 +3,13 @@
 # Runs the Spring Boot integration tests (Gradle module listing-integration-test-spring) against
 # the docker-compose IT stack (db, WireMock, Artemis, app): composeUp → tests → composeDown.
 #
-# Usage: ./runSpringIntegrationTests.sh [nomidnightguard] [-- <extra gradle args>]
+# Usage: ./runSpringIntegrationTests.sh [legacy] [nomidnightguard] [-- <extra gradle args>]
+#   legacy          - run the legacy *IT suite (the Maven listing-integration-test scenarios, compiled
+#                     by the Gradle module listing-integration-test-legacy) against the Spring stack
+#                     instead of the new-style Spring ITs (MBD P2.3.0, §9, ADR 014). Subsets:
+#                     -- -PitClasses=ListingNoteIT,HearingIT  or  -- --tests '*ListingNoteIT'.
+#                     A red legacy run is expected until every command slice is ported (P2.3.x);
+#                     add -- -PlegacyIgnoreFailures to get the report without a failed build.
 #   nomidnightguard - do not wait when 00:00 UTC is near (see waitIfUtcMidnightIsNear below).
 #   Anything after `--` is passed to Gradle, e.g. -- --offline --tests '*SmokeIntegrationTest'
 #
@@ -15,11 +21,15 @@
 set -e
 
 MIDNIGHT_GUARD=true
+TASK=:listing-integration-test-spring:test
 GRADLE_ARGS=()
 while [ $# -gt 0 ]; do
   case "$1" in
     nomidnightguard)
       MIDNIGHT_GUARD=false
+      ;;
+    legacy)
+      TASK=:listing-integration-test-legacy:legacyIntegrationTest
       ;;
     --)
       shift
@@ -27,7 +37,7 @@ while [ $# -gt 0 ]; do
       break
       ;;
     *)
-      echo "Unknown argument '$1' (supported: nomidnightguard, then -- <gradle args>)."
+      echo "Unknown argument '$1' (supported: legacy, nomidnightguard, then -- <gradle args>)."
       exit 2
       ;;
   esac
@@ -48,4 +58,4 @@ waitIfUtcMidnightIsNear() {
 
 cd "$(dirname "$0")"
 waitIfUtcMidnightIsNear
-./gradlew :listing-integration-test-spring:test "${GRADLE_ARGS[@]}"
+./gradlew "$TASK" "${GRADLE_ARGS[@]}"

@@ -1,0 +1,23 @@
+# Overlay for the legacy *IT suite on the Spring stack (MBD refactor P2.3.0, §9, ADR 014). Used together
+# with listing-integration-test-spring/docker/docker-compose.integration.yml (same db, WireMock, Artemis
+# and app). Adds:
+#  - gateway: haproxy with cpp-developers-docker's path rewrites (/listing-query-api/... -> /listing-service/...),
+#    on host port 8192 (the legacy harness's base URI);
+#  - the Artemis console (Jolokia) on host port 8171, which the harness uses to quiesce and purge queues.
+services:
+  artemis:
+    ports:
+      - "61626:61616"
+      - "8171:8161"
+
+  gateway:
+    image: haproxy:2.0-alpine
+    container_name: CP_LISTING_gateway_legacy_it
+    volumes:
+      # Relative to the FIRST compose file (listing-integration-test-spring/docker): compose resolves overlay paths there.
+      - ../../listing-integration-test-legacy/docker/gateway/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "8192:8080"
+    depends_on:
+      app:
+        condition: service_healthy
