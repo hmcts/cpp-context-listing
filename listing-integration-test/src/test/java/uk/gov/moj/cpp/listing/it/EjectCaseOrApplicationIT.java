@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataStandaloneApplication;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyDeleteAvailableHearingSlotsStubCommandInvoked;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyDeleteAvailableHearingSlotsStubCommandIsNeverInvoked;
 
 import uk.gov.moj.cpp.listing.steps.EjectCaseApplicationSteps;
@@ -9,7 +10,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import org.junit.jupiter.api.Test;
 
-public class EjectCaseOrApplicationIT extends AbstractIT {
+class EjectCaseOrApplicationIT extends AbstractIT {
 
     @Test
     void shouldEjectCaseFollowingPublicCaseEjectedEventFromProgression() {
@@ -39,7 +40,7 @@ public class EjectCaseOrApplicationIT extends AbstractIT {
         ejectCaseApplicationSteps.buildEjectApplicationData();
         ejectCaseApplicationSteps.verifyNoHearingsReturned(false);
 
-        verifyDeleteAvailableHearingSlotsStubCommandIsNeverInvoked(hearingsData.getHearingData().get(0).getId().toString());
+        verifyDeleteAvailableHearingSlotsStubCommandInvoked(hearingsData.getHearingData().get(0).getId().toString());
     }
 
 
@@ -55,6 +56,6 @@ public class EjectCaseOrApplicationIT extends AbstractIT {
         ejectCaseApplicationSteps.buildEjectApplicationDataWithRandomHearingID();
         ejectCaseApplicationSteps.verifyNoHearingsReturned(false);
 
-        verifyDeleteAvailableHearingSlotsStubCommandIsNeverInvoked(hearingsData.getHearingData().get(0).getId().toString());
+        verifyDeleteAvailableHearingSlotsStubCommandInvoked(hearingsData.getHearingData().get(0).getId().toString());
     }
 }

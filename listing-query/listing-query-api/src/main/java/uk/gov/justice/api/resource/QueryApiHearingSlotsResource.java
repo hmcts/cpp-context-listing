@@ -1,5 +1,23 @@
 package uk.gov.justice.api.resource;
 
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.AVAILABLE_DURATION_MINS;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.BUSINESS_TYPE;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.COURT_ROOM_ID;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.COURT_ROOM_NUMBER;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.COURT_SESSION;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.HEARING_START_TIME;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.IS_SLOT_BASED;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.JURISDICTION;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.OUCODE;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.OU_L2_CODE;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.PAGE_NUMBER;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.PAGE_SIZE;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.PANEL;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.SESSION_END_DATE;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.SESSION_START_DATE;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.SHOW_OVERBOOKED_SLOTS;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.STATUS;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -41,5 +59,7 @@ public interface QueryApiHearingSlotsResource {
                              @QueryParam(SHOW_OVERBOOKED_SLOTS) Boolean showOverbookedSlots,
                              @QueryParam(PAGE_SIZE) String pageSize,
                              @QueryParam(PAGE_NUMBER) String pageNumber,
-                             @QueryParam(AVAILABLE_DURATION_MINS) Integer availableDurationMins);
+                             @QueryParam(AVAILABLE_DURATION_MINS) Integer availableDurationMins,
+                             @QueryParam(STATUS) String status,
+                             @QueryParam(JURISDICTION) String jurisdiction);
 }

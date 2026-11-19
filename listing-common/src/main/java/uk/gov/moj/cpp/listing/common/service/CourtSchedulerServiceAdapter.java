@@ -5,6 +5,14 @@ import static java.util.Optional.empty;
 
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.moj.cpp.listing.common.courtroomchange.ChangeCourtRoomForMultidayException;
+import uk.gov.moj.cpp.listing.common.courtroomchange.ChangedDaySession;
+import uk.gov.moj.cpp.listing.common.courtroomchange.RequestedChangeDay;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
@@ -12,6 +20,8 @@ import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,6 +35,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
@@ -48,17 +59,45 @@ public class CourtSchedulerServiceAdapter {
     public static final String HEARING_SLOTS = "hearingSlots";
     public static final String COURT_SESSION = "courtSession";
     public static final String BUSINESS_TYPE = "businessType";
+    public static final String HEARING_IDS = "hearingIds";
+    public static final String JURISDICTION = "jurisdiction";
+    public static final String STATUS = "status";
     public static final String PANEL_ADULT_YOUTH = "ADULT,YOUTH";
     private static final String PANEL = "panel";
     public static final String HEARING_ID = "hearingId";
-    public static final String COURT_CENTRE_ID = "courtCentreId";
-    public static final String JURISDICTION = "jurisdiction";
-    public static final String START_TIME = "startTime";
-    public static final String END_TIME = "endTime";
-    public static final String BOOKED_SLOTS = "bookedSlots";
-    public static final String DURATION_IN_MINUTES = "durationInMinutes";
-    public static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
+    // Crown fallback wire-field constants (used by crownFallbackSearchAndBook + parseCrownFallbackResult)
+    private static final String COURT_CENTRE_ID = "courtCentreId";
+    private static final String HEARING_DATE = "hearingDate";
+    private static final String DURATION_IN_MINUTES = "durationInMinutes";
+    private static final String SOURCE = "source";
+    private static final String EARLIEST_HEARING_TIME = "earliestHearingTime";
+    // SPRDT-1283: optional centre metadata so courtscheduler can auto-create a session at a centre
+    // that has no session at all to copy metadata from (never-seeded centre). ouCode reuses the
+    // OU_CODE constant declared above.
+    private static final String COURT_CENTRE_NAME = "courtCentreName";
+    private static final String COURT_ROOM_NAME = "courtRoomName";
+    private static final String COURT_SCHEDULE_ID = "courtScheduleId";
+    private static final String ALLOCATED_SCHEDULES = "allocatedSchedules";
+    private static final String SESSION_DATE = "sessionDate";
+    private static final String SESSION_START_TIME = "sessionStartTime";
+    private static final String SESSION_END_TIME = "sessionEndTime";
+    private static final String IS_DRAFT = "isDraft";
+    private static final String DRAFT = "draft";
+    private static final String OVERBOOKED = "overbooked";
+    private static final String ANY_DRAFT = "anyDraft";
+    // move-hearing-to-past-date wire-field constants; JURISDICTION/COURT_ROOM_ID reuse the fields
+    // declared above. startTime/endTime (UTC instants) replace the old date-only startDate/endDate
+    // fields, aligning the outbound contract with main (see the review artifact this reconciles).
+    private static final String START_TIME = "startTime";
+    private static final String END_TIME = "endTime";
+    private static final String SESSIONS = "sessions";
+    private static final String COURT_HOUSE_ID = "courtHouseId";
+    private static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
+    // no-session normalisation (422 NO_SESSION_FOUND) constants
     public static final String NO_SESSION_FOUND = "NO_SESSION_FOUND";
+    private static final String NO_AVAILABILITY = "NO_AVAILABILITY";
+    // Fixed user-facing copy (ported from main) replacing whatever diagnostic message courtscheduler
+    // itself supplies, on both the legacy-404 normalisation and a genuine 422 NO_SESSION_FOUND passthrough.
     public static final String NO_SESSION_FOUND_MESSAGE =
             "No suitable sessions are available for the selected date. Please select another date.";
     private static final String ERROR_CODE = "errorCode";
@@ -183,11 +222,292 @@ public class CourtSchedulerServiceAdapter {
         return hearingSlotResponse;
     }
 
+    /**
+     * Calls the courtscheduler Crown fallback search-and-book endpoint. Returns the booked session
+     * parsed into a {@link CrownFallbackResult}. On 404 (no session available), throws
+     * {@link CrownFallbackNoSessionException}. On 400 (invalid request, typically multi-day with
+     * duration > 360), throws {@link CrownFallbackInvalidRequestException}.
+     *
+     * Uses courtCentreId (UUID) as the single canonical court identifier — the courtscheduler
+     * filters on court_schedule.court_house_id directly, so no ouCode lookup is needed.
+     *
+     * @param hearingId           listing hearingId
+     * @param courtCentreId       court centre UUID (hard match on court_schedule.court_house_id)
+     * @param hearingDate         hearing date (hard match)
+     * @param durationInMinutes   hearing duration (max 360 — multi-day rejected)
+     * @param courtRoomId         optional court room UUID; if supplied, courtscheduler prefers non-draft at that room
+     * @param earliestHearingTime optional earliest start time (ISO-8601); courtscheduler honors it if provided
+     * @param source              which listing flow initiated this call
+     * @param ouCode              optional centre ouCode (SPRDT-1283) — lets courtscheduler auto-create a
+     *                            session at a centre with no existing session to copy metadata from
+     * @param courtCentreName     optional centre display name for the auto-created session
+     * @param courtRoomName       optional room display name for the auto-created session
+     */
+    @SuppressWarnings("squid:S107") // wire-call parameter object mirrors the endpoint's optional fields
+    public CrownFallbackResult crownFallbackSearchAndBook(final UUID hearingId,
+                                                           final UUID courtCentreId,
+                                                           final LocalDate hearingDate,
+                                                           final int durationInMinutes,
+                                                           final Optional<UUID> courtRoomId,
+                                                           final Optional<String> earliestHearingTime,
+                                                           final CrownFallbackSource source,
+                                                           final Optional<String> ouCode,
+                                                           final Optional<String> courtCentreName,
+                                                           final Optional<String> courtRoomName) {
+        final Map<String, String> params = new HashMap<>();
+        params.put(HEARING_ID, hearingId.toString());
+        params.put(COURT_CENTRE_ID, courtCentreId.toString());
+        params.put(HEARING_DATE, hearingDate.toString());
+        params.put(DURATION_IN_MINUTES, Integer.toString(durationInMinutes));
+        params.put(SOURCE, source.label());
+        courtRoomId.ifPresent(id -> params.put(COURT_ROOM_ID, id.toString()));
+        earliestHearingTime.ifPresent(t -> params.put(EARLIEST_HEARING_TIME, t));
+        ouCode.filter(v -> !v.isBlank()).ifPresent(v -> params.put(OU_CODE, v));
+        courtCentreName.filter(v -> !v.isBlank()).ifPresent(v -> params.put(COURT_CENTRE_NAME, v));
+        courtRoomName.filter(v -> !v.isBlank()).ifPresent(v -> params.put(COURT_ROOM_NAME, v));
+
+        final Response response = hearingSlotsService.crownFallbackSearchAndBook(params);
+        final int status = response.getStatus();
+
+        if (status == HttpStatus.SC_NOT_FOUND) {
+            throw new CrownFallbackNoSessionException(
+                    "Crown fallback: no session at courtCentreId=" + courtCentreId + " on " + hearingDate
+                            + " (hearingId=" + hearingId + ")");
+        }
+        if (status == HttpStatus.SC_BAD_REQUEST) {
+            throw new CrownFallbackInvalidRequestException(
+                    "Crown fallback rejected by courtscheduler (status=" + status + ") for hearingId=" + hearingId
+                            + ": " + (response.hasEntity() ? response.getEntity().toString() : ""));
+        }
+        if (status == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
+            throwIfNoAvailability(response, hearingId);
+        }
+        if (status != HttpStatus.SC_OK) {
+            LOGGER.error("Crown fallback search-and-book returned unexpected status {} for hearingId {}", status, hearingId);
+            throw new CrownFallbackNoSessionException(
+                    "Crown fallback: unexpected courtscheduler status " + status + " for hearingId " + hearingId);
+        }
+
+        final JsonObject body = objectToJsonObjectConverter.convert(response.getEntity());
+        final CrownFallbackResult result = parseCrownFallbackResult(body);
+        if (result.courtScheduleId() == null) {
+            // A 200 whose body carries no courtScheduleId is not a booking (e.g. a differently-shaped
+            // search-and-book response) — treating it as a booking would fabricate an all-null hearing day.
+            throw new CrownFallbackNoSessionException(
+                    "Crown fallback: courtscheduler returned 200 without a courtScheduleId for hearingId "
+                            + hearingId + " — treating as no bookable session");
+        }
+        return result;
+    }
+
+    /**
+     * SPRDT-1539: a hearing that already holds a booking is MOVED by courtscheduler's single-day path;
+     * when nothing is bookable it answers 422 NO_AVAILABILITY and keeps the old booking. That is a
+     * rejection for the caller, not a "no session" to fail open on. Any other 422 returns normally.
+     */
+    private void throwIfNoAvailability(final Response response, final UUID hearingId) {
+        final JsonObject errorBody = jsonBodyOrNull(response);
+        if (errorBody != null && NO_AVAILABILITY.equals(errorBody.getString(ERROR_CODE, null))) {
+            throw new CrownMultiDayExtensionException(response.getStatus(), errorBody,
+                    "Crown single-day search-and-book rejected (" + NO_AVAILABILITY + ") for hearingId " + hearingId);
+        }
+    }
+
+    private JsonObject jsonBodyOrNull(final Response response) {
+        if (!response.hasEntity()) {
+            return null;
+        }
+        return response.getEntity() instanceof JsonObject jsonBody
+                ? jsonBody
+                : objectToJsonObjectConverter.convert(response.getEntity());
+    }
+
+    private static CrownFallbackResult parseCrownFallbackResult(final JsonObject body) {
+        return new CrownFallbackResult(
+                uuidOrNull(body, HEARING_ID),
+                uuidOrNull(body, COURT_SCHEDULE_ID),
+                roomUuidOrNull(body, COURT_ROOM_ID),
+                localDateOrNull(body, SESSION_DATE),
+                zonedDateTimeOrNull(body, SESSION_START_TIME),
+                zonedDateTimeOrNull(body, SESSION_END_TIME),
+                intOrNull(body, DURATION_IN_MINUTES),
+                booleanOrNull(body, IS_DRAFT),
+                stringOrNull(body, BUSINESS_TYPE),
+                stringOrNull(body, SOURCE),
+                booleanOrNull(body, OVERBOOKED)
+        );
+    }
+
+    private static boolean hasValue(final JsonObject body, final String key) {
+        return body.containsKey(key) && !body.isNull(key);
+    }
+
+    private static String stringOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? body.getString(key) : null;
+    }
+
+    private static UUID uuidOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? UUID.fromString(body.getString(key)) : null;
+    }
+
+    /**
+     * SPRDT-1274: the room arrives as the session's UUID from current courtscheduler builds, but
+     * legacy builds (and legacy stubs) sent the Integer room NUMBER in the same field. A number is
+     * useless as a room id — tolerate it as "no room" instead of blowing up the whole command.
+     */
+    private static UUID roomUuidOrNull(final JsonObject body, final String key) {
+        if (!hasValue(body, key)) {
+            return null;
+        }
+        final javax.json.JsonValue value = body.get(key);
+        if (value.getValueType() != javax.json.JsonValue.ValueType.STRING) {
+            return null;
+        }
+        try {
+            return UUID.fromString(((javax.json.JsonString) value).getString());
+        } catch (final IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static Integer intOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? body.getInt(key) : null;
+    }
+
+    private static Boolean booleanOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? body.getBoolean(key) : null;
+    }
+
+    private static LocalDate localDateOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? LocalDate.parse(body.getString(key)) : null;
+    }
+
+    private static ZonedDateTime zonedDateTimeOrNull(final JsonObject body, final String key) {
+        return hasValue(body, key) ? ZonedDateTime.parse(body.getString(key)) : null;
+    }
+
+    public Response validateSessionAvailability(final JsonObject requestPayload) {
+        final Response response = hearingSlotsService.validateSessionAvailability(requestPayload);
+
+        if (HttpStatus.SC_OK == response.getStatus()) {
+            return response;
+        }
+
+        String responsePayload = "";
+        if (response.hasEntity()) {
+            responsePayload = response.getEntity().toString();
+        }
+        LOGGER.error("validateSessionAvailability from courtscheduler returned an error : {} with status {}", responsePayload, response.getStatus());
+        return response;
+    }
+
+
+    /**
+     * Reports whether any of the supplied courtScheduleIds resolves to a DRAFT
+     * (unallocated) court-schedule session. Used by cpp-context-progression to
+     * decide whether to strip courtroom info from outgoing unallocated CROWN
+     * hearings before they are persisted or surfaced in notifications.
+     *
+     * <p>Fails-safe by reporting anyDraft=true when the downstream courtscheduler
+     * call fails - leaking a phantom courtroom is worse than dropping room info
+     * for what may actually be a confirmed-allocated hearing.
+     *
+     * @param requestPayload JSON object with a courtScheduleIdList array
+     * @return Response with body {"anyDraft": true|false}
+     */
+    public JsonObject getCourtScheduleDraftStatus(final JsonObject requestPayload) {
+        final List<String> courtScheduleIds = extractCourtScheduleIds(requestPayload);
+        if (courtScheduleIds.isEmpty()) {
+            return javax.json.Json.createObjectBuilder().add(ANY_DRAFT, false).build();
+        }
+
+        final Map<String, String> params = new HashMap<>();
+        params.put("ids", String.join(",", courtScheduleIds));
+
+        final Response response;
+        try {
+            response = hearingSlotsService.getCourtSchedulesById(params);
+        } catch (Exception ex) {
+            LOGGER.warn("courtscheduler getCourtSchedulesById threw {} for {} ids - failing-safe by returning anyDraft=true",
+                    ex.getClass().getSimpleName(), courtScheduleIds.size());
+            return javax.json.Json.createObjectBuilder().add(ANY_DRAFT, true).build();
+        }
+
+        if (response == null || HttpStatus.SC_OK != response.getStatus()) {
+            LOGGER.warn("courtscheduler getCourtSchedulesById returned status {} for {} ids - failing-safe by returning anyDraft=true",
+                    response == null ? "null" : response.getStatus(), courtScheduleIds.size());
+            return javax.json.Json.createObjectBuilder().add(ANY_DRAFT, true).build();
+        }
+
+        final boolean anyDraft = scanForDraftSession(objectToJsonObjectConverter.convert(response.getEntity()));
+        return javax.json.Json.createObjectBuilder().add(ANY_DRAFT, anyDraft).build();
+    }
+
+    private static List<String> extractCourtScheduleIds(final JsonObject requestPayload) {
+        if (requestPayload == null || !requestPayload.containsKey("courtScheduleIdList")) {
+            return Collections.emptyList();
+        }
+        // Wire shape: { "courtScheduleIdList": ["uuid", "uuid", ...] } - flat array of UUID
+        // strings. The caller is progression (or any inter-context system caller); we don't
+        // accept the object-wrapped {"courtScheduleId": "..."} form because every entry IS a
+        // UUID and the wrapper added nothing but ceremony.
+        final JsonArray list = requestPayload.getJsonArray("courtScheduleIdList");
+        final List<String> ids = new ArrayList<>();
+        for (int i = 0; i < list.size(); i++) {
+            if (list.isNull(i)) {
+                continue;
+            }
+            final String id = list.getString(i, null);
+            if (StringUtils.isNotBlank(id)) {
+                ids.add(id);
+            }
+        }
+        return ids;
+    }
+
+    private static boolean scanForDraftSession(final JsonObject responseJson) {
+        if (responseJson == null || responseJson.isEmpty() || !responseJson.containsKey("courtSchedules")) {
+            return false;
+        }
+        // The /courtschedule/search.court-schedules-by-id wire response is FLAT: a top-level
+        // courtSchedules array whose every element is one CourtSchedule (a session).
+        // Each array element is a single CourtSchedule. The schema/example file in
+        // courtscheduler-api shows a misleading nested "sessions" array copied from a
+        // different endpoint. The actual implementation serialises List<CourtSchedule> flat
+        // via ListToJsonArrayConverter -> ObjectMapper.writeValueAsString.
+        //
+        // The boolean draft field appears in the wire JSON under two possible names depending
+        // on how Jackson resolves the CourtSchedule pair `isDraft()` getter + `setIsDraft(...)`
+        // setter:
+        //
+        //   - getter `isDraft()` for a boolean -> Jackson conventionally exposes it as
+        //     property "draft" (the "is" prefix is stripped for boolean getters)
+        //   - setter `setIsDraft(...)`         -> Jackson exposes it as property "isDraft"
+        //
+        // The framework's ObjectMapperProducer doesn't configure either USE_GETTERS_AS_SETTERS
+        // or USE_STD_BEAN_NAMING explicitly, so we cover both names here. This means a future
+        // change to either getter or setter naming does not silently break the strip.
+        final JsonArray schedules = responseJson.getJsonArray("courtSchedules");
+        for (int i = 0; i < schedules.size(); i++) {
+            final JsonObject schedule = schedules.getJsonObject(i);
+            if (isTrue(schedule, IS_DRAFT) || isTrue(schedule, DRAFT)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isTrue(final JsonObject obj, final String key) {
+        return obj.containsKey(key) && !obj.isNull(key) && obj.getBoolean(key);
+    }
+
     public HearingIdsResponse getCourtSchedulerHearings(final String ouCode,
                                                         final Optional<String> courtSessionOptional,
                                                         final String courtRoomId, final String startDate,
                                                         final String endDate, final Optional<Instant> exactHearingStartDateTime,
                                                         final Optional<String> businessTypeOptional,
+                                                        final Optional<String> jurisdiction,
+                                                        final String status,
                                                         final String panel, final Integer pageSize, final Integer pageNumber
     ) {
         final Map<String, String> queryParams = new HashMap<>();
@@ -200,7 +520,14 @@ public class CourtSchedulerServiceAdapter {
         queryParams.put(COURT_ROOM_ID, courtRoomId);
         courtSessionOptional.ifPresent(courtSession -> queryParams.put(COURT_SESSION, courtSession));
         businessTypeOptional.ifPresent(businessType -> queryParams.put(BUSINESS_TYPE, businessType));
+        jurisdiction.ifPresent(j -> queryParams.put(JURISDICTION, j));
         exactHearingStartDateTime.ifPresent(s -> queryParams.put(EXACT_HEARING_START_DATETIME, s.toString()));
+        // Draft (unallocated) court-schedule sessions are excluded at source when status="FINAL" is
+        // supplied; a null status leaves the courtscheduler result unfiltered (returns ALL).
+        if (status != null) {
+            queryParams.put(STATUS, status);
+        }
+
         final Response hearingsResponse = getCourtSchedulerHearingIds(queryParams);
 
         return getHearingIds(hearingsResponse);
@@ -222,65 +549,77 @@ public class CourtSchedulerServiceAdapter {
     }
 
     HearingIdsResponse getHearingIds(final Response response) {
-        final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
-
-       List<IdResponse> uuids = new ArrayList<>();
-        final JsonArray li = responseJson.getJsonArray("hearingIds");
-        for (int i = 0; i < li.size(); i++) {
-            IdResponse res = jsonObjectConverter.convert(li.getJsonObject(i), IdResponse.class);
-            uuids.add(res);
-
+        final int status = response.getStatus();
+        if (HttpStatus.SC_OK != status) {
+            throw new HearingQueryException(format("Court scheduler hearing id search failed with status %d", status));
         }
-        final int results = responseJson.getInt("results");
-        final int pageCount = responseJson.getInt("pageCount");
+
+        final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
+        if (responseJson == null || !responseJson.containsKey(HEARING_IDS) || responseJson.isNull(HEARING_IDS)) {
+            throw new HearingQueryException("Court scheduler hearing id search returned no hearingIds");
+        }
+
+        final List<IdResponse> uuids = new ArrayList<>();
+        final JsonArray li = responseJson.getJsonArray(HEARING_IDS);
+        for (int i = 0; i < li.size(); i++) {
+            uuids.add(jsonObjectConverter.convert(li.getJsonObject(i), IdResponse.class));
+        }
+
+        final int results = intOrDefault(responseJson, "results", uuids.size());
+        final int pageCount = intOrDefault(responseJson, "pageCount", 1);
 
         return new HearingIdsResponse(uuids, results, pageCount);
     }
 
+    private static int intOrDefault(final JsonObject json, final String key, final int fallback) {
+        return json.containsKey(key) && !json.isNull(key) ? json.getInt(key) : fallback;
+    }
+
     /**
-     * MAGISTRATES-only from listing today (courtscheduler itself now supports both jurisdictions;
-     * CROWN moves stay listing-side until Phase 2 - Baris decision D1). courtscheduler expands
-     * [startDate, endDate] into sitting days and books every day in one atomic call, returning one
-     * booked slot per day. On any non-200 the upstream errorCode/status is surfaced via
-     * {@link MoveHearingToPastDateException} so the caller sends no event.
-     *
-     * @param hearingStartTime the requested start time already converted to UTC (HH:mm), matched by
-     *                         courtscheduler against the UTC session windows (range-containment).
+     * Calls courtscheduler's {@code move-hearing-to-past-date} action synchronously for both
+     * MAGISTRATES and CROWN moves. courtRoomId/startInstant/endInstant mirror main's contract
+     * (courtRoomId scopes the session search to that room; startInstant/endInstant are UTC instants
+     * whose dates drive courtscheduler's [startDate, endDate] span — see the review artifact this
+     * reconciles). On any non-200 response the upstream errorCode/status is surfaced via
+     * {@link MoveHearingToPastDateException} so the caller sends no event; a NO_SESSION_FOUND failure
+     * (whether a legacy bare 404 or a genuine 422) always carries the fixed user-facing message below,
+     * replacing whatever diagnostic message courtscheduler itself supplied (ported from main).
      */
-    public List<MoveHearingToPastDateResult> moveHearingToPastDate(final UUID hearingId,
-                                                                   final UUID courtCentreId,
-                                                                   final UUID courtRoomId,
-                                                                   final String startTime,
-                                                                   final String endTime) {
-        // hearingId travels only in the URL path; courtscheduler's REST adapter injects it.
-        // startTime/endTime are absolute UTC instants (e.g. 2026-07-20T10:30:00.000Z); courtscheduler
-        // derives the per-day start/end time-of-day and the duration from them.
+    public MoveHearingToPastDateResult moveHearingToPastDate(final UUID hearingId,
+                                                              final UUID courtCentreId,
+                                                              final UUID courtRoomId,
+                                                              final ZonedDateTime startInstant,
+                                                              final ZonedDateTime endInstant,
+                                                              final Integer durationInMinutes,
+                                                              final String jurisdiction) {
+        // hearingId travels only in the URL path; courtscheduler's REST adapter injects it
         final JsonObjectBuilder requestBuilder = Json.createObjectBuilder()
                 .add(COURT_CENTRE_ID, courtCentreId.toString())
                 .add(COURT_ROOM_ID, courtRoomId.toString())
-                .add(JURISDICTION, MAGISTRATES_JURISDICTION)
-                .add(START_TIME, startTime);
-        if (endTime != null) {
-            requestBuilder.add(END_TIME, endTime);
+                .add(JURISDICTION, jurisdiction == null || jurisdiction.isBlank() ? MAGISTRATES_JURISDICTION : jurisdiction)
+                .add(START_TIME, formatInstant(startInstant))
+                .add(END_TIME, formatInstant(endInstant));
+        if (durationInMinutes != null) {
+            requestBuilder.add(DURATION_IN_MINUTES, durationInMinutes);
         }
 
         final Response response = hearingSlotsService.moveHearingToPastDate(hearingId, requestBuilder.build());
         final int status = response.getStatus();
-        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject)
-                ? (JsonObject) response.getEntity()
+        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject jsonBody)
+                ? jsonBody
                 : Json.createObjectBuilder().build();
 
         if (HttpStatus.SC_OK == status) {
-            return parseMoveHearingToPastDateResults(body);
+            return parseMoveHearingToPastDateResult(body);
         }
 
         LOGGER.error("moveHearingToPastDate from courtscheduler returned status {} for hearingId {}: {}",
                 status, hearingId, body);
 
-        // No-session failures are normalised to one fixed user-facing shape regardless of how the
-        // courtscheduler signalled them: a legacy bare 404, or a 422 whose body carries its internal
-        // diagnostic message (e.g. "No session available at courtCentreId=... on ...").
-        if (HttpStatus.SC_NOT_FOUND == status || NO_SESSION_FOUND.equals(body.getString(ERROR_CODE, null))) {
+        // A legacy bare 404 (older courtscheduler releases) and a genuine 422 NO_SESSION_FOUND both
+        // collapse onto the same fixed user-facing shape/message - callers see one failure shape.
+        if (HttpStatus.SC_NOT_FOUND == status
+                || (HttpStatus.SC_UNPROCESSABLE_ENTITY == status && NO_SESSION_FOUND.equals(body.getString(ERROR_CODE, null)))) {
             final JsonObject noSessionBody = Json.createObjectBuilder()
                     .add(ERROR_CODE, NO_SESSION_FOUND)
                     .add(MESSAGE, NO_SESSION_FOUND_MESSAGE)
@@ -293,24 +632,121 @@ public class CourtSchedulerServiceAdapter {
                 "moveHearingToPastDate returned " + status + " for hearingId " + hearingId);
     }
 
-    private static List<MoveHearingToPastDateResult> parseMoveHearingToPastDateResults(final JsonObject body) {
-        final List<MoveHearingToPastDateResult> results = new ArrayList<>();
-        final JsonArray bookedSlots = body.containsKey(BOOKED_SLOTS) ? body.getJsonArray(BOOKED_SLOTS) : null;
-        if (bookedSlots != null) {
-            for (int i = 0; i < bookedSlots.size(); i++) {
-                results.add(parseMoveHearingToPastDateResult(bookedSlots.getJsonObject(i)));
-            }
-        }
-        return results;
+    /**
+     * ZonedDateTime.toString() (via LocalDateTime.toString()) OMITS the seconds field entirely when
+     * seconds and nanos are both zero - e.g. "2026-09-01T09:00Z" for an on-the-minute time - which
+     * fails courtscheduler's request schema (seconds are a MANDATORY group in its startTime/endTime
+     * pattern, not optional). DateTimeFormatter.ISO_INSTANT always emits seconds and only adds a
+     * fractional part when non-zero, matching that pattern exactly.
+     */
+    private static String formatInstant(final ZonedDateTime instant) {
+        return DateTimeFormatter.ISO_INSTANT.format(instant.toInstant());
     }
 
-    private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject slot) {
-        return new MoveHearingToPastDateResult(
-                slot.containsKey("courtScheduleId") ? UUID.fromString(slot.getString("courtScheduleId")) : null,
-                slot.getString(COURT_ROOM_ID, null),
-                slot.containsKey("sessionDate") ? LocalDate.parse(slot.getString("sessionDate")) : null,
-                slot.getString("sessionStartTime", null),
-                slot.getString("sessionEndTime", null),
-                slot.containsKey(DURATION_IN_MINUTES) ? slot.getInt(DURATION_IN_MINUTES) : null);
+    /**
+     * courtscheduler's wire response is {@code {hearingId, source, sessions:[CourtSchedule...]}} — EVERY
+     * booked past day, nested and ordered by date (first = the day the hearing now starts on). All of
+     * them are returned so the caller can re-issue one hearing day per booked session. A flat body
+     * (slot fields at the top level) is still accepted as a single session so older stubs/releases
+     * keep working.
+     */
+    private static MoveHearingToPastDateResult parseMoveHearingToPastDateResult(final JsonObject body) {
+        // A PRESENT sessions key is authoritative, even when empty (e.g. a genuine multi-day-range
+        // search that matched nothing - courtscheduler's own "exploratory, leave allocation intact"
+        // 200 response). Falling through to the flat-body fallback in that case would misparse the
+        // top-level {hearingId, source, sessions:[]} envelope as a single session with every field
+        // null, producing an enriched command with a broken sessions[0] entry. Only fall back to the
+        // legacy flat-body shape when the sessions key is absent entirely (older courtscheduler releases).
+        if (body.containsKey(SESSIONS) && !body.isNull(SESSIONS)) {
+            final JsonArray sessions = body.getJsonArray(SESSIONS);
+            final List<MoveHearingToPastDateResult.BookedSession> booked = new ArrayList<>();
+            for (int i = 0; i < sessions.size(); i++) {
+                booked.add(parseBookedSession(sessions.getJsonObject(i)));
+            }
+            return new MoveHearingToPastDateResult(booked);
+        }
+        return new MoveHearingToPastDateResult(List.of(parseBookedSession(body)));
+    }
+
+    private static MoveHearingToPastDateResult.BookedSession parseBookedSession(final JsonObject session) {
+        return new MoveHearingToPastDateResult.BookedSession(
+                uuidOrNull(session, COURT_SCHEDULE_ID),
+                session.getString(COURT_ROOM_ID, null),
+                uuidOrNull(session, COURT_HOUSE_ID),
+                session.containsKey(SESSION_DATE) && !session.isNull(SESSION_DATE)
+                        ? LocalDate.parse(session.getString(SESSION_DATE)) : null,
+                session.getString(SESSION_START_TIME, null),
+                session.getString(SESSION_END_TIME, null),
+                session.containsKey(DURATION_IN_MINUTES) && !session.isNull(DURATION_IN_MINUTES)
+                        ? session.getInt(DURATION_IN_MINUTES) : null,
+                // Jackson may name the flag "isDraft" (setter) or "draft" (boolean getter) - accept both
+                session.containsKey(IS_DRAFT) ? booleanOrNull(session, IS_DRAFT) : booleanOrNull(session, DRAFT));
+    }
+
+    /**
+     * Calls courtscheduler's {@code change-court-room-for-multiday-hearing} action
+     * synchronously, moving one or more days of a multi-day hearing to a different
+     * court-schedule session. On any non-200 response the upstream errorCode/status is surfaced
+     * via {@link ChangeCourtRoomForMultidayException} so the caller sends no event; a legacy bare
+     * 404 is normalised to 422 NO_SESSION_FOUND exactly as {@link #moveHearingToPastDate} does.
+     */
+    public List<ChangedDaySession> changeCourtRoomForMultidayHearing(final UUID hearingId,
+                                                                      final List<RequestedChangeDay> days) {
+        final JsonArrayBuilder daysArr = Json.createArrayBuilder();
+        days.forEach(d -> daysArr.add(Json.createObjectBuilder()
+                .add(SESSION_DATE, d.sessionDate().toString())
+                .add(COURT_SCHEDULE_ID, d.courtScheduleId().toString())
+                .add(DURATION_IN_MINUTES, d.durationInMinutes())));
+        final JsonObject payload = Json.createObjectBuilder().add("days", daysArr).build();
+
+        final Response response = hearingSlotsService.changeCourtRoomForMultidayHearing(hearingId, payload);
+        final int status = response.getStatus();
+        final JsonObject body = (response.hasEntity() && response.getEntity() instanceof JsonObject jsonBody)
+                ? jsonBody
+                : Json.createObjectBuilder().build();
+
+        if (HttpStatus.SC_OK == status) {
+            return parseChangedDaySessions(body);
+        }
+
+        LOGGER.error("changeCourtRoomForMultidayHearing from courtscheduler returned status {} for hearingId {}: {}",
+                status, hearingId, body);
+
+        if (HttpStatus.SC_NOT_FOUND == status) {
+            // older courtscheduler releases signal no-session as a bare 404 - normalise to the
+            // 422 NO_SESSION_FOUND contract so callers see a single failure shape
+            final JsonObject noSessionBody = Json.createObjectBuilder()
+                    .add(ERROR_CODE, NO_SESSION_FOUND)
+                    .add(MESSAGE, body.getString(MESSAGE,
+                            "No court-schedule session found for hearingId " + hearingId))
+                    .build();
+            throw new ChangeCourtRoomForMultidayException(HttpStatus.SC_UNPROCESSABLE_ENTITY, noSessionBody,
+                    "changeCourtRoomForMultidayHearing found no session for hearingId " + hearingId);
+        }
+
+        throw new ChangeCourtRoomForMultidayException(status, body,
+                "changeCourtRoomForMultidayHearing returned " + status + " for hearingId " + hearingId);
+    }
+
+    private static List<ChangedDaySession> parseChangedDaySessions(final JsonObject body) {
+        if (!body.containsKey(ALLOCATED_SCHEDULES) || body.isNull(ALLOCATED_SCHEDULES)) {
+            return Collections.emptyList();
+        }
+        final JsonArray allocatedSchedules = body.getJsonArray(ALLOCATED_SCHEDULES);
+        final List<ChangedDaySession> sessions = new ArrayList<>();
+        for (int i = 0; i < allocatedSchedules.size(); i++) {
+            sessions.add(parseChangedDaySession(allocatedSchedules.getJsonObject(i)));
+        }
+        return sessions;
+    }
+
+    private static ChangedDaySession parseChangedDaySession(final JsonObject schedule) {
+        return new ChangedDaySession(
+                uuidOrNull(schedule, COURT_SCHEDULE_ID),
+                stringOrNull(schedule, COURT_ROOM_ID),
+                localDateOrNull(schedule, SESSION_DATE),
+                stringOrNull(schedule, SESSION_START_TIME),
+                intOrNull(schedule, DURATION_IN_MINUTES),
+                booleanOrNull(schedule, IS_DRAFT));
     }
 }

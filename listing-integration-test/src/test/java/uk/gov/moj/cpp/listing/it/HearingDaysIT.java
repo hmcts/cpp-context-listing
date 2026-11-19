@@ -1,10 +1,15 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static uk.gov.moj.cpp.listing.it.util.HearingHelper.pollForHearingByIdWithJmsDelay;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static com.jayway.jsonpath.Criteria.where;
+import static java.text.MessageFormat.format;
 import static java.time.ZoneOffset.UTC;
-import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
-import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
+import static org.codehaus.groovy.runtime.InvokerHelper.asList;
+import static org.hamcrest.core.Is.is;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
@@ -12,11 +17,11 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCente
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtRoomId;
 
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.moj.cpp.listing.it.util.ItClock;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -38,10 +43,13 @@ public class HearingDaysIT extends AbstractIT {
     private static final String UPDATE_HEARING_FOR_LISTING_SPLIT_JSON = "update-hearing-for-listing-split.json";
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
+    private UUID hearingId;
+    private UUID caseId;
     private UUID courtCentreId;
     private UUID courtRoomId;
     private LocalDate startDate;
     private LocalDate endDate;
+    private ZonedDateTime hearingStartTime;
     private final LocalTime defaultStartTime = LocalTime.parse("10:00");
     private final int defaultDuration = 20;
     private UUID otherCourtCentreId;
@@ -50,11 +58,15 @@ public class HearingDaysIT extends AbstractIT {
 
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     @Test
-    void testHearingDaysWithCourtCentreForSplit() throws IOException {
+    @ExpectedServerErrors("SPRDT-1365: the split guard deliberately logs ERROR SPLIT_VIA_UPDATE_HEARING_REJECTED with the hearingId and correlation id -> that marker is the asserted behaviour, not a fault")
+    void testSplitViaUpdateHearingIsRejectedAndRaisesNoNewHearing() throws IOException {
         stubGetAvailableHearingSlots();
 
         startDate = ItClock.today();
         endDate = ItClock.today().plusDays(1);
+        hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
+        hearingId = randomUUID();
+        caseId = randomUUID();
         courtCentreId = getRandomCourtCenterId();
         courtRoomId = getRandomCourtRoomId();
         otherCourtCentreId = getRandomCourtCenterId(asList(courtCentreId));
@@ -84,14 +96,15 @@ public class HearingDaysIT extends AbstractIT {
         listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         final HearingData hearingData = hearingsData.getHearingData().get(0);
+        // The handler's SPLIT-vs-PARTIAL_ALLOCATION decision reads `allocated` from the VIEW-STORE hearing
+        // (ExtendHearingUtils.getOperationType). The court-centre search above can match before the
+        // allocation projection lands; wait for the exact field the guard branches on.
+        pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(), withJsonPath("$.allocated", equalTo(true)));
 
         UpdateHearingSteps updateHearingStepsSplit = new UpdateHearingSteps();
 
-        // Anchor the split day span on working days. The split derives new hearing days from the base
-        // hearing date; built with raw plusDays(1)/plusDays(2) the span straddles a weekend whenever the
-        // suite runs Wed-Sat. Courts do not sit at weekends, so no hearing-requested-for-listing is emitted
-        // for the weekend day and verifyHearingRequestedForListingEvent(2) times out. plusWorkingDays keeps
-        // the span on Mon-Fri and is identical to plusDays on a weekday run with no weekend in range.
+        // Anchor the split day span on working days so the payload stays a realistic split request
+        // on any run day, rather than one the classifier might read differently across a weekend.
         final LocalDate splitStartDate = ItClock.plusWorkingDays(hearingData.getHearingStartDate(), 1);
         final LocalDate splitEndDate = ItClock.plusWorkingDays(splitStartDate, 2);
 
@@ -106,9 +119,100 @@ public class HearingDaysIT extends AbstractIT {
 
         final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObjectSplit, courtScheduleId);
         updateHearingStepsSplit.updateHearingForListing(objectMapper.treeToValue(jsonNode, JsonObject.class), hearingData.getId());
-        updateHearingStepsSplit.verifyHearingRequestedForListingEvent(2);
-        updateHearingStepsSplit.verifyHearingRequestedForListingInPublicMQ();
 
+        // SPRDT-1365: the guard must leave the ORIGINAL hearing completely alone.
+        //
+        // Asserting "no new hearing was raised" would prove nothing here — this ticket deleted the
+        // only code that could raise one, so that event is unproducible whether the guard exists or
+        // not. What the guard actually prevents is the partial-allocation event, which strips the
+        // moved offence (index 1 above) off the original.
+        //
+        // Barrier FIRST. "Offence count unchanged" is already true the instant the command is
+        // accepted, so polling for it without a happens-after barrier passes immediately and proves
+        // nothing — it would race the async removal rather than observe its absence. This waits on
+        // both the publish relay and the subscriber queues; the consume-side quiesce alone can
+        // return before the event has even been published.
+        awaitAsyncProcessingComplete();
+        pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(),
+                withJsonPath("$.listedCases[0].defendants[0].offences.length()",
+                        equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().size())));
+    }
+
+    /**
+     * Same split journey as {@link #testSplitViaUpdateHearingIsRejectedAndRaisesNoNewHearing}, but the payload's
+     * nonDefaultDays carry {@code virtual: true} — the shape sent when splitting an offence /
+     * defendant out of a hearing and allocating it as a multi-day hearing.
+     *
+     * <p>SPRDT-1365: both shapes are now rejected identically. This test exists to prove the
+     * virtual-nonDefaultDays variant does not slip past the guard on some other path.
+     */
+    @Test
+    @ExpectedServerErrors("SPRDT-1365: the split guard deliberately logs ERROR SPLIT_VIA_UPDATE_HEARING_REJECTED with the hearingId and correlation id -> that marker is the asserted behaviour, not a fault")
+    void testSplitWithVirtualNonDefaultDaysIsRejectedAndRaisesNoNewHearing() throws IOException {
+        stubGetAvailableHearingSlots();
+
+        startDate = ItClock.today();
+        endDate = ItClock.today().plusDays(1);
+        hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
+        hearingId = randomUUID();
+        caseId = randomUUID();
+        courtCentreId = getRandomCourtCenterId();
+        courtRoomId = getRandomCourtRoomId();
+        otherCourtCentreId = getRandomCourtCenterId(asList(courtCentreId));
+        otherCourtRoomId = randomUUID();
+
+        final HearingsData hearingsData = HearingsData.singleHearingsDataWithAllocationDataAndJudiciary();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ZonedDateTime hearingStartTime = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getHearingStartTime();
+        final LocalDate hearingDate = hearingStartTime.toLocalDate();
+        final UUID courtroomId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtRoomId();
+        final UUID bookingId = randomUUID();
+        final String courtScheduleId = randomUUID().toString();
+        final UUID courtCentreId = listCourtHearingSteps.getHearingsData().getHearingData().get(0).getCourtCentreId();
+
+        Map<String, String> stubParams = new HashMap<>();
+        stubParams.put("SESSION_DATE", hearingDate.toString());
+        stubParams.put("COURT_CENTRE_ID", courtCentreId.toString());
+        stubParams.put("COURT_SCHEDULE_ID", courtScheduleId);
+        stubParams.put("COURT_ROOM_ID", courtroomId.toString());
+        stubParams.put("BOOKING_ID", bookingId.toString());
+        stubParams.put("HEARING_START_TIME", hearingStartTime.toString());
+        stubProvisionalBookingWithCustomParams(stubParams);
+
+        stubListHearingInCourtSessions(hearingsData.getHearingData().get(0).getId().toString(),
+                courtScheduleId, hearingsData.getHearingData().get(0).getHearingStartTime());
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        // The handler's SPLIT-vs-PARTIAL_ALLOCATION decision reads `allocated` from the VIEW-STORE hearing
+        // (ExtendHearingUtils.getOperationType). The court-centre search above can match before the
+        // allocation projection lands; wait for the exact field the guard branches on.
+        pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(), withJsonPath("$.allocated", equalTo(true)));
+
+        UpdateHearingSteps updateHearingStepsSplit = new UpdateHearingSteps();
+
+        final LocalDate splitStartDate = ItClock.plusWorkingDays(hearingData.getHearingStartDate(), 1);
+        final LocalDate splitEndDate = ItClock.plusWorkingDays(splitStartDate, 2);
+
+        final JsonObject updateHearingJsonObjectSplit =
+                updateHearingStepsSplit.preparePayloadToUpdateHearing(UPDATE_HEARING_FOR_LISTING_SPLIT_JSON,
+                getSplitPayloadValues(hearingData.getId().toString(), hearingData.getListedCases().get(0).getCaseId().toString(),
+                        hearingData.getCourtCentreId().toString(), hearingData.getCourtRoomId().toString(),
+                        splitStartDate.toString(), splitEndDate.toString(),
+                        hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString(),
+                        hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(1).getOffenceId().toString(), courtScheduleId));
+
+        final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObjectSplit, courtScheduleId, true);
+        updateHearingStepsSplit.updateHearingForListing(objectMapper.treeToValue(jsonNode, JsonObject.class), hearingData.getId());
+
+        // SPRDT-1365: rejected the same way regardless of the virtual-nonDefaultDays shape — the
+        // moved offence stays on the original because the partial-allocation event never runs.
+        // Same two-stage barrier as the sibling test above, for the same reason.
+        awaitAsyncProcessingComplete();
+        pollForHearingByIdWithJmsDelay(USER_ID_VALUE, hearingData.getId(),
+                withJsonPath("$.listedCases[0].defendants[0].offences.length()",
+                        equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().size())));
     }
 
     private Map<String, String> getSplitPayloadValues(final String hearingId,
@@ -135,7 +239,16 @@ public class HearingDaysIT extends AbstractIT {
         }};
     }
 
+
+
+
+
+
     private JsonNode populateNonDefaultDays(final UUID otherCourtCentreId, final UUID otherCourtRoomId, final JsonObject updateHearingJsonObject, final String courtScheduleId) throws IOException {
+        return populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObject, courtScheduleId, false);
+    }
+
+    private JsonNode populateNonDefaultDays(final UUID otherCourtCentreId, final UUID otherCourtRoomId, final JsonObject updateHearingJsonObject, final String courtScheduleId, final boolean virtual) throws IOException {
         final JsonNode hearingNode = convertToNode(updateHearingJsonObject);
         ((ObjectNode) hearingNode).putArray("nonDefaultDays").add(convertToNode(createObjectBuilder()
                         .add("duration", defaultDuration)
@@ -147,6 +260,7 @@ public class HearingDaysIT extends AbstractIT {
                         .add("session", "AM")
                         .add("oucode", "B01BLYO")
                         .add("courtScheduleId", courtScheduleId)
+                        .add("virtual", virtual)
                         .build()))
                 .add(convertToNode(createObjectBuilder()
                         .add("duration", defaultDuration)
@@ -158,6 +272,7 @@ public class HearingDaysIT extends AbstractIT {
                         .add("session", "AM")
                         .add("oucode", "B01BH8U")
                         .add("courtScheduleId", courtScheduleId)
+                        .add("virtual", virtual)
                         .build()));
         return hearingNode;
     }
@@ -165,6 +280,5 @@ public class HearingDaysIT extends AbstractIT {
     private JsonNode convertToNode(final JsonObject build) throws IOException {
         return objectMapper.readTree(build.toString());
     }
-
 
 }

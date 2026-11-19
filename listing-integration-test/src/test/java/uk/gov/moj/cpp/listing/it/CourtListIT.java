@@ -9,6 +9,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocation;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCrownFallbackSearchAndBookForHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
@@ -253,6 +254,10 @@ public class CourtListIT extends AbstractIT {
 
         final ListCourtHearingSteps standaloneApplicationSteps = new ListCourtHearingSteps(standaloneApplicationData);
         stubProvisionalBooking(crownCourtCentreId, crownCourtRoomId, courtScheduleId, hearingDate, hearingStartTime);
+        // SPRDT-1539: a CROWN list payload with a courtroom and no courtScheduleId books through
+        // the single-day crown.search.and.book, not the MAGS search-and-book above.
+        stubCrownFallbackSearchAndBookForHearing(standaloneHearing.getId().toString(), courtScheduleId, crownCourtRoomId,
+                hearingDate, hearingStartTime);
         stubListHearingInCourtSessions(standaloneHearing.getId().toString(), courtScheduleId, hearingStartTime);
 
         standaloneApplicationSteps.whenCaseIsSubmittedForListingStandaloneApplication();

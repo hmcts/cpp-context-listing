@@ -1,0 +1,42 @@
+@startuml
+title Export Court List v2.1 (multiple court sites per XML file)
+
+' Change Log
+
+' v2
+' * Publishing Court Lists now saves the list to the 'published_court_list' table
+' * XML files contain Court Lists for all Court Sites for the Parent Court
+' * XML files are generated from Published Court Lists
+' * The COURT_LIST_PRODUCED state is removed
+' * The fileservice is removed
+
+' Diagram changes
+' * Status updates have been removed for clarity
+
+' v2.1
+' * Export is triggered by a scheduler to remove the race condition
+
+JavaTimer -> JavaTimer: sleep 10 minutes
+
+' Export
+JavaTimer->CourtListEventProcessor: findPublishedCourtListsWaitingForExport
+CourtListEventProcessor -> ListingQueryView: listing.publishedcourtlist query
+ListingQueryView-> published_court_list: findCourtListsRequiringExport
+
+loop every court list requiring export
+CourtListEventProcessor -> ListingCommandHandler: listing.command.court-list-request-export (courtSite)
+ListingCommandHandler -> CourtListEventProcessor: listing.command.court-list-export-requested
+
+' XML generation
+CourtListEventProcessor -> ListingQueryView: listing.query.published-courtlists (parentCourt)
+
+ListingQueryView -> published_court_list: retrievePublishedCourtLists
+
+CourtListEventProcessor -> CourtListEventProcessor: generateXmlCourtListForParentCourt()
+
+CourtListEventProcessor -> XhibitService: sendToExhibit
+
+XhibitService -> WebDAV: PUT file
+CourtListEventProcessor -> ListingCommandHandler :listing.command.record-court-list-export-successful
+end
+@enduml

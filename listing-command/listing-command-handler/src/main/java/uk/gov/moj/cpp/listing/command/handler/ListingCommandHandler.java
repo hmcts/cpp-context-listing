@@ -110,6 +110,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.command.factory.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingFactory;
+import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.command.service.UUIDService;
 import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
@@ -174,7 +175,6 @@ import javax.json.JsonObject;
 import javax.json.JsonValue;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,6 +187,13 @@ public class ListingCommandHandler {
 
     private static final String SUMMONS_REJECTED_RESULT_TYPE_ID = "d8837a45-8281-49b3-8349-49b423193148";
 
+    /**
+     * Fixed log marker for a split-shaped update-hearing-for-listing that this handler refuses to
+     * act on. Alerted on: it means a client is still driving splits through this command instead of
+     * the progression proxy, and that client will not get its new hearing.
+     */
+    public static final String SPLIT_VIA_UPDATE_HEARING_REJECTED = "SPLIT_VIA_UPDATE_HEARING_REJECTED";
+
     public static final String HEARING_ID = "hearingId";
     private static final String HEARING_DAY_COURT_SCHEDULES = "hearingDayCourtSchedules";
     private static final String HEARINGS = "hearings";
@@ -194,17 +201,18 @@ public class ListingCommandHandler {
     public static final String OUCODE = "oucode";
     private static final String JURISDICTION = "jurisdiction";
     private static final String START_DATE = "startDate";
-    private static final String END_DATE = "endDate";
     private static final String COURT_SCHEDULE_ID = "courtScheduleId";
     private static final String SESSION_DATE = "sessionDate";
     private static final String MOVE_COURT_CENTRE_ID = "courtCentreId";
     private static final String MOVE_COURT_ROOM_ID = "courtRoomId";
+    private static final String MOVE_END_DATE = "endDate";
+    private static final String MOVE_SESSIONS = "sessions";
+    private static final String MOVE_IS_DRAFT = "isDraft";
+    private static final String IS_DRAFT = "isDraft";
     private static final String SESSION_START_TIME = "sessionStartTime";
     private static final String SESSION_END_TIME = "sessionEndTime";
     private static final String DURATION_IN_MINUTES = "durationInMinutes";
     private static final String CROWN_JURISDICTION = "CROWN";
-    private static final String HEARING_DAYS = "hearingDays";
-    private static final String SEQUENCE = "sequence";
 
     @Inject
     private EventSource eventSource;
@@ -284,6 +292,9 @@ public class ListingCommandHandler {
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
+
+    @Inject
+    private HearingTypeFactory hearingTypeFactory;
 
 
     private static final String APPLICATION_ID = "applicationId";
@@ -431,71 +442,106 @@ public class ListingCommandHandler {
         final JsonObject payload = command.payloadAsJsonObject();
         final UUID hearingId = fromString(payload.getString(HEARING_ID));
         final String jurisdiction = payload.getString(JURISDICTION);
-        // startDate/endDate are the earliest/latest hearing-day dates, derived in the command-api
-        // enrichment; only these two main-level fields (plus hearingDays) are changed by a move.
         final LocalDate startDate = parse(payload.getString(START_DATE));
-        final LocalDate endDate = payload.containsKey(END_DATE) ? parse(payload.getString(END_DATE)) : startDate;
-        final Optional<UUID> courtCentreId = payload.containsKey(MOVE_COURT_CENTRE_ID)
-                ? Optional.of(fromString(payload.getString(MOVE_COURT_CENTRE_ID))) : Optional.empty();
 
         // hearing-day-court-schedule-updated matches days BY DATE in the projection, so it cannot
-        // move a day to a new date. Both paths re-issue every sitting day on the new past date instead:
-        // MAGS carries the slot(s) booked by courtscheduler (one per working day), CROWN carries the
-        // hearing's own room + the requested hearingStartTime (enriched by command-api - courtscheduler
-        // is never called for CROWN before Phase 2, Baris decision D1).
-        final JsonArray days = payload.getJsonArray(HEARING_DAYS);
-        final List<uk.gov.moj.cpp.listing.domain.HearingDay> movedDays = new ArrayList<>();
-        for (int i = 0; i < days.size(); i++) {
-            movedDays.add(buildMovedHearingDay(days.getJsonObject(i), courtCentreId, i + 1));
-        }
-
+        // move a day to a new date. Instead the hearing's days are re-issued on the past date(s)
+        // carrying the sessions booked by courtscheduler (command-api books them for both
+        // MAGISTRATES and CROWN): one hearing day per booked session, so a multi-day hearing keeps N
+        // days matching courtscheduler's N allocations. An enrichment without a sessions array (older
+        // producer) falls back to the single flat slot.
+        // New end date = last session courtscheduler booked; absent on older enrichments, in which case
+        // the hearing keeps its current end date (never silently removed).
+        final Optional<LocalDate> endDate = payload.containsKey(MOVE_END_DATE) && !payload.isNull(MOVE_END_DATE)
+                ? Optional.of(parse(payload.getString(MOVE_END_DATE))) : Optional.empty();
         final uk.gov.justice.core.courts.JurisdictionType jurisdictionType = CROWN_JURISDICTION.equals(jurisdiction)
                 ? uk.gov.justice.core.courts.JurisdictionType.CROWN
                 : uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
-
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> movedDays = buildMovedHearingDays(payload);
+        // courtscheduler may have booked the past run in a different room from the hearing's current one;
+        // when every booked day shares one room, the hearing-level courtRoomId follows it, mirroring what
+        // the update flow does when it assigns a court room, so hearing and days never disagree. Panel is left untouched.
+        final Optional<UUID> bookedRoom = singleBookedRoom(movedDays);
         updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
-            // Collected (not streamed) because applyRescheduledCheck inspects the occurred events —
-            // a StartDateChangedForHearing among them raises hearing-rescheduled →
-            // public.listing.vacated-trial-updated, exactly as update-hearing-for-listing does.
-            final List<Object> startDateEvents = hearing.changeStartDate(startDate, hearingId).collect(toList());
-            final Stream<Object> endDateEvents = hearing.changeEndDate(endDate, hearingId);
-            // Allocation rules run AFTER the date/day events so the allocated-hearing-updated private
-            // event snapshots the moved days; on an allocated hearing it becomes
-            // public.listing.hearing-updated (progression → hearing) and feeds MI's listing listener.
-            // Both notification flags are hard-coded FALSE: a past-date move must never notify parties
-            // (progression's gate is sendNotificationToParties && isNotificationAllocationFieldUpdated).
+            // Materialised (not left as a lazy Stream) so applyRescheduledCheck below can inspect
+            // whether a StartDateChangedForHearing actually occurred - same pattern as
+            // updateHearingForListingEnriched.
+            final List<Object> startDateEventList = hearing.changeStartDate(startDate, hearingId).collect(toList());
+            final Stream<Object> endDateEvents = endDate.map(date -> hearing.changeEndDate(date, hearingId)).orElseGet(Stream::empty);
+            final Stream<Object> courtRoomEvents = bookedRoom.map(room -> hearing.assignCourtRoom(room, hearingId, Optional.empty())).orElseGet(Stream::empty);
             final Stream<Object> hearingDayEvents = hearing.assignHearingDaysV2(hearingId, movedDays, null, null, jurisdictionType, emptyList());
-            final Stream<Object> allocationEvents = hearing.applyAllocationRules(emptyList(), FALSE, FALSE);
-            final Stream<Object> rescheduledEvents = hearing.applyRescheduledCheck(startDateEvents);
-            return Stream.of(startDateEvents.stream(), endDateEvents, hearingDayEvents, allocationEvents, rescheduledEvents)
-                    .flatMap(i -> i);
+            // Ported from main and applied uniformly for BOTH jurisdictions (closes the SPRDT-1214 gap
+            // flagged in the review artifact: without these, public.listing.hearing-updated and
+            // public.listing.vacated-trial-updated never fired from this command). Sequenced after
+            // assignHearingDaysV2, mirroring updateHearingForListingEnriched's ordering, since
+            // canAllocate()/canUnallocate() depend on the day/room state just mutated. Both flags are
+            // hard-coded false: a past-date move must never notify parties.
+            final Stream<Object> allocationEvents = hearing.applyAllocationRules(emptyList(), false, false);
+            final Stream<Object> rescheduledEvents = hearing.applyRescheduledCheck(startDateEventList);
+            return Stream.of(startDateEventList.stream(), endDateEvents, courtRoomEvents, hearingDayEvents, allocationEvents, rescheduledEvents)
+                    .flatMap(events -> events);
         });
     }
 
+    /** The one room every moved day is booked in, or empty when rooms differ / are unknown. */
+    private static Optional<UUID> singleBookedRoom(final List<uk.gov.moj.cpp.listing.domain.HearingDay> days) {
+        final java.util.Set<UUID> rooms = days.stream()
+                .map(uk.gov.moj.cpp.listing.domain.HearingDay::getCourtRoomId)
+                .flatMap(Optional::stream)
+                .collect(java.util.stream.Collectors.toSet());
+        return rooms.size() == 1 ? Optional.of(rooms.iterator().next()) : Optional.empty();
+    }
+
+    /**
+     * One hearing day per booked session in {@code sessions} (date order, sequence 1..N), each falling
+     * back to the enrichment's top-level values (courtCentreId of the command, per-day duration) for
+     * anything the session entry does not carry. Without a sessions array the single flat slot
+     * (courtScheduleId/sessionDate/...) is the one and only day.
+     */
+    private static List<uk.gov.moj.cpp.listing.domain.HearingDay> buildMovedHearingDays(final JsonObject payload) {
+        if (payload.containsKey(MOVE_SESSIONS) && !payload.isNull(MOVE_SESSIONS)
+                && !payload.getJsonArray(MOVE_SESSIONS).isEmpty()) {
+            final List<uk.gov.moj.cpp.listing.domain.HearingDay> days = new ArrayList<>();
+            int sequence = 1;
+            for (final JsonValue value : payload.getJsonArray(MOVE_SESSIONS)) {
+                final JsonObject session = (JsonObject) value;
+                days.add(buildMovedHearingDay(session, payload, parse(session.getString(SESSION_DATE)),
+                        Optional.of(fromString(session.getString(COURT_SCHEDULE_ID))), sequence++));
+            }
+            return days;
+        }
+        return List.of(buildMovedHearingDay(payload, payload, parse(payload.getString(SESSION_DATE)),
+                Optional.of(fromString(payload.getString(COURT_SCHEDULE_ID))), 1));
+    }
+
     private static uk.gov.moj.cpp.listing.domain.HearingDay buildMovedHearingDay(final JsonObject day,
-                                                                                 final Optional<UUID> courtCentreId,
-                                                                                 final int defaultSequence) {
-        final LocalDate dayDate = parse(day.getString(SESSION_DATE));
-        final Optional<UUID> courtScheduleId = day.containsKey(COURT_SCHEDULE_ID)
-                ? Optional.of(fromString(day.getString(COURT_SCHEDULE_ID))) : Optional.empty();
-        final Optional<UUID> courtRoomId = day.containsKey(MOVE_COURT_ROOM_ID)
-                ? Optional.of(fromString(day.getString(MOVE_COURT_ROOM_ID))) : Optional.empty();
-        final ZonedDateTime dayStartTime = day.containsKey(SESSION_START_TIME)
+                                                                                 final JsonObject defaults,
+                                                                                 final LocalDate dayDate,
+                                                                                 final Optional<UUID> courtScheduleId,
+                                                                                 final int sequence) {
+        final Optional<UUID> courtCentreId = optionalUuid(day, MOVE_COURT_CENTRE_ID)
+                .or(() -> optionalUuid(defaults, MOVE_COURT_CENTRE_ID));
+        final Optional<UUID> courtRoomId = optionalUuid(day, MOVE_COURT_ROOM_ID);
+        final ZonedDateTime dayStartTime = day.containsKey(SESSION_START_TIME) && !day.isNull(SESSION_START_TIME)
                 ? ZonedDateTime.parse(day.getString(SESSION_START_TIME))
                 : dayDate.atStartOfDay(java.time.ZoneOffset.UTC);
-        final Integer durationInMinutes = day.containsKey(DURATION_IN_MINUTES)
-                ? day.getInt(DURATION_IN_MINUTES) : null;
-        // hearing-days-changed-for-hearing requires endTime on every day; the normal listing flows
-        // always compute it as startTime + duration, so mirror that when the day has no end time.
+        final Integer durationInMinutes = optionalInt(day, DURATION_IN_MINUTES)
+                .or(() -> optionalInt(defaults, DURATION_IN_MINUTES))
+                .orElse(null);
+        // hearing-days-changed-for-hearing requires endTime on every day. The normal listing flows
+        // always derive it as startTime + the day's duration (the session's own end time is the
+        // courtroom's closing time, not the hearing's), so do the same; only without a duration does
+        // the session end time stand in.
         final ZonedDateTime dayEndTime;
-        if (day.containsKey(SESSION_END_TIME)) {
-            dayEndTime = ZonedDateTime.parse(day.getString(SESSION_END_TIME));
-        } else if (durationInMinutes != null) {
+        if (durationInMinutes != null) {
             dayEndTime = dayStartTime.plusMinutes(durationInMinutes);
+        } else if (day.containsKey(SESSION_END_TIME) && !day.isNull(SESSION_END_TIME)) {
+            dayEndTime = ZonedDateTime.parse(day.getString(SESSION_END_TIME));
         } else {
             dayEndTime = dayStartTime;
         }
-        final int sequence = day.containsKey(SEQUENCE) ? day.getInt(SEQUENCE) : defaultSequence;
+        final Optional<Boolean> isDraft = day.containsKey(MOVE_IS_DRAFT) && !day.isNull(MOVE_IS_DRAFT)
+                ? Optional.of(day.getBoolean(MOVE_IS_DRAFT)) : Optional.empty();
 
         return uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
                 .withHearingDate(dayDate)
@@ -506,7 +552,83 @@ public class ListingCommandHandler {
                 .withCourtScheduleId(courtScheduleId)
                 .withCourtCentreId(courtCentreId)
                 .withCourtRoomId(courtRoomId)
+                .withIsDraft(isDraft)
                 .build();
+    }
+
+    private static Optional<Integer> optionalInt(final JsonObject json, final String key) {
+        return json.containsKey(key) && !json.isNull(key) ? Optional.of(json.getInt(key)) : Optional.empty();
+    }
+
+    private static Optional<UUID> optionalUuid(final JsonObject json, final String key) {
+        if (!json.containsKey(key) || json.isNull(key)) {
+            return Optional.empty();
+        }
+        final String value = json.getString(key, null);
+        return value == null || value.isBlank() ? Optional.empty() : Optional.of(fromString(value));
+    }
+
+    @Handles("listing.command.change-court-room-for-multiday-hearing-enriched")
+    public void changeCourtRoomForMultidayHearing(final JsonEnvelope command) throws EventStreamException {
+        LOGGER.info("'listing.command.change-court-room-for-multiday-hearing-enriched' received with payload {}",
+                command.toObfuscatedDebugString());
+
+        final JsonObject payload = command.payloadAsJsonObject();
+        final UUID hearingId = fromString(payload.getString(HEARING_ID));
+        final Boolean sendNotificationToParties = payload.getBoolean("sendNotificationToParties", true);
+
+        // Days already (re)booked by COMMAND_API (virtual days, plus real days whose schedule changed
+        // - SPRDT-1225) -> become hearing days + schedule updates.
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = new ArrayList<>();
+        final List<HearingDayCourtSchedule> changedSchedules = new ArrayList<>();
+        if (payload.containsKey("changedDays")) {
+            for (final JsonValue value : payload.getJsonArray("changedDays")) {
+                final JsonObject day = (JsonObject) value;
+                final ZonedDateTime start = ZonedDateTime.parse(day.getString("startTime"));
+                final int durationMinutes = day.getInt("durationMinutes");
+                // The day carries the NEW courtScheduleId and the booked session's draft state, so the
+                // aggregate merge doesn't wipe them on the room change; the day never carries a sequence
+                // (assignHearingDaysV2 re-derives it by startTime).
+                changedDays.add(hearingDay()
+                        .withHearingDate(LocalDate.parse(day.getString("hearingDate")))
+                        .withStartTime(start)
+                        .withEndTime(start.plusMinutes(durationMinutes))
+                        .withDurationMinutes(durationMinutes)
+                        .withCourtCentreId(of(fromString(day.getString(MOVE_COURT_CENTRE_ID))))
+                        .withCourtRoomId(of(fromString(day.getString(MOVE_COURT_ROOM_ID))))
+                        .withCourtScheduleId(of(fromString(day.getString(COURT_SCHEDULE_ID))))
+                        .withIsDraft(day.containsKey(IS_DRAFT) && !day.isNull(IS_DRAFT)
+                                ? of(day.getBoolean(IS_DRAFT)) : Optional.empty())
+                        .build());
+                changedSchedules.add(HearingDayCourtSchedule.hearingDayCourtSchedule()
+                        .withHearingDate(LocalDate.parse(day.getString("hearingDate")))
+                        .withCourtScheduleId(fromString(day.getString(COURT_SCHEDULE_ID)))
+                        .build());
+            }
+        }
+
+        // REAL days (virtual false/absent) are persisted as nonDefaultDays. A schedule-changing real
+        // day ALSO travels pre-booked in changedDays above; the aggregate dedupes by date so it is
+        // applied exactly once. courtCentreId/roomId/courtScheduleId are carried as uuid strings.
+        // courtScheduleId may be absent (the UI has none when no bookable slot exists for the
+        // room/date) - the aggregate's merge then keeps the stored day's existing schedule.
+        final List<NonDefaultDay> changedNonDefaultDays = new ArrayList<>();
+        if (payload.containsKey("nonDefaultDays")) {
+            for (final JsonValue value : payload.getJsonArray("nonDefaultDays")) {
+                final JsonObject day = (JsonObject) value;
+                changedNonDefaultDays.add(NonDefaultDay.nonDefaultDay()
+                        .withStartTime(ZonedDateTime.parse(day.getString("startTime")))
+                        .withDuration(of(day.getInt("durationMinutes")))
+                        .withCourtCentreId(of(day.getString(MOVE_COURT_CENTRE_ID)))
+                        .withRoomId(of(day.getString("roomId")))
+                        .withCourtScheduleId(ofNullable(day.getString(COURT_SCHEDULE_ID, null)))
+                        .withVirtual(of(false))
+                        .build());
+            }
+        }
+
+        updateHearingEventStream(command, hearingId, (Hearing hearing) ->
+                hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, changedSchedules, changedNonDefaultDays, sendNotificationToParties));
     }
 
     @Handles("listing.command.hearing-vacate-trial")
@@ -594,8 +716,6 @@ public class ListingCommandHandler {
 
         final uk.gov.justice.listing.events.Hearing storedHearing = hearingFactory.getHearingById(hearingId, command);
 
-        final uk.gov.justice.listing.events.Hearing actualStoredHearing = SerializationUtils.clone(storedHearing);
-
         final boolean hasVideoLink = nonNull(updateHearingForListing.getHasVideoLink()) ? updateHearingForListing.getHasVideoLink() : false;
         final String publicListNote = updateHearingForListing.getPublicListNote();
 
@@ -612,18 +732,23 @@ public class ListingCommandHandler {
 
             LOGGER.info("UpdateHearingEventStream for hearing id: {} with operationType: {} ", hearingId, operationType);
 
+            // Splits are performed by progression via the listing proxy, never through this command.
+            // Rejected before any event is built so the original hearing's stream is left untouched:
+            // a partial update here would move the original's room/date, which is what SPRDT-1227 was.
+            if (HearingUpdateOperationType.SPLIT.equals(operationType)) {
+                LOGGER.error("{} hearingId={} correlationId={}",
+                        SPLIT_VIA_UPDATE_HEARING_REJECTED,
+                        hearingId,
+                        command.metadata().clientCorrelationId().orElse(null));
+                return Stream.empty();
+            }
+
             final Stream<Object> hearingPartiallyEvents = extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing,
                     hearingId,
                     unallocatedHearingRequestCaseMap,
                     persistedUnallocatedHearingCasesMap,
                     operationType,
                     splitHearing);
-
-
-            if (HearingUpdateOperationType.SPLIT.equals(operationType)) {
-                //if its a split the only thing we need to update is the remaining cases
-                return Stream.of(hearingPartiallyEvents).flatMap(i -> i);
-            }
 
             final Boolean isNotificationRelatedAllocatedFieldsUpdated = hearing.isNotificationRelatedAllocatedFieldsUpdated(hearingDays);
 
@@ -680,29 +805,6 @@ public class ListingCommandHandler {
                     nonSittingDaysEvents, courtCentreEvents, judiciaryEvents, courtRoomEvents, hearingDayEvents, allocationEvents, weekCommencingDateEvents, hearingPartiallyEvents,
                     rescheduledEvents, videoLinkUpdateEvent, publicListNoteUpdateEvent).flatMap(i -> i);
         });
-
-
-        if (HearingUpdateOperationType.SPLIT.equals(operationType)) {
-            LOGGER.info("SPLIT hearing raising a new Hearing from hearing id: {}", hearingId);
-            final ZonedDateTime newHearingStartTime = nonNull(startDate) ? ZonedDateTime.of(startDate.atTime(courtCentre.getDefaultStartTime()), ZoneOffset.UTC) : null;
-            //raisenewHearing
-            final List<ListedCase> listedCases = extendHearingUtils.extractCasesToMove(actualStoredHearing.getListedCases(), unallocatedHearingRequestCaseMap);
-            final List<uk.gov.justice.core.courts.JudicialRole> judiciaryInfoByUpdate = updateHearingForListing.getJudiciary();
-            updateHearingEventStream(command, eventStream, hearingAggregate, (Hearing hearing) -> {
-                final Stream<Object> hearingListedEvent = hearing.listForSplit(type,
-                        listedCases,
-                        courtCentreId,
-                        courtCentre.getName(),
-                        courtRoomId,
-                        jurisdictionType,
-                        newHearingStartTime,
-                        weekCommencingStartDate,
-                        weekCommencingDurationInWeeks,
-                        judiciaryInfoByUpdate,
-                        convertCommandHearingDaysToDomainNonDefaultDays(hearingDays));
-                return Stream.of(hearingListedEvent).flatMap(i -> i);
-            });
-        }
     }
 
     private Stream<Object> getJudiciaryEvents(final UUID hearingId, final List<JudicialRole> judiciary, final Hearing hearing, final String judiciaryAssignmentSource,
@@ -1707,20 +1809,6 @@ public class ListingCommandHandler {
         return domainDefaultDays;
     }
 
-    private static List<NonDefaultDay> convertCommandHearingDaysToDomainNonDefaultDays(final List<uk.gov.justice.listing.commands.HearingDay> hearingDays) {
-        List<NonDefaultDay> domainNonDefaultDays = Collections.emptyList();
-        if (isNotEmpty(hearingDays)) {
-            domainNonDefaultDays = hearingDays.stream().map(hearingDay -> NonDefaultDay.nonDefaultDay()
-                    .withStartTime(hearingDay.getStartTime())
-                    .withDuration(Optional.of(hearingDay.getDurationMinutes()))
-                    .withRoomId(Optional.of(hearingDay.getCourtRoomId().toString()))
-                    .withCourtScheduleId(Optional.ofNullable(hearingDay.getCourtScheduleId()).map(Object::toString))
-                    .withCourtCentreId(Optional.of(hearingDay.getCourtCentreId().toString()))
-                    .build()).toList();
-        }
-        return domainNonDefaultDays;
-    }
-
     private static List<HearingDay> convertHearingDaysCommandToDomain(final List<uk.gov.justice.listing.commands.HearingDay> commandHearingDays) {
         if (isEmpty(commandHearingDays)) {
             return emptyList();
@@ -1728,7 +1816,7 @@ public class ListingCommandHandler {
 
         return commandHearingDays.stream()
                 .map(commandHearingDay -> HearingDay.hearingDay()
-                        .withCourtCentreId(Optional.of(commandHearingDay.getCourtCentreId()))
+                        .withCourtCentreId(Optional.ofNullable(commandHearingDay.getCourtCentreId()))
                         .withCourtRoomId(Optional.ofNullable(commandHearingDay.getCourtRoomId()))
                         .withCourtScheduleId(Optional.ofNullable(commandHearingDay.getCourtScheduleId()))
                         .withDurationMinutes(commandHearingDay.getDurationMinutes())
@@ -1736,6 +1824,7 @@ public class ListingCommandHandler {
                         .withEndTime(nonNull(commandHearingDay.getEndTime()) ? commandHearingDay.getEndTime() : commandHearingDay.getStartTime().plusMinutes(commandHearingDay.getDurationMinutes()))
                         .withHearingDate(commandHearingDay.getHearingDate())
                         .withIsCancelled(Optional.ofNullable(commandHearingDay.getIsCancelled()))
+                        .withIsDraft(Optional.ofNullable(commandHearingDay.getIsDraft()))
                         .withSequence(commandHearingDay.getSequence())
                         .build())
                 .toList();

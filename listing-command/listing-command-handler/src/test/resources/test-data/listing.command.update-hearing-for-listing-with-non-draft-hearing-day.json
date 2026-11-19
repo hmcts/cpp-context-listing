@@ -1,0 +1,55 @@
+{
+  "updateHearingForListing": {
+    "hearingId": "HEARING_ID",
+    "type": {
+      "id": "HEARING_TYPE_ID",
+      "description": "HEARING_TYPE_DESCRIPTION"
+    },
+    "startDate": "START_DATE",
+    "endDate": "END_DATE",
+    "hearingLanguage": "HEARING_LANGUAGE",
+    "courtCentreId": "COURT_CENTRE_ID",
+    "jurisdictionType": "JURISDICTION_TYPE",
+    "judiciary": [],
+    "hearingDays": [
+      {
+        "courtCentreId": "COURT_CENTRE_ID",
+        "courtRoomId": "COURT_ROOM_ID",
+        "courtScheduleId": "COURT_SCHEDULE_ID_1",
+        "durationMinutes": 25,
+        "endTime": "2018-06-01T11:25:00Z",
+        "hearingDate": "2018-06-01",
+        "isCancelled": false,
+        "isDraft": false,
+        "sequence": 1,
+        "startTime": "2018-06-01T11:00:00Z"
+      }
+    ],
+    "nonDefaultDays": [],
+    "nonSittingDays": [],
+    "courtRoomId": "COURT_ROOM_ID",
+    "hasVideoLink": false,
+    "publicListNote": "",
+    "sendNotificationToParties": false
+  },
+  "courtCentreDetails": {
+    "id": "f0e04581-8f66-4bbf-b5b4-2d41fcc2ae7c",
+    "defaultDuration": "6",
+    "defaultStartTime": "10:30"
+  },
+  "prosecutionCases": [
+    {
+      "caseId": "2279b2c3-b0d3-4889-ae8e-1ecc20c39e27",
+      "defendants": [
+        {
+          "defendantId": "e1d32d9d-29ec-4934-a932-22a50f223966",
+          "offences": [
+            {
+              "offenceId": "3789ab16-0bb7-4ef1-87ef-c936bf0364f1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
