@@ -20,6 +20,7 @@ import uk.gov.moj.cpp.listing.query.api.util.FileUtil;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +36,8 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -47,6 +50,8 @@ class DefaultQueryApiHearingSlotsResourceTest {
 
     private final String AZURE_RESULT = "listing.search.hearing.slots.json";
     private final String SLOT_SEARCH_RESPONSE_WITH_HEARING_START_TIME = "listing.search.hearing.slots.withhearingstarttime.json";
+    private static final Map<String, String> CROWN_SEARCH_PARAMS = Map.of("panel", "ADULT", "sessionStartDate", "2026-11-23", "sessionEndDate", "2026-12-14",
+            "ouCode", "C05LV00", "businessType", "GENC", "pageSize", "20", "pageNumber", "1", "availableDurationMins", "1080", "status", "DRAFT", "jurisdiction", "CROWN");
 
     @Mock
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
@@ -99,7 +104,8 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "1",
                 20,
                 null,
-                "MAGISTRATES");
+                "MAGISTRATES",
+                null);
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
@@ -133,7 +139,8 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "1",
                 20,
                 null,
-                "MAGISTRATES");
+                "MAGISTRATES",
+                null);
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
@@ -166,7 +173,8 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "1",
                 20,
                 null,
-                "MAGISTRATES");
+                "MAGISTRATES",
+                null);
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
@@ -209,7 +217,8 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "1",
                 20,
                 "FINAL",
-                "MAGISTRATES");
+                "MAGISTRATES",
+                null);
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(paramsCaptor.capture());
         final Map<String, String> params = paramsCaptor.getValue();
@@ -238,11 +247,39 @@ class DefaultQueryApiHearingSlotsResourceTest {
                 "1",
                 null,
                 null,
+                null,
                 null);
 
         verify(courtSchedulerServiceAdapter).hearingSlotsSearch(paramsCaptor.capture());
         final Map<String, String> params = paramsCaptor.getValue();
         assertEquals("ALL", params.get("status"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void searchHearingSlots_passesIsWeekCommencingToAdapterWhenSent(final boolean isWeekCommencing) {
+        when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
+        when(notesService.findNotes(any(List.class))).thenReturn(new ArrayList());
+
+        queryApiHearingSlotsResource.getHearingSlots("ADULT", "2026-11-23", "2026-12-14", null, null, "C05LV00", null, null, "GENC", null,
+                null, null, "20", "1", 1080, "DRAFT", "CROWN", isWeekCommencing);
+
+        final Map<String, String> expected = new HashMap<>(CROWN_SEARCH_PARAMS);
+        expected.put("isWeekCommencing", String.valueOf(isWeekCommencing));
+        verify(courtSchedulerServiceAdapter).hearingSlotsSearch(paramsCaptor.capture());
+        assertEquals(expected, paramsCaptor.getValue());
+    }
+
+    @Test
+    void searchHearingSlots_leavesIsWeekCommencingOutWhenNotSent() {
+        when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
+        when(notesService.findNotes(any(List.class))).thenReturn(new ArrayList());
+
+        queryApiHearingSlotsResource.getHearingSlots("ADULT", "2026-11-23", "2026-12-14", null, null, "C05LV00", null, null, "GENC", null,
+                null, null, "20", "1", 1080, "DRAFT", "CROWN", null);
+
+        verify(courtSchedulerServiceAdapter).hearingSlotsSearch(paramsCaptor.capture());
+        assertEquals(CROWN_SEARCH_PARAMS, paramsCaptor.getValue());
     }
 
     @Test
@@ -269,7 +306,7 @@ class DefaultQueryApiHearingSlotsResourceTest {
         final Response result = queryApiHearingSlotsResource.getHearingSlots("ADULT",
                 "2017-10-11", "2020-10-11", null, "BAOOUS", "BAOOUS",
                 "001c067d-eaca-4ce5-ad90-a366ef3e4bb6", "1234", "BYS", "AM",
-                null, null, "20", "1", 20, null, "CROWN");
+                null, null, "20", "1", 20, null, "CROWN", null);
 
         verify(notesService).findNotes(notesCaptor.capture());
         assertEquals(1, notesCaptor.getValue().size());

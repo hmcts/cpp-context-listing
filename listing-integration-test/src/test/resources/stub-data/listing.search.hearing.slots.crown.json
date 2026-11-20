@@ -1,0 +1,52 @@
+{
+  "results": 2,
+  "pageCount": 1,
+  "hearingSlots": [
+    {
+      "courtScheduleId": "4a8e2c71-6d3f-4b0e-8f15-9c2d7e5a1b36",
+      "listingProfileId": null,
+      "ouCode": "C05LV00",
+      "courtRoomId": "e06e1734-aa04-3ec0-b14c-400edab8b831",
+      "courtRoomNumber": 1,
+      "courtHouseName": "Liverpool Crown Court",
+      "courtRoomName": "Courtroom 01",
+      "operationalUnit": "1",
+      "businessType": "GENC",
+      "panel": "ADULT",
+      "courtSession": "AD",
+      "sessionDate": "2026-11-23",
+      "sessionStartTime": "2026-11-23T10:00:00.000+00:00",
+      "maxSlots": 0,
+      "maxDuration": 360,
+      "availableSlots": 0,
+      "availableDuration": 300,
+      "draft": true,
+      "isWeekCommencing": false,
+      "judiciaries": [],
+      "slotStartTimes": []
+    },
+    {
+      "courtScheduleId": "b3f7d924-1c5a-4e86-a0d2-6e8b4f3c7a59",
+      "listingProfileId": null,
+      "ouCode": "C05LV00",
+      "courtRoomId": "e06e1734-aa04-3ec0-b14c-400edab8b831",
+      "courtRoomNumber": 1,
+      "courtHouseName": "Liverpool Crown Court",
+      "courtRoomName": "Courtroom 01",
+      "operationalUnit": "1",
+      "businessType": "GENC",
+      "panel": "ADULT",
+      "courtSession": "AD",
+      "sessionDate": "2026-11-24",
+      "sessionStartTime": "2026-11-24T10:00:00.000+00:00",
+      "maxSlots": 0,
+      "maxDuration": 360,
+      "availableSlots": 0,
+      "availableDuration": 360,
+      "draft": true,
+      "isWeekCommencing": false,
+      "judiciaries": [],
+      "slotStartTimes": []
+    }
+  ]
+}

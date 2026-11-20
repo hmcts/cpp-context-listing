@@ -19,6 +19,7 @@ public final class SessionAvailabilityValidationQueryParamConstants {
     public static final String AVAILABLE_DURATION_MINS = "availableDurationMins";
     public static final String STATUS = "status";
     public static final String JURISDICTION = "jurisdiction";
+    public static final String IS_WEEK_COMMENCING = "isWeekCommencing";
 
     private SessionAvailabilityValidationQueryParamConstants() {
         // utility class

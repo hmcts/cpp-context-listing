@@ -17,7 +17,9 @@ import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.TIMEOUT_IN_MILLIS;
 import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithOverbookedSlots;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCrownHearingSlotsByWeekCommencing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSessionEndDateEmptyRequest;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyCrownHearingSlotsSearchSentIsWeekCommencing;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
@@ -28,6 +30,7 @@ import uk.gov.moj.cpp.listing.steps.NotesSteps;
 import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub;
 
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -41,6 +44,8 @@ class HearingSlotsIT extends AbstractIT {
 
     private static final String QUERY_API_PATH = "/listing-query-api/query/api/rest/listing/hearingSlots";
     private static final String QUERY_MEDIA_TYPE = "application/vnd.listing.search.hearing.slots+json";
+    private static final String WEEK_COMMENCING_OU_CODE = "C05LV00";
+    private static final String WEEK_COMMENCING_MONDAY = "2026-11-23";
     private final NotesSteps notesSteps = new NotesSteps();
 
     StringToJsonObjectConverter stringToJsonObjectConverter = new StringToJsonObjectConverter();
@@ -206,6 +211,76 @@ class HearingSlotsIT extends AbstractIT {
                 responseData.getPayload().contains("\"results\":0"), is(true));
     }
 
+
+    @Test
+    void shouldSendIsWeekCommencingTrueToCourtSchedulerWhenItIsTrueInTheQuery() {
+        stubGetCrownHearingSlotsByWeekCommencing(WEEK_COMMENCING_OU_CODE, WEEK_COMMENCING_MONDAY);
+
+        pollWithDefaults(getRequestParams(getQueryString(weekCommencingSearch("true")))).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.results", is(1)),
+                        withJsonPath("$.pageCount", is(1)),
+                        withJsonPath("$.notes.size()", is(0)),
+                        withJsonPath("$.hearingSlots.size()", is(1)),
+                        withJsonPath("$.hearingSlots[0].courtScheduleId", is("7c1d5f0e-3b0a-4c58-9a61-2f4f5d6a9b10")),
+                        withJsonPath("$.hearingSlots[0].sessionDate", is(WEEK_COMMENCING_MONDAY)),
+                        withJsonPath("$.hearingSlots[0].ouCode", is(WEEK_COMMENCING_OU_CODE)),
+                        withJsonPath("$.hearingSlots[0].isWeekCommencing", is(true)),
+                        withJsonPath("$.hearingSlots[0].draft", is(true)),
+                        withJsonPath("$.hearingSlots[0].maxDuration", is(3600)),
+                        withJsonPath("$.hearingSlots[0].availableDuration", is(2520))
+                ))
+        );
+        verifyCrownHearingSlotsSearchSentIsWeekCommencing(WEEK_COMMENCING_OU_CODE, WEEK_COMMENCING_MONDAY, "true");
+    }
+
+    @Test
+    void shouldNotSendIsWeekCommencingToCourtSchedulerWhenItIsNotInTheQuery() {
+        stubGetCrownHearingSlotsByWeekCommencing(WEEK_COMMENCING_OU_CODE, WEEK_COMMENCING_MONDAY);
+
+        pollForOrdinaryCrownSessions(weekCommencingSearch(null));
+        verifyCrownHearingSlotsSearchSentIsWeekCommencing(WEEK_COMMENCING_OU_CODE, WEEK_COMMENCING_MONDAY, null);
+    }
+
+    @Test
+    void shouldSendIsWeekCommencingFalseToCourtSchedulerWhenItIsFalseInTheQuery() {
+        stubGetCrownHearingSlotsByWeekCommencing(WEEK_COMMENCING_OU_CODE, WEEK_COMMENCING_MONDAY);
+
+        pollForOrdinaryCrownSessions(weekCommencingSearch("false"));
+        verifyCrownHearingSlotsSearchSentIsWeekCommencing(WEEK_COMMENCING_OU_CODE, WEEK_COMMENCING_MONDAY, "false");
+    }
+
+    private void pollForOrdinaryCrownSessions(final Map<String, String> search) {
+        pollWithDefaults(getRequestParams(getQueryString(search))).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.results", is(2)),
+                        withJsonPath("$.pageCount", is(1)),
+                        withJsonPath("$.hearingSlots.size()", is(2)),
+                        withJsonPath("$.hearingSlots[0].courtScheduleId", is("4a8e2c71-6d3f-4b0e-8f15-9c2d7e5a1b36")),
+                        withJsonPath("$.hearingSlots[0].ouCode", is(WEEK_COMMENCING_OU_CODE)),
+                        withJsonPath("$.hearingSlots[0].isWeekCommencing", is(false)),
+                        withJsonPath("$.hearingSlots[1].courtScheduleId", is("b3f7d924-1c5a-4e86-a0d2-6e8b4f3c7a59")),
+                        withJsonPath("$.hearingSlots[1].isWeekCommencing", is(false))
+                ))
+        );
+    }
+
+    private static Map<String, String> weekCommencingSearch(final String isWeekCommencing) {
+        final Map<String, String> params = new LinkedHashMap<>();
+        params.put("panel", "ADULT");
+        params.put("sessionStartDate", WEEK_COMMENCING_MONDAY);
+        params.put("sessionEndDate", "2026-12-14");
+        params.put("ouCode", WEEK_COMMENCING_OU_CODE);
+        params.put("businessType", "GENC");
+        params.put("pageSize", "20");
+        params.put("pageNumber", "1");
+        params.put("status", "DRAFT");
+        params.put("jurisdiction", "CROWN");
+        if (isWeekCommencing != null) {
+            params.put("isWeekCommencing", isWeekCommencing);
+        }
+        return params;
+    }
 
     private RequestParams getRequestParams(final String queryString) {
         final String url = format("%s%s%s%s", getBaseUri(), QUERY_API_PATH, "?", queryString);
