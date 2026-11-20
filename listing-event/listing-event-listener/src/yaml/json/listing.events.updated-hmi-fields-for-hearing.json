@@ -1,9 +1,0 @@
-{
-  "hearingId" : "9689207b-a9d2-4c2e-bd38-269b78a132a8",
-  "bookingType": "Video",
-  "priority": "High",
-  "specialRequirements": [
-    "RVC",
-    "GSN"
-  ]
-}

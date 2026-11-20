@@ -1,16 +1,15 @@
-// The legacy *IT suite (Maven module listing-integration-test) run against the Spring Boot app on the
-// docker-compose IT stack (MBD refactor P2.3.0; §9, D1, D10; ADR 014). Tests only.
+// The legacy *IT suite (the scenarios of the former Maven module listing-integration-test) run against
+// the Spring Boot app on the docker-compose IT stack (MBD refactor P2.3.0; §9, D1, D10; ADR 014).
+// Tests only.
 //
-// Sources: NOT copied. The scenarios are compiled from the Maven module's src/test/java and
-// src/test/resources (one source of truth while the JEE suite is still the parity baseline, D13).
-// The harness classes this module overrides (src/test/java here, same package and class name) are
-// left out of the Maven sources by a Sync into build/legacy-it/, so each class exists once. The
-// overrides are the §9 "harness only" changes: base URI and ports, WireMock in its own container,
-// the Artemis connection, the viewstore-only database (no event store). Listed in ADR 014.
+// Sources: moved here from the Maven module at P2.6 (src/test/java, src/test/resources, src/test/raml,
+// unchanged). The harness classes the Maven module had and the Spring stack needs replaced (the §9
+// "harness only" changes: base URI and ports, WireMock in its own container, the Artemis connection,
+// the viewstore-only database, no event store) are the versions in src/test/java; the WildFly
+// versions are gone (listed in ADR 014). src/generated/java and legacy-it-dependencies.txt are owned
+// here (see README.md); there is no Maven build to regenerate them from any more.
 //
-// Generated inputs (src/generated/java, legacy-it-dependencies.txt): refresh-legacy-inputs.sh.
-//
-// Run: ./runSpringIntegrationTests.sh legacy [-- --offline] or
+// Run: ./runIntegrationTests.sh legacy  or
 //      ./gradlew :listing-integration-test-legacy:legacyIntegrationTest [-PitClasses=ListingNoteIT,HearingIT] [--tests ...]
 // The stack uses the same fixed container names and ports as listing-integration-test-spring, so the
 // two suites do not run at the same time.
@@ -19,29 +18,14 @@ plugins {
     id 'com.avast.gradle.docker-compose'
 }
 
-def mavenItDir = rootProject.file('listing-integration-test/src/test')
-def legacySources = layout.buildDirectory.dir('legacy-it/java')
-// Under build/legacy-it/src/test/resources: the suite's FileUtil reads 'src/test/resources/...' relative
-// to the working directory (the Maven module dir under failsafe); the test task runs in build/legacy-it.
+// The test JVM runs in build/legacy-it: the suite's FileUtil reads 'src/test/resources/...' relative to
+// the working directory, and its listeners write target/... and unexpected-server-errors.txt there.
+def legacyItDir = layout.buildDirectory.dir('legacy-it')
 def legacyResources = layout.buildDirectory.dir('legacy-it/src/test/resources')
 
-// Every class under src/test/java here that also exists in the Maven module replaces it.
-def overriddenSources = providers.provider {
-    fileTree('src/test/java').matching { include '**/*.java' }.files
-            .collect { file('src/test/java').toPath().relativize(it.toPath()).toString().replace(File.separatorChar, '/' as char) }
-            .findAll { new File(mavenItDir, "java/${it}").exists() }
-}
-
-def syncLegacySources = tasks.register('syncLegacySources', Sync) {
-    description = 'Copies the Maven legacy IT sources, minus the classes this module overrides'
-    from(new File(mavenItDir, 'java'))
-    exclude { details -> overriddenSources.get().contains(details.relativePath.pathString) }
-    into legacySources
-}
-
 def syncLegacyResources = tasks.register('syncLegacyResources', Sync) {
-    description = 'Copies the Maven legacy IT resources, with the base URI of the Spring stack gateway'
-    from(new File(mavenItDir, 'resources'))
+    description = 'Copies the legacy IT resources under build/legacy-it, with the base URI of the Spring stack gateway'
+    from('src/test/resources')
     // §9 base URI: endpoint.properties' base-uri (was http://localhost:8080, the cpp-developers-docker gateway).
     filesMatching('endpoint.properties') {
         filter { String line -> line.startsWith('base-uri=') ? "base-uri=${project.findProperty('legacy.baseUri') ?: 'http://localhost:8192'}" : line }
@@ -49,20 +33,25 @@ def syncLegacyResources = tasks.register('syncLegacyResources', Sync) {
     into legacyResources
 }
 
+// The listing-json schemas (now under listing-api/src/listing-json) were on the Maven test classpath.
+def listingJsonSchemas = project(':listing-api').file('src/listing-json')
+// The public message contract (schemas + publications descriptor, listing-messaging/src/contract).
+def publicContractDir = project(':listing-messaging').file('src/contract')
+// Every public.* message the app published during legacyIntegrationTest (PublicMessageRecorder).
+def recordedPublicMessages = layout.buildDirectory.dir('legacy-it/public-messages')
+
 sourceSets {
     main {
         java.srcDirs = []
         resources.srcDirs = []
     }
     test {
-        java.srcDirs = [legacySources, 'src/test/java', 'src/generated/java']
-        // listing-json's schemas were on the Maven test classpath (listing-json jar).
-        resources.srcDirs = [legacyResources, 'src/test/resources', rootProject.file('listing-json/src/main/resources')]
+        java.srcDirs = ['src/test/java', 'src/generated/java']
+        resources.srcDirs = [legacyResources, listingJsonSchemas]
     }
 }
 
 tasks.named('compileTestJava') {
-    dependsOn syncLegacySources
     options.compilerArgs.remove('-Xlint:unchecked')
     options.compilerArgs << '-nowarn'
     options.encoding = 'UTF-8'
@@ -102,7 +91,7 @@ repositories {
 }
 
 dependencies {
-    // The Maven module's test classpath, exact versions, non-transitive (refresh-legacy-inputs.sh).
+    // The former Maven module's resolved test classpath, exact versions, non-transitive (README.md).
     file('legacy-it-dependencies.txt').readLines()
             .findAll { it && !it.startsWith('#') }
             .each { coordinates -> testImplementation(coordinates) { transitive = false } }
@@ -142,8 +131,8 @@ dockerCompose {
     dockerExecutable = 'docker'
 }
 
-// The legacy suite is NOT part of `./gradlew build` (it is red until the remaining command slices are
-// ported, P2.3.x): it has its own task, run explicitly. `test` only compiles (build stays green).
+// The legacy suite is NOT part of `./gradlew build` (opt-in: ~22 minutes on its own stack): it has its
+// own task, run by ./runIntegrationTests.sh. `test` only compiles it.
 tasks.named('test') { enabled = false }
 
 def legacyIntegrationTest = tasks.register('legacyIntegrationTest', Test) {
@@ -189,12 +178,44 @@ def legacyIntegrationTest = tasks.register('legacyIntegrationTest', Test) {
     // ServerLogTestMarkerExtension writes its markers here instead of WildFly's server.log (the app's
     // log is captured per container under build/legacy-it/container-logs).
     systemProperty 'server.log.path', layout.buildDirectory.file('legacy-it/test-markers.log').get().asFile.path
+    // PublicMessageRecorder: every public.event message, for publicMessageContractTest.
+    systemProperty 'legacy.publicMessages.dir', recordedPublicMessages.get().asFile.path
+    // ./runIntegrationTests.sh durations: TestDurationListener's ranked durations
+    // (build/legacy-it/target/test-results/test-durations.csv), as the Maven test-duration-tracking profile.
+    if (project.hasProperty('itDurations')) {
+        systemProperty 'enable.test.duration.tracking', 'true'
+    }
 
     jvmArgs = ['-Xshare:off']
+    finalizedBy 'publicMessageContractTest'
     reports.junitXml.outputPerTestCase = false
     testLogging {
         events 'passed', 'skipped', 'failed'
         exceptionFormat = 'short'
         showStandardStreams = false
+    }
+}
+
+// Public message contract (P2.5, §4.4, §12): validates every public.* message recorded during
+// legacyIntegrationTest against the legacy public schemas, one test per published name. Runs after the
+// suite (finalizedBy), without the compose stack; on its own it validates the last run's recordings.
+tasks.register('publicMessageContractTest', Test) {
+    description = 'Validates the public.* messages recorded by the last legacyIntegrationTest run against the legacy public schemas'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    mustRunAfter legacyIntegrationTest
+    include '**/PublicMessageContractTest.class'
+    // No stack here: LegacyHarnessExtension (auto-detected for the *IT classes) would initialise the WireMock stubs.
+    systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'false'
+    systemProperty 'public.contract.dir', publicContractDir.path
+    systemProperty 'schema.catalog.dirs', [new File(listingJsonSchemas, 'json/schema'),
+            project(':listing-api').file('src/main/resources/request-schemas/catalog/vendored-core-domain')].join(File.pathSeparator)
+    // Not legacy.publicMessages.dir: that property switches PublicMessageRecorder on (it would wipe the recordings).
+    systemProperty 'contract.publicMessages.dir', recordedPublicMessages.get().asFile.path
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat = 'full'
     }
 }

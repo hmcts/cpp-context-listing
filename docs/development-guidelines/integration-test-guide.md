@@ -1,5 +1,16 @@
 # Integration Test Guide
 
+> **Since P2.6 of the MBD refactor (2026-11-19)** the suite lives in the Gradle module
+> `listing-integration-test-legacy` and runs against the Spring Boot app on the docker-compose stack
+> (no WildFly, no `CPP_DOCKER_DIR`, no Maven). Command mapping for the sections below:
+> `mvn verify -pl listing-integration-test -P listing-integration-test` →
+> `./runIntegrationTests.sh legacy` (or `./gradlew :listing-integration-test-legacy:legacyIntegrationTest`,
+> subsets with `-PitClasses=HearingIT` or `--tests`); the `test-duration-tracking` profile →
+> `./runIntegrationTests.sh legacy durations` (`-PitDurations`); `-Dit.clock=…` → `-- -Pit.clock=…`.
+> The server.log strict mode (`errorlog`, `-Dserver.log.failOnUnexpectedErrors`) and the Maven
+> `forbidden-apis` guard (§14.2) have no Gradle equivalent yet; failsafe reruns are gone (no rerun).
+> The coding rules below still apply.
+
 This document describes the coding standards and patterns to follow when writing or modifying integration tests. These rules are derived from the migration performed on the `dev/PEG-Framework-D-perf` branch relative to `team/sni8349`.
 
 # Latest Integration Test Timing 
@@ -510,6 +521,7 @@ signature. Findings are printed at the end of the run (and written to
 Strict mode makes the owning test FAIL instead of just being summarised:
 
 ```bash
+# WildFly runner only (removed at P2.6; not available on the Spring stack, see the note at the top):
 ./runIntegrationTests.sh errorlog                      # full suite, strict (also disables reruns)
 mvn verify ... -Dserver.log.failOnUnexpectedErrors=true  # targeted runs
 ```

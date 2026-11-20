@@ -15,12 +15,13 @@ needs the CPP schema jars (decision D22, `docs/MBD_REFACTOR_PROMPT.md` §15.13).
 | `criminal-court-public-model/` | `uk.gov.moj.cpp.core.domain:criminal-court-public-model` | 17.104.6 | 99 |
 
 Vendored on 2026-11-19. 17.104.6 is the `coredomain.version` the Maven (JEE) build resolves from
-the CPP parent POM (`mvn -o help:evaluate -Dexpression=coredomain.version`). Each file is a byte-for-byte copy of
+the CPP parent POM of the (since deleted) Maven build. Each file is a byte-for-byte copy of
 `json/schema/<path>` from the jar, kept at its path in the jar under `<artifact>/`.
 
 Only the transitive closure of the `$ref`s is here: start from every schema in
-`listing-command/listing-command-api/src/raml/json/schema`,
-`listing-query/listing-query-api/src/raml/json/schema` and `listing-json/src/main/resources/json/schema`,
+`listing-api/src/raml/command/json/schema`,
+`listing-api/src/raml/query/json/schema` and `listing-api/src/listing-json/json/schema` (the former
+`listing-command-api`, `listing-query-api` and `listing-json` schemas, moved here at P2.6),
 resolve each `$ref` (against the enclosing `id`, fragment removed), and follow it into the schema
 with that `id`. Files that are never reached are left out (the jar's duplicate of
 `http://justice.gov.uk/listing/courts/list-court-hearing.json` is one; the local
@@ -28,7 +29,7 @@ with that `id`. Files that are never reached are left out (the jar's duplicate o
 
 ## Refreshing
 
-Do this when the JEE build moves to a new core-domain version (until P2.6) or a legacy schema gains a
+Do this when a newer core-domain release must be adopted or a legacy schema gains a
 `$ref` into a core-domain schema that is not here.
 
 1. Unpack `json/schema/**` from both jars (same version) into two scratch directories.
@@ -37,4 +38,4 @@ Do this when the JEE build moves to a new core-domain version (until P2.6) or a 
 3. Update the version and date in this README.
 4. `./gradlew --offline :listing-api:test` — `RequestSchemaRegistry` compiles every mapped schema at
    startup and fails with "JSON schema … is not in the classpath schema catalog" for a missing id.
-   Then run the Spring ITs (`./runSpringIntegrationTests.sh`).
+   Then run the ITs (`./runIntegrationTests.sh`).

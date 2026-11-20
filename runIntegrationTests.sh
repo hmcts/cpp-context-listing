@@ -1,129 +1,123 @@
 #!/usr/bin/env bash
 
-# Script that runs, liquibase, deploys wars and runs integration test
+# Runs the integration tests of the Spring Boot listing app against the docker-compose IT stack
+# (db, WireMock, Artemis, app; MBD refactor §9). A thin wrapper around the Gradle IT tasks:
 #
-# Usage: ./runIntegrationTests.sh [errorlog] [durations] [nounit] [nomidnightguard]
-#   errorlog  - strict server.log mode: any unexpected ERROR/WARN in a test's server.log window
-#               FAILS that test (see ServerLogTestMarkerExtension / @ExpectedServerErrors).
-#               Also disables failsafe reruns so strict failures cannot be masked as flakes.
-#   durations - also activate the test-duration-tracking profile (TestDurationListener): ranked
-#               per-test durations in listing-integration-test/target/test-results/test-durations.csv
-#   nounit    - build the wars with -DskipTests (unit tests are not needed to deploy; the PR gate's
-#               own `mvn clean install` still runs them). Saves the ~1 min unit-test pass per IT run.
+#   1. unit tests   ./gradlew build -x :listing-integration-test-spring:test           (skip: nounit)
+#   2. Spring ITs   ./gradlew :listing-integration-test-spring:test                     (*IntegrationTest / *IT)
+#   3. legacy ITs   ./gradlew :listing-integration-test-legacy:legacyIntegrationTest    (the former Maven
+#                   listing-integration-test scenarios), followed by publicMessageContractTest (every
+#                   public.* message the app published during the run, validated against its legacy schema)
+#
+# Usage: ./runIntegrationTests.sh [spring|legacy] [durations] [nounit] [nomidnightguard] [-- <gradle args>]
+#   spring          - run only the Spring ITs (step 2).
+#   legacy          - run only the legacy suite (step 3). Subsets: -- -PitClasses=ListingNoteIT,HearingIT
+#                     or -- --tests '*ListingNoteIT'.
+#   durations       - legacy suite: ranked per-test durations (TestDurationListener) in
+#                     listing-integration-test-legacy/build/legacy-it/target/test-results/test-durations.csv.
+#   nounit          - skip step 1 (the IT stack only needs the bootJar).
 #   nomidnightguard - do not wait when 00:00 UTC is near (see waitIfUtcMidnightIsNear below).
-# Any other argument is rejected: in particular -D options (-Dit.test, -Dit.clock) are NOT forwarded to Maven.
+#   Anything after `--` is passed to every Gradle call, e.g. -- --offline, -- -Pit.clock=2026-06-01T23:30:00Z.
+#
+# `errorlog` (the WildFly runner's strict server.log mode) is no longer supported: the app logs JSON to
+# stdout in its container (captured under listing-integration-test-legacy/build/legacy-it/container-logs),
+# not to a server.log the suite can mark and scan.
+#
+# Needs Docker (compose v2) and the JDK 25 Gradle toolchain; no WildFly and no CPP_DOCKER_DIR. Both
+# suites use the same container names and ports, so they run one after the other, never together.
+# Exit status: non-zero if any step failed (every selected step still runs).
 
-CONTEXT_NAME=listing
+set -u
 
-SERVER_LOG_STRICT_PROPS=""
-EXTRA_IT_PROFILES=""
-BUILD_SKIP_TESTS=""
+# The host must not sleep mid-run: the suite's JMS connections die with the broker's TTL (seen at P2.3.2).
+if [ -z "${IT_CAFFEINATED:-}" ] && [ "$(uname -s)" = "Darwin" ] && command -v caffeinate >/dev/null 2>&1; then
+  export IT_CAFFEINATED=1
+  exec caffeinate -dims "$0" "$@"
+fi
+
+RUN_SPRING=true
+RUN_LEGACY=true
+RUN_UNIT=true
 MIDNIGHT_GUARD=true
-for arg in "$@"; do
-  case "$arg" in
-    errorlog)
-      SERVER_LOG_STRICT_PROPS="-Dserver.log.failOnUnexpectedErrors=true -Dfailsafe.rerunFailingTestsCount=0"
+LEGACY_PROPS=()
+GRADLE_ARGS=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    spring)
+      RUN_LEGACY=false
+      ;;
+    legacy)
+      RUN_SPRING=false
       ;;
     durations)
-      EXTRA_IT_PROFILES=",test-duration-tracking"
+      LEGACY_PROPS+=("-PitDurations")
       ;;
     nounit)
-      BUILD_SKIP_TESTS="-DskipTests"
+      RUN_UNIT=false
       ;;
     nomidnightguard)
       MIDNIGHT_GUARD=false
       ;;
+    errorlog)
+      echo "'errorlog' is not supported on the Spring stack: the app logs JSON to stdout in its container, not to a"
+      echo "server.log the suite can scan. Check listing-integration-test-legacy/build/legacy-it/container-logs/ instead."
+      exit 2
+      ;;
+    --)
+      shift
+      GRADLE_ARGS=("$@")
+      break
+      ;;
     *)
-      echo "Unknown argument '$arg' (supported: errorlog durations nounit nomidnightguard)."
-      echo "-D options such as -Dit.test / -Dit.clock are NOT forwarded to the failsafe run."
+      echo "Unknown argument '$1' (supported: spring legacy durations nounit nomidnightguard, then -- <gradle args>)."
       exit 2
       ;;
   esac
+  shift
 done
 
-FRAMEWORK_LIBRARIES_VERSION=$(mvn help:evaluate -Dexpression=framework-libraries.version -q -DforceStdout)
-FRAMEWORK_VERSION=$(mvn help:evaluate -Dexpression=framework.version -q -DforceStdout)
-EVENT_STORE_VERSION=$(mvn help:evaluate -Dexpression=event-store.version -q -DforceStdout)
-
-DOCKER_CONTAINER_REGISTRY_HOST_NAME=crmdvrepo01
-
-LIQUIBASE_COMMAND=update
-#LIQUIBASE_COMMAND=dropAll
-
-#fail script on error
-set -e
-
-[ -z "$CPP_DOCKER_DIR" ] && echo "Please export CPP_DOCKER_DIR environment variable pointing to cpp-developers-docker repo (https://github.com/hmcts/cpp-developers-docker) checked out locally" && exit 1
-WILDFLY_DEPLOYMENT_DIR="$CPP_DOCKER_DIR/containers/wildfly/deployments"
-
-source $CPP_DOCKER_DIR/docker-utility-functions.sh
-source $CPP_DOCKER_DIR/build-scripts/integration-test-scipt-functions.sh
-
-# Local override of cpp-developers-docker's integrationTests(): identical mvn line plus the
-# optional strict server.log properties (see "errorlog" usage above). Defined AFTER the source
-# lines so this definition wins. The trailing ${SERVER_LOG_STRICT_PROPS} also overrides the
-# rerun count when strict mode is on (later -D wins on the mvn command line).
-integrationTests() {
-  echo
-  echo "Running Integration Tests${SERVER_LOG_STRICT_PROPS:+ (strict server.log mode: unexpected ERROR/WARN fails the owning test)}"
-  mvn -B -C -U verify -pl ${CONTEXT_NAME}-integration-test -P${CONTEXT_NAME}-integration-test${EXTRA_IT_PROFILES} -DINTEGRATION_HOST_KEY=localhost -Dfailsafe.rerunFailingTestsCount=4 ${SERVER_LOG_STRICT_PROPS}
-  echo "Finished executing Integration Tests"
-}
-
-# Local override of cpp-developers-docker's buildWars()/doBuildWars 'service': same clean + install,
-# plus -DskipTests when "nounit" is given.
-buildWars() {
-  mvn -f ${CONTEXT_NAME}-service/pom.xml clean
-  echo "Building wars..."
-  mvn install -nsu ${BUILD_SKIP_TESTS}
-  echo "Finished building wars"
-}
-
-# Never start the IT JVM within IT_MIDNIGHT_GUARD_SECONDS of 00:00 UTC (01:00 BST in summer).
-# ItClock anchors "today" once per IT JVM, but the server's LocalDate.now() rolls over at 00:00 UTC:
-# hearings the suite created for "today" then count as past (Hearing.isHearingInThePast drops defendant,
-# offence, case-marker, application ... updates) and date-filtered searches stop matching. A run that
-# straddled midnight on 2026-10-09 went 24+ tests red and ran for over 45 minutes.
+# Never start an IT JVM within IT_MIDNIGHT_GUARD_SECONDS of 00:00 UTC (01:00 BST in summer).
+# ItClock anchors "today" once per IT JVM, but the app's LocalDate.now() rolls over at 00:00 UTC:
+# hearings the suite created for "today" then count as past and date-filtered searches stop matching.
+# A run that straddled midnight on 2026-10-09 went 24+ tests red. Checked before each suite.
 waitIfUtcMidnightIsNear() {
   [ "$MIDNIGHT_GUARD" = true ] || return 0
   local guard="${IT_MIDNIGHT_GUARD_SECONDS:-1200}"
   local secs_left=$(( 86400 - $(date -u +%s) % 86400 ))
   if [ "$secs_left" -le "$guard" ]; then
-    echo "00:00 UTC is ${secs_left}s away: waiting $(( secs_left + 30 ))s so the IT JVM and the server agree on 'today'"
+    echo "00:00 UTC is ${secs_left}s away: waiting $(( secs_left + 30 ))s so the IT JVM and the app agree on 'today'"
     sleep $(( secs_left + 30 ))
   fi
 }
 
-runLiquibase() {
-  runEventLogLiquibase
-  runEventLogAggregateSnapshotLiquibase
-  runEventBufferLiquibase
-  runViewStoreLiquibase
-  runSystemLiquibase
-  runEventTrackingLiquibase
-  printf "${CYAN}All liquibase $LIQUIBASE_COMMAND scripts run${NO_COLOUR}\n\n"
+gradle() {
+  # "${arr[@]+...}" keeps bash 3.2 (macOS) happy with empty arrays under set -u.
+  ./gradlew "$@" ${GRADLE_ARGS[@]+"${GRADLE_ARGS[@]}"}
 }
 
-# TODO: Should probably move this function to cpp-developers-docker as it's already generic
-deltaspikeIntegrationTests() {
-  echo
-  echo "Running Deltaspike Persistence Integration Tests"
-  mvn -B verify -pl ${CONTEXT_NAME}-integration-test-persistence -P${CONTEXT_NAME}-integration-test -DINTEGRATION_HOST_KEY=localhost
-  echo "Finished executing Deltaspike Persistence Integration Tests"
-}
+cd "$(dirname "$0")"
+FAILED=()
 
-buildDeployAndTest() {
-  loginToDockerContainerRegistry
-  buildWars
-  undeployWarsFromDocker
-  buildAndStartContainers
-  runLiquibase
-#  deltaspikeIntegrationTests
-  deployWiremock
-  deployWars
-  healthchecks
+if [ "$RUN_UNIT" = true ]; then
+  echo "== Unit tests"
+  gradle build -x :listing-integration-test-spring:test || FAILED+=("unit tests")
+fi
+
+if [ "$RUN_SPRING" = true ]; then
   waitIfUtcMidnightIsNear
-  integrationTests
-}
+  echo "== Spring integration tests (listing-integration-test-spring)"
+  gradle :listing-integration-test-spring:test || FAILED+=("Spring ITs")
+fi
 
-buildDeployAndTest
+if [ "$RUN_LEGACY" = true ]; then
+  waitIfUtcMidnightIsNear
+  echo "== Legacy IT suite (listing-integration-test-legacy) + public message contract"
+  gradle :listing-integration-test-legacy:legacyIntegrationTest ${LEGACY_PROPS[@]+"${LEGACY_PROPS[@]}"} \
+    || FAILED+=("legacy ITs / public message contract")
+fi
+
+if [ ${#FAILED[@]} -gt 0 ]; then
+  printf 'FAILED: %s\n' "${FAILED[@]}"
+  exit 1
+fi
+echo "All selected steps passed."

@@ -3,8 +3,9 @@ info:
   title: Listing API
   description: |
     Spring Boot port of the two RAML 0.8 contracts of the listing context:
-      - listing-command/listing-command-api/src/raml/listing-command-api.raml (command API)
-      - listing-query/listing-query-api/src/raml/listing-query-api.raml (query API)
+      - listing-api/src/raml/command/listing-command-api.raml (command API)
+      - listing-api/src/raml/query/listing-query-api.raml (query API)
+    (moved from the deleted JEE modules listing-command-api / listing-query-api at P2.6).
     One spec serves both legacy context roots (ADR 008): the servlet context path is
     /listing-service and every path below starts with /command/api/rest/listing or
     /query/api/rest/listing, so clients see the same URLs as on WildFly.

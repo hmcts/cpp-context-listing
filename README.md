@@ -1,35 +1,47 @@
-# Listing  :
+# Listing
+
+The CPP Listing context: a Spring Boot 4.1 application (Java 25, Gradle). It replaced the WildFly WAR
+on the CJS framework (MBD refactor, branch `mbd-refactor`) as a drop-in replacement: same URLs, media
+types, schemas, access rules and public messages. What changed for callers is in
+[docs/breaking.md](docs/breaking.md); the per-module rationale is in [docs/REVIEW.md](docs/REVIEW.md).
+
+## Build and run
+
+```
+./gradlew build -x :listing-integration-test-spring:test     # compile + unit tests
+./gradlew clean build                                        # ... plus the Spring ITs (docker-compose)
+./runIntegrationTests.sh                                      # unit tests, Spring ITs, legacy IT suite + public message contract
+./runIntegrationTests.sh legacy nounit -- -PitClasses=HearingIT   # one legacy IT class
+./gradlew :listing-api:bootJar                                # listing-api/build/libs/cpp-context-listing-<version>.jar
+```
+
+The ITs need Docker (compose v2) only: the stack (Postgres 16, WireMock, Artemis, the app) is
+defined in `listing-integration-test-spring/docker/docker-compose.integration.yml`. Deployment
+changes still to make (pipeline, Helm): [docs/deployment-notes.md](docs/deployment-notes.md).
+
+| Module | Contents |
+|---|---|
+| `listing-api` | Boot app, OpenAPI spec (`src/main/resources/openapi/listing-api.openapi.yml`), controllers, request validation (RAML schemas in `src/raml`), access-control DRL, config |
+| `listing-command-spring` | Command services, rules (former aggregates), inbound `public.*` handlers, court lists |
+| `listing-common-spring` | Query services, REST clients, listing notes |
+| `listing-messaging` | Envelope, transactional outbox + relay to `public.event`, `@JmsListener`, inbound dedup; `src/contract` = legacy public schemas |
+| `listing-domain-spring`, `listing-domain-event-spring` | Domain types and payload DTOs |
+| `listing-viewstore-persistence-spring`, `listing-viewstore-liquibase` | JPA entities/repositories, Liquibase changelogs |
+| `listing-xhibit` | XHIBIT court-list XML (JAXB from `src/main/xsd`) and WebDAV export |
+| `listing-integration-test-spring`, `listing-integration-test-legacy` | Spring ITs; the legacy `*IT` suite on the Spring stack |
+
+The examples below use the legacy local gateway (`localhost:8080`); against a local app use its port and
+the `/listing-service` context path for both command and query paths.
 
 ## API
 
-Every request requires a `CJSCPPUID` header, with a valid user id.
-If you do not have one, you can turn off access control, by switching to the `atcm-vagrant` directory and running:
-
-``` 
-utils/accessControl off
-```
-
-However, before running any of the integration tests, ensure that you turn it back on.
-
-``` 
-utils/accessControl on
-```    
-
-Finally, if you receive something like the following error, it's likely that it's already in that state; the command isn't idempotent.
-
-``` 
-{
-    "outcome" => "failed",
-    "failure-description" => "WFLYCTL0212: Duplicate resource [(\"system-property\" => \"uk.gov.justice.services.core.accesscontrol.disabled\")]",
-    "rolled-back" => true
-}
-
-```
-
+Every request requires a `CJSCPPUID` header, with a valid user id. Access control is the
+`cp-auth-rules-filter` (`application-authz.yml`, on/off with `LISTING_AUTHZ_ENABLED`); the old WildFly
+`utils/accessControl` switch no longer applies.
 
 ### Getting a single Hearing by its ID
 
-This endpoint is primarily defined in [listing-query-api.raml](listing-query/listing-query-api/src/raml/listing-query-api.raml)
+This endpoint is primarily defined in [listing-query-api.raml](listing-api/src/raml/query/listing-query-api.raml) and served from [listing-api.openapi.yml](listing-api/src/main/resources/openapi/listing-api.openapi.yml)
 
 #### When one exists for that ID 
 
@@ -61,7 +73,7 @@ curl -v -H "CJSCPPUID:441a514e-2437-4338-b72a-baa3d2f9d0be" -H "Accept:applicati
 < Date: Tue, 19 Nov 2019 15:49:44 GMT
 ```
 
-And [here is an example of the response](listing-query/listing-query-api/src/raml/json/listing.search.hearing.json).
+And [here is an example of the response](listing-api/src/raml/query/json/listing.search.hearing.json).
 
 #### When no Hearing exists for that ID
 
@@ -102,7 +114,7 @@ Please note it is the 'final' list for the next weekday.
 
 As well, this can only be called by a 'System' user (presuming that access control is active).
 
-This endpoint is defined in [listing-command-api.raml](listing-command/listing-command-api/src/raml/listing-command-api.raml)
+This endpoint is defined in [listing-command-api.raml](listing-api/src/raml/command/listing-command-api.raml)
 
 ``` 
 curl -X POST \

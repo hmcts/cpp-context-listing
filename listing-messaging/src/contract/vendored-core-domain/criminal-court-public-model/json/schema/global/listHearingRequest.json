@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/core/courts/listHearingRequest.json",
+  "type": "object",
+  "properties": {
+    "hearingType": {
+      "$ref": "http://justice.gov.uk/core/courts/hearingType.json"
+    },
+    "jurisdictionType": {
+      "$ref": "http://justice.gov.uk/core/courts/jurisdictionType.json"
+    },
+    "listedStartDateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "listedEndDateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "earliestStartDateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "estimateMinutes": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
+    },
+	"reportingRestrictionReason": {
+		"type": "string"
+	},
+    "courtScheduleId": {
+      "type": "string"
+    },
+    "courtCentre": {
+      "$ref": "http://justice.gov.uk/core/courts/courtCentre.json"
+    },
+    "prosecutorDatesToAvoid": {
+      "type": "string"
+    },
+    "listingDirections": {
+      "type": "string"
+    },
+    "listDefendantRequests": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/listDefendantRequest.json"
+      }
+    },
+    "estimatedDuration": {
+      "description": "Value from the Estimated Duration prompt",
+      "type": "string"
+    },
+    "weekCommencingDate": {
+      "description": "Hearing week commencing",
+      "$ref": "http://justice.gov.uk/core/courts/weekCommencingDate.json"
+    },
+    "bookedSlots": {
+      "description": "Booked Magistrate's slots in Rota schedules.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/rotaSlot.json"
+      }
+    },
+    "judiciary": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/judicialRole.json"
+      }
+    },
+    "bookingType": {
+      "description": "A choice of in-court, or video conference options",
+      "type": "string"
+    },
+    "priority": {
+      "description": "Priority marking on hearings/cases",
+      "type": "string"
+    },
+    "specialRequirements": {
+      "description": "Special requirements on hearings/cases",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "nonDefaultDays": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/nonDefaultDay.json#"
+      }
+    }
+  },
+  "required": [
+    "hearingType",
+    "courtCentre",
+    "jurisdictionType",
+    "listDefendantRequests"
+  ],
+  "additionalProperties": false
+}

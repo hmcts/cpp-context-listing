@@ -1,8 +1,7 @@
 // XHIBIT court-list export for the Spring Boot port (§8 `listing-xhibit`; MBD refactor P2.3.1, ADR 015).
 //
-// - JAXB classes compiled from the EXISTING XSDs (listing-domain/listing-domain-xhibit/src/main/
-//   resources/xhibit/xsd, read in place until P2.6, as the other "-spring" modules read the Maven
-//   sources): same XJC (2.3.7, the version maven-jaxb2-plugin 0.15.2 ran), same flat package
+// - JAXB classes compiled from the EXISTING XSDs (src/main/xsd, moved unchanged from the Maven
+//   module listing-domain-xhibit at P2.6): same XJC (2.3.7, the version maven-jaxb2-plugin 0.15.2 ran), same flat package
 //   uk.gov.moj.cpp.listing.domain.xhibit.generated, same arguments (-extension -XautoNameResolution
 //   -Xnamespace-prefix, binding.xjb), so the classes and the namespace prefixes (cs/apd/p2/xsi) of
 //   the marshalled XML are the JEE ones. XJC 2.3.7 emits javax.xml.bind; the sources are then
@@ -53,7 +52,8 @@ configurations.xjc {
     }
 }
 
-def xsdDir = rootProject.file('listing-domain/listing-domain-xhibit/src/main/resources/xhibit/xsd')
+// The XHIBIT XSDs and binding.xjb, unchanged (moved from listing-domain-xhibit at P2.6).
+def xsdDir = file('src/main/xsd')
 def xjcJavaxDir = layout.buildDirectory.dir('generated/xjc-javax')
 def xjcJakartaDir = layout.buildDirectory.dir('generated/xjc')
 

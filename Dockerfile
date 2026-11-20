@@ -6,8 +6,8 @@
 # Artifacts feed into build/libs/ and runs `docker build` from the repo root. Locally:
 #   ./gradlew :listing-api:bootJar && mkdir -p build/libs && cp listing-api/build/libs/*.jar build/libs/
 #   docker build -t listing .
-# Whether listing moves to that pipeline or stays on azure-pipelines.yaml is open (§15.7); the
-# pipeline switch itself is P2.5. The WildFly image (docker/Dockerfile_listing-service) is untouched.
+# Whether listing moves to that pipeline or stays on azure-pipelines.yaml is open (§15.7); what has to
+# change is listed in docs/deployment-notes.md. The WildFly image was deleted at P2.6.
 #
 # BASE_IMAGE: CI supplies hmcts/apm-services:25-jre, which already trusts the HMCTS CA.
 ARG BASE_IMAGE
@@ -21,8 +21,7 @@ RUN apt-get update \
 RUN groupadd -r app && useradd -r -g app app
 WORKDIR /app
 
-# startup.sh picks the right (non-plain) jar at runtime. Only startup.sh is copied: docker/ also
-# holds the WildFly Dockerfile and scripts.
+# startup.sh picks the right (non-plain) jar at runtime.
 COPY docker/startup.sh /app/
 COPY build/libs/*.jar /app/
 

@@ -1,10 +1,6 @@
-// Gradle build for the Spring Boot port (MBD refactor, Phase 2). It lives alongside the Maven
-// build: the JEE modules (listing-command, listing-query, listing-service, ...) are still built
-// by Maven until cut-over (P2.5) and deleted at P2.6. Gradle includes ONLY the new modules.
-//
-// Module names follow §8 of docs/MBD_REFACTOR_PROMPT.md. Where §8's directory is still taken by a
-// Maven module, the Gradle module lives in a sibling directory with a "-spring" suffix (as P2.0
-// did for listing-integration-test-spring); the suffix goes at P2.6 with the Maven modules.
+// Gradle build of the Spring Boot listing app (MBD refactor). The JEE Maven modules were deleted at
+// P2.6. Module names follow §8 of docs/MBD_REFACTOR_PROMPT.md; the "-spring" suffix dates from when
+// the Maven modules still held those directory names.
 rootProject.name = 'cpp-context-listing'
 
 include 'listing-domain-spring'
@@ -18,8 +14,5 @@ include 'listing-api'
 include 'listing-integration-test-spring'
 include 'listing-integration-test-legacy'
 
-// The existing Liquibase changelogs are reused unchanged (§6): this resources-only Gradle project
-// points at the Maven module's directory. Its build output is redirected under the root build/
-// directory (see root build.gradle), so Gradle writes nothing into the Maven module.
+// The viewstore Liquibase changelogs (resources only; moved from the Maven module at P2.6, unchanged).
 include 'listing-viewstore-liquibase'
-project(':listing-viewstore-liquibase').projectDir = file('listing-viewstore/listing-viewstore-liquibase')

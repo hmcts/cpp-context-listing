@@ -248,9 +248,11 @@ tasks.named('test') {
     ]
 }
 
-def legacyCommandSchemas = rootProject.file('listing-command/listing-command-api/src/raml/json/schema')
-def legacyQuerySchemas   = rootProject.file('listing-query/listing-query-api/src/raml/json/schema')
-def listingJsonSchemas   = rootProject.file('listing-json/src/main/resources/json/schema')
+// The legacy RAML contracts and their JSON schemas, unchanged (moved from listing-command-api,
+// listing-query-api and listing-json at P2.6): src/raml/{command,query}, src/listing-json.
+def legacyCommandSchemas = file('src/raml/command/json/schema')
+def legacyQuerySchemas   = file('src/raml/query/json/schema')
+def listingJsonSchemas   = file('src/listing-json/json/schema')
 
 tasks.named('processResources') {
     // §11 pitfall 9: legacy modules ship duplicate META-INF descriptors; first one wins.

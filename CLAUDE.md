@@ -23,9 +23,12 @@ Load on demand when relevant:
 
 ## This repository — `cpp-context-listing`
 
-The CPP **Listing** context: a WildFly WAR built on the HMCTS/CJS microservice framework
-(CQRS + event sourcing, RAML-defined APIs, JMS, DeltaSpike, Liquibase). It is **not** Spring Boot
-today. Branch `mbd-refactor` is migrating it to Spring Boot; see `docs/MBD_REFACTOR_PROMPT.md`.
+The CPP **Listing** context. It **is a Spring Boot application** (Spring Boot 4.1, Java 25, Gradle):
+OpenAPI spec-first controllers, Spring Data JPA + Liquibase on the existing viewstore, Spring JMS on
+Artemis (transactional outbox to `public.event`, inbound `public.*` with dedup), `cp-auth-rules-filter`.
+Branch `mbd-refactor` migrated it from a WildFly WAR on the HMCTS/CJS framework (CQRS + event
+sourcing, RAML, DeltaSpike); the JEE modules were deleted at P2.6 (git history keeps them). See
+`docs/MBD_REFACTOR_PROMPT.md`, `docs/REVIEW.md` and `docs/breaking.md`.
 
 **The `mbd-refactor` migration follows only `docs/MBD_REFACTOR_PROMPT.md`.** For that work, the
 pipeline stages, gates, artefact conventions, shared skills and Hard rules in this file **do not
@@ -45,29 +48,35 @@ Spring Boot template or the Hard rules, record the difference in an ADR. Courtsc
 domain JMS messaging, so the messaging patterns have to be designed fresh (see
 `docs/MBD_REFACTOR_PROMPT.md` §2, §5 and §7).
 
-- **Current build (before migration):** Java 17, Maven. Parent `uk.gov.moj.cpp.common:service-parent-pom`, groupId
-  `uk.gov.moj.cpp.listing`. CI is `azure-pipelines.yaml` (templates from `hmcts/cpp-azure-devops-templates`).
-- **Modules:**
-  - `listing-command` (`-api`, `-handler`): command side.
-  - `listing-domain` (`-aggregate`, `-common`, `-event`, `-xhibit`): aggregates and domain events.
-  - `listing-event` (`-listener`, `-processor`): event listener (writes the viewstore) and event processor.
-  - `listing-query` (`-api`, `-view`): query side.
-  - `listing-viewstore` (`-liquibase`, `-persistence`): read model.
-  - `listing-service`: the deployable WAR.
-  - Also `listing-common`, `listing-json`, `listing-event-sources`, `listing-healthchecks`.
-- **API contracts (RAML):**
-  - `listing-command/listing-command-api/src/raml/listing-command-api.raml`
-  - `listing-command/listing-command-handler/src/raml/listing-command-handler.messaging.raml`
-  - `listing-query/listing-query-api/src/raml/listing-query-api.raml`
-- **Unit tests:** `mvn clean install`.
-- **Integration tests:** `mvn clean && ./runIntegrationTests.sh`. Needs `CPP_DOCKER_DIR` pointing at
-  a local checkout of `hmcts/cpp-developers-docker`. Optional arguments: `errorlog` (any unexpected
-  server.log ERROR/WARN fails the test), `durations`, `nounit`, `nomidnightguard`. `-D` options are not
-  forwarded. The script waits if 00:00 UTC is near, because runs that cross midnight fail.
-  The tests live in `listing-integration-test`; also see `listing-integration-test-persistence`.
+- **Build:** Gradle (wrapper), Java 25 toolchain, groupId `uk.gov.moj.cpp.listing`. The app is the
+  `listing-api` bootJar (`Dockerfile` + `docker/startup.sh`). CI is still the Maven-based
+  `azure-pipelines.yaml` and must change before cut-over (`docs/deployment-notes.md`).
+- **Modules** (the `-spring` suffix is historical, from when the Maven modules shared the names):
+  - `listing-api`: Boot app, controllers, config, request validation, access-control DRL, envelope.
+  - `listing-command-spring`: command services, rules (the former aggregates), listener/processor
+    ports, inbound `public.*` handlers, court lists.
+  - `listing-common-spring`: query services, REST clients, listing notes.
+  - `listing-messaging`: envelope, outbox + relay, `@JmsListener`, dedup. `src/contract` holds the
+    legacy public schemas and descriptors.
+  - `listing-domain-spring`, `listing-domain-event-spring` (vendored payload DTOs, owned here),
+    `listing-viewstore-persistence-spring` (entities, repositories), `listing-viewstore-liquibase`
+    (changelogs), `listing-xhibit` (JAXB from the XHIBIT XSDs, WebDAV).
+  - `listing-integration-test-spring` (Spring ITs) and `listing-integration-test-legacy` (the legacy
+    `*IT` suite on the Spring stack).
+- **API contracts:** `listing-api/src/main/resources/openapi/listing-api.openapi.yml` (served), ported
+  1:1 from the RAML in `listing-api/src/raml/{command,query}/` (kept, with their JSON schemas, for
+  request validation).
+- **Unit tests:** `./gradlew build -x :listing-integration-test-spring:test` (`./gradlew clean build`
+  also runs the Spring ITs on docker-compose).
+- **Integration tests:** `./runIntegrationTests.sh` — unit tests, then the Spring ITs, then the legacy
+  `*IT` suite plus the public message contract test, each on the docker-compose stack (db, WireMock,
+  Artemis, app). Needs Docker (compose v2); no WildFly or `CPP_DOCKER_DIR`. Arguments: `spring` or
+  `legacy` (one suite only), `durations`, `nounit`, `nomidnightguard`; Gradle arguments after `--`
+  (e.g. `-- --offline`, `-- -PitClasses=HearingIT`). `errorlog` is no longer supported. The script
+  waits if 00:00 UTC is near and runs under `caffeinate -dims` on macOS.
 - **IT conventions:** follow `docs/development-guidelines/integration-test-guide.md`. For example, use
-  `uk.gov.justice.services.messaging.JsonObjects`, not `javax.json.Json`. For payload-based tests, see
-  `listing-integration-test/README-PAYLOAD-BASED-TESTING.md`.
+  `uk.gov.justice.services.messaging.JsonObjects`, not `javax.json.Json`, in the legacy suite. For
+  payload-based tests, see `listing-integration-test-legacy/README-PAYLOAD-BASED-TESTING.md`.
 - **Requests** need a `CJSCPPUID` header (see `README.md`).
 - **Other docs:** `docs/development-guidelines/` (journeys, transactions, integration map),
   `docs/big-changes/`, `docs/future-improvements/`.
@@ -150,7 +159,7 @@ Stage 5 — see the Hard rules.
 - **Integration tests for new endpoints (backend features & bugfixes).** Any PR that adds or changes
   a REST endpoint / `@Handles` action / message-driven entry point MUST add **at least one integration
   test per new endpoint**, and the integration-test suite MUST be green when run locally — via
-  `mvn clean && ./runIntegrationTests.sh` when that script exists at the repo root, otherwise the
+  `./runIntegrationTests.sh` when that script exists at the repo root, otherwise the
   repo's documented IT command. Never weaken or skip an IT to go green.
 - For Spring Boot services: the HMCTS templates (`service-hmcts-crime-springboot-template`, `api-hmcts-crime-template`) are the master source. Use `skills/springboot-service-from-template/` or `skills/springboot-api-from-template/` to adopt them — do not scaffold build files, Dockerfile, or logback config from scratch. Deviations require an ADR.
 - JSON logging to stdout is mandatory for Spring Boot services. See `context/logging-standards.md`.

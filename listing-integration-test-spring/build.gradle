@@ -2,9 +2,8 @@
 // listingcourtscheduler-integration-test/build.gradle. Tests only: the app runs in Docker
 // (docker/docker-compose.integration.yml) and the tests call it over HTTP.
 //
-// This is NOT the Maven listing-integration-test module: that one still runs the legacy *IT
-// suite against WildFly (./runIntegrationTests.sh) until cut-over (P2.5), when its scenarios move
-// onto this stack (§9).
+// The legacy *IT suite runs on the same stack from listing-integration-test-legacy; both are run by
+// ./runIntegrationTests.sh (§9).
 plugins {
     id 'java-library'
     id 'com.avast.gradle.docker-compose'

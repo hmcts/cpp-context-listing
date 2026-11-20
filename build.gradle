@@ -1,6 +1,5 @@
-// Root Gradle build for the Spring Boot port of cpp-context-listing (MBD refactor, Phase 2).
-// Copied from cpp-context-listing-courtscheduler (the reference project, ADR 007). It builds only
-// the modules listed in settings.gradle; the JEE modules stay on Maven until P2.6.
+// Root Gradle build of cpp-context-listing (Spring Boot; MBD refactor). Copied from
+// cpp-context-listing-courtscheduler (the reference project, ADR 007).
 plugins {
     id 'io.spring.dependency-management' version '1.1.7' apply false
     id 'org.springframework.boot' version '4.1.0' apply false
@@ -113,20 +112,18 @@ subprojects {
 // `./gradlew clean build` from the repo root runs `build` on every subproject. The IT
 // subproject's `test` task is the docker-compose integration runner (composeUp → tests →
 // composeDown), so a full build also runs the Spring ITs, as in courtscheduler. Use
-// `./gradlew build -x :listing-integration-test-spring:test` for build + unit tests only.
+// `./gradlew build -x :listing-integration-test-spring:test` for build + unit tests only. The legacy
+// *IT suite (listing-integration-test-legacy) is NOT part of `build`: it runs through
+// ./runIntegrationTests.sh or :listing-integration-test-legacy:legacyIntegrationTest.
 
-// Resources-only view of the Maven listing-viewstore-liquibase module (P2.1). The changelogs are
-// used as they are, so the JEE build and the Spring build always run the same changesets.
-// Build output goes to <root>/build/gradle-modules/listing-viewstore-liquibase, never into the
-// Maven module's directory. liquibase.properties (the Maven plugin's config) is left out of the
-// jar: spring.liquibase.change-log is set explicitly (courtscheduler REVIEW).
+// Resources-only module: the viewstore Liquibase changelogs (moved from the Maven module
+// listing-viewstore/listing-viewstore-liquibase at P2.6, unchanged). spring.liquibase.change-log is
+// set explicitly (courtscheduler REVIEW), so no liquibase.properties is shipped.
 project(':listing-viewstore-liquibase') {
-    layout.buildDirectory = rootProject.layout.buildDirectory.dir('gradle-modules/listing-viewstore-liquibase')
     sourceSets {
         main {
             java.srcDirs = []
             resources.srcDirs = ['src/main/resources']
-            resources.exclude 'liquibase.properties'
         }
         test {
             java.srcDirs = []

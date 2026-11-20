@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 /**
  * The listing processor's subscription to the framework's {@code public.event} topic (MBD refactor
  * P2.2, ADR 013): the 28 {@code public.*} events of the "public event subscription" in
- * {@code listing-event/listing-event-processor/src/yaml/subscriptions-descriptor.yaml}, in the same
+ * {@code listing-messaging/src/contract/subscriptions-descriptor.yaml} (the legacy processor's descriptor), in the same
  * order, and the JMS message selector the framework generated from them for
  * {@code ListingEventProcessorPublicEventJmsListener} ({@code CPPNAME in('…','…')}).
  *

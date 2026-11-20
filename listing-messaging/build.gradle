@@ -23,7 +23,7 @@ dependencies {
 }
 
 tasks.named('test') {
-    // The legacy subscriptions descriptor and generated MDB are read from the Maven modules
-    // (until P2.6) to prove the selector and subscription name are unchanged.
-    systemProperty 'listing.repoRoot', rootProject.projectDir.absolutePath
+    // The legacy processor's descriptors and public schemas (src/contract, moved unchanged from
+    // listing-event-processor/src/yaml at P2.6) prove the subscription names are unchanged.
+    systemProperty 'listing.contractDir', file('src/contract').absolutePath
 }
