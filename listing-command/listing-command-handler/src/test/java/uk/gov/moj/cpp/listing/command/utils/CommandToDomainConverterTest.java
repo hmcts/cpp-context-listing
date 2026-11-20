@@ -38,6 +38,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -99,6 +100,23 @@ class CommandToDomainConverterTest {
         assertThat(actual.getWeekCommencingStartDate(), is(of(LocalDate.parse(commandHearing.getWeekCommencingDate().getStartDate()))));
         assertThat(actual.getWeekCommencingDurationInWeeks().get(), is(commandHearing.getWeekCommencingDate().getDuration()));
 
+    }
+
+    @Test
+    public void shouldBuildListedCaseWithoutHearingWhenDefendantIsYouthNotSet() {
+        final ProsecutionCase prosecutionCase = commandBuilder.buildCommandHearing().getProsecutionCases().get(0);
+        final ProsecutionCase caseWithoutYouthFlag = ProsecutionCase.prosecutionCase()
+                .withValuesFrom(prosecutionCase)
+                .withDefendants(prosecutionCase.getDefendants().stream()
+                        .map(defendant -> uk.gov.justice.core.courts.Defendant.defendant().withValuesFrom(defendant).withIsYouth(null).build())
+                        .collect(java.util.stream.Collectors.toList()))
+                .build();
+
+        final ListedCase listedCase = commandToDomainConverter.buildListedCases(caseWithoutYouthFlag);
+
+        assertThat(listedCase.getId(), is(prosecutionCase.getId()));
+        assertThat(listedCase.getDefendants().size(), is(prosecutionCase.getDefendants().size()));
+        assertThat(listedCase.getDefendants().get(0).getIsYouth(), is(Optional.empty()));
     }
 
     @Test

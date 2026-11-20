@@ -30,10 +30,11 @@
         "$ref": "http://justice.gov.uk/listing/events/judicialRole.json"
       }
     },
-    "judiciarySource": {
-      "description": "Indicates whether judiciary on this hearing is hearing-level ('HEARING') or session-level fallback ('SESSION')",
+    "judiciaryAssignmentSource": {
       "type": "string",
-      "enum": ["HEARING", "SESSION"]
+      "enum": [
+        "MANUAL",
+        "AUTO"]
     },
     "reportingRestrictionReason": {
       "type": "string"
