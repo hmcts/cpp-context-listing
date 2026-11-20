@@ -152,6 +152,15 @@ public class CourtListSteps extends AbstractIT {
                 .until(status().is(OK), payload().isJson(allOf(allocatedMatchers)));
     }
 
+    public void verifyCourtListRequestedAndIsCorrectJsonWithExParte(final String listId, final Matcher[] allocatedMatchers, UUID courtCenterId, UUID courtRoomId, String startDate, String hearingEndDate, final boolean includeApplications) {
+        final String endDate = listId.equals(STANDARD) ? startDate : hearingEndDate;
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.court.list.payload-court-room-id"), courtCenterId,
+                        startDate, listId, endDate, courtRoomId)) + "&includeApplications=" + includeApplications;
+        pollWithDelayForJms(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_COURT_LIST_PAYLOAD).withHeader(USER_ID, getLoggedInUser()).build())
+                .until(status().is(OK), payload().isJson(allOf(allocatedMatchers)));
+    }
+
     private Response getResponseData(final String listId) {
         final String endDate = listId.equals(STANDARD) ? updatedHearingData.getStartDate() : updatedHearingData.getEndDate();
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
