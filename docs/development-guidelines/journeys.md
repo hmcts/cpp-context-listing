@@ -434,8 +434,8 @@ For a visual diagram of all integration points, see [integration-map.mmd](./inte
 | **courtscheduler** | `GET /multidaysearchandbook/hearingslots` | `HearingSlotsService` | Multi-day search and book |
 | **courtscheduler** | `PUT /list/hearingslots` | `HearingSlotsService` | List hearings in court sessions |
 | **courtscheduler** | `POST /validate-session-availability` | `HearingSlotsService` | Validate session availability |
-| **courtscheduler** | `GET /provisionalBooking` | `ProvisionalBookingService` | Get provisional booking slots |
-| **courtscheduler** | `DELETE /provisionalBooking` | `ProvisionalBookingService` | Remove provisional booking |
+| **courtscheduler** | `GET /unconfirmedBooking` | `ProvisionalBookingService` | Get provisional booking slots |
+| **courtscheduler** | `DELETE /unconfirmedBooking` | `ProvisionalBookingService` | Remove provisional booking |
 | **progression** | `progression.query.prosecutioncase` | `ProgressionService` (Requester) | Get prosecution case details |
 | **progression** | `progression.query.case-notes` | `ProgressionService` (Requester) | Get case notes |
 | **progression** | `progression.query.application-notes` | `ProgressionService` (Requester) | Get application notes |
