@@ -3436,6 +3436,79 @@ class CourtScheduleEnrichmentServiceTest {
     }
 
     @Test
+    void shouldRetryAReShareWhenCourtschedulerFailsToAnswerTheCarriedIdsLookup() {
+        // An outage is not a lost booking: failing as unavailable lets the command be redelivered
+        // and listed once courtscheduler answers, instead of logging [LISTING-LOST].
+        final UUID bookingReference = UUID.randomUUID();
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference.toString()))
+                .thenReturn(List.of());
+        final Response error = mock(Response.class);
+        when(error.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(error);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withBookingReference(bookingReference)
+                .withEstimatedMinutes(20)
+                .build();
+
+        org.junit.jupiter.api.Assertions.assertThrows(CourtSchedulerUnavailableException.class,
+                () -> courtScheduleEnrichmentService.enrichWithCourtSchedules(
+                        hearing, envelopeCarrying(bookingReference, UUID.randomUUID())));
+
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+    }
+
+    @Test
+    void shouldReportAReShareLostWhenCourtschedulerHasNoneOfTheCarriedSessions() {
+        final UUID bookingReference = UUID.randomUUID();
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference.toString()))
+                .thenReturn(List.of());
+        final JsonObject noSessions = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder())
+                .build();
+        final Response empty = mock(Response.class);
+        when(empty.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(empty);
+        when(objectToJsonObjectConverter.convert(empty.getEntity())).thenReturn(noSessions);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withBookingReference(bookingReference)
+                .withEstimatedMinutes(20)
+                .build();
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException.class,
+                () -> courtScheduleEnrichmentService.enrichWithCourtSchedules(
+                        hearing, envelopeCarrying(bookingReference, UUID.randomUUID())));
+
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+    }
+
+    @Test
+    void promoteCrownBookingReferenceToBookedSlot_retriesAReShareWhenCourtschedulerFailsToAnswerTheCarriedIdsLookup() {
+        final UUID bookingReference = UUID.randomUUID();
+        when(courtSchedulerService.getCourtSchedulesByProvisionalBookingId(bookingReference.toString()))
+                .thenReturn(List.of());
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(null);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withBookingReference(bookingReference)
+                .withEstimatedMinutes(30)
+                .withListedStartDateTime(ZonedDateTime.parse("2027-01-19T10:00:00Z"))
+                .build();
+
+        org.junit.jupiter.api.Assertions.assertThrows(CourtSchedulerUnavailableException.class,
+                () -> courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(
+                        hearing, envelopeCarrying(bookingReference, UUID.randomUUID())));
+    }
+
+    @Test
     void shouldListASessionWithNoHearingStartTimeAtTheHearingDaysOwnStartTime() {
         final UUID bookingReference = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();

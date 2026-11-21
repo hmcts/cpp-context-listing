@@ -1871,7 +1871,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 LOGGER.info("CROWN bookingReference={} no longer resolves in courtscheduler for hearingId={}; "
                                 + "listing against the {} courtScheduleId(s) carried on the command",
                         bookingReference, hearing.getId(), carriedIds.size());
-                sessions = fetchCourtSchedulesByIds(carriedIds);
+                sessions = fetchCourtSchedulesByIdsOrFail(carriedIds);
             }
         }
 
@@ -1926,15 +1926,28 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 .build();
     }
 
+    /** As {@link #fetchCourtSchedulesByIdsOrFail}, but a failed lookup reads as no sessions. */
     private List<CourtSchedule> fetchCourtSchedulesByIds(final List<String> courtScheduleIds) {
+        try {
+            return fetchCourtSchedulesByIdsOrFail(courtScheduleIds);
+        } catch (final CourtSchedulerUnavailableException e) {
+            LOGGER.error("fetchCourtSchedulesByIds failed: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * A failed lookup is an outage, not an empty answer: a re-share reading it as empty would report
+     * the hearing lost ([LISTING-LOST]) while courtscheduler is merely down.
+     */
+    private List<CourtSchedule> fetchCourtSchedulesByIdsOrFail(final List<String> courtScheduleIds) {
         final Map<String, String> params = new HashMap<>();
         params.put(IDS_PARAM, String.join(",", courtScheduleIds));
         final Response response = hearingSlotsService.getCourtSchedulesById(params);
 
         if (response == null || !isSuccess(response)) {
-            LOGGER.error("fetchCourtSchedulesByIds failed with status {}",
-                    response == null ? "no response" : response.getStatus());
-            return new ArrayList<>();
+            throw new CourtSchedulerUnavailableException("courtscheduler did not answer the lookup of court schedule ids "
+                    + courtScheduleIds + ": " + (response == null ? "no response" : "status " + response.getStatus()));
         }
 
         final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
@@ -2721,7 +2734,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                 LOGGER.info("bookingReference={} no longer resolves in courtscheduler for hearingId={}; "
                                 + "listing against the {} courtScheduleId(s) carried on the command",
                         hearing.getBookingReference(), hearing.getId(), carriedIds.size());
-                courtScheduleList = fetchCourtSchedulesByIds(carriedIds);
+                courtScheduleList = fetchCourtSchedulesByIdsOrFail(carriedIds);
             }
         }
 
