@@ -21,6 +21,7 @@ import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.StatusLine;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -36,6 +37,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -70,6 +72,9 @@ class HearingSlotsServiceTest {
     @Captor
     private ArgumentCaptor<HttpPost> httpPostCaptor;
 
+    @Spy
+    private CourtSchedulerHttpClient courtSchedulerHttpClient = new CourtSchedulerHttpClient(5000, 10000);
+
     @InjectMocks
     private HearingSlotsService hearingSlotsService;
 
@@ -87,6 +92,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -112,6 +118,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpDelete.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -136,6 +143,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -176,6 +184,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -202,6 +211,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenThrow(new IOException("Test exception"));
 
@@ -222,6 +232,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -262,6 +273,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -283,6 +295,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpDelete.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -305,6 +318,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpDelete.class))).thenThrow(new IOException("Test exception"));
 
@@ -328,6 +342,7 @@ class HearingSlotsServiceTest {
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class);
              MockedStatic<EntityUtils> entityUtilsMockedStatic = Mockito.mockStatic(EntityUtils.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -356,6 +371,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -400,6 +416,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -447,6 +464,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -504,6 +522,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -531,6 +550,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenThrow(new IOException("Connection refused"));
 
@@ -555,6 +575,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -583,6 +604,7 @@ class HearingSlotsServiceTest {
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class);
              MockedStatic<EntityUtils> entityUtilsMockedStatic = Mockito.mockStatic(EntityUtils.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -613,6 +635,7 @@ class HearingSlotsServiceTest {
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class);
              MockedStatic<EntityUtils> entityUtilsMockedStatic = Mockito.mockStatic(EntityUtils.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -645,6 +668,7 @@ class HearingSlotsServiceTest {
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class);
              MockedStatic<EntityUtils> entityUtilsMockedStatic = Mockito.mockStatic(EntityUtils.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -670,6 +694,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenThrow(new IOException("Connection refused"));
 
@@ -694,6 +719,7 @@ class HearingSlotsServiceTest {
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class);
              MockedStatic<org.apache.http.util.EntityUtils> entityUtilsMock = Mockito.mockStatic(org.apache.http.util.EntityUtils.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -722,6 +748,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -746,6 +773,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -778,6 +806,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -851,6 +880,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -880,6 +910,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -904,6 +935,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenThrow(new IOException("Test exception"));
 
@@ -925,6 +957,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -954,6 +987,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -978,6 +1012,7 @@ class HearingSlotsServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpPost.class))).thenThrow(new IOException("Test exception"));
 

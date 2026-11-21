@@ -11,6 +11,7 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.core.dispatcher.SystemUserProvider;
+import uk.gov.moj.cpp.listing.common.service.CourtSchedulerHttpClient;
 import uk.gov.moj.cpp.listing.common.service.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.exception.DataValidationException;
@@ -28,6 +29,7 @@ import javax.ws.rs.core.Response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -40,6 +42,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -74,6 +77,9 @@ class CourtSchedulerServiceTest {
     @Captor
     private ArgumentCaptor<HttpGet> httpGetCaptor;
 
+    @Spy
+    private CourtSchedulerHttpClient courtSchedulerHttpClient = new CourtSchedulerHttpClient(5000, 10000);
+
     @InjectMocks
     private CourtSchedulerService courtSchedulerService;
 
@@ -92,6 +98,7 @@ class CourtSchedulerServiceTest {
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class);
              MockedStatic<EntityUtils> entityUtilsMockedStatic = Mockito.mockStatic(EntityUtils.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -135,6 +142,7 @@ class CourtSchedulerServiceTest {
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class);
              MockedStatic<EntityUtils> entityUtilsMockedStatic = Mockito.mockStatic(EntityUtils.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -161,6 +169,7 @@ class CourtSchedulerServiceTest {
 
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenThrow(new IOException("Test exception"));
 
@@ -198,6 +207,7 @@ class CourtSchedulerServiceTest {
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class);
              MockedStatic<EntityUtils> entityUtilsMockedStatic = Mockito.mockStatic(EntityUtils.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -227,6 +237,7 @@ class CourtSchedulerServiceTest {
         try (MockedStatic<HttpClientBuilder> mockedStatic = Mockito.mockStatic(HttpClientBuilder.class);
              MockedStatic<EntityUtils> entityUtilsMockedStatic = Mockito.mockStatic(EntityUtils.class)) {
             mockedStatic.when(HttpClientBuilder::create).thenReturn(httpClientBuilder);
+            when(httpClientBuilder.setDefaultRequestConfig(any(RequestConfig.class))).thenReturn(httpClientBuilder);
             when(httpClientBuilder.build()).thenReturn(httpClient);
             when(httpClient.execute(any(HttpGet.class))).thenReturn(httpResponse);
             when(httpResponse.getStatusLine()).thenReturn(statusLine);

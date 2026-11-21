@@ -22,7 +22,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +36,8 @@ public class ProvisionalBookingService {
     @Inject
     @Value(key = "courtscheduler.base.url", defaultValue = "http://localhost:8080/listingcourtscheduler-api/rest/courtscheduler")
     private String baseUri;
+    @Inject
+    CourtSchedulerHttpClient courtSchedulerHttpClient;
     @Inject
     SystemUserProvider systemUserProvider;
     @Inject
@@ -51,7 +53,7 @@ public class ProvisionalBookingService {
             throw new DataValidationException("Params for search ProvisionalSlots is null ....");
         }
 
-        try {
+        try (CloseableHttpClient client = courtSchedulerHttpClient.create()) {
             final HttpGet httpGet = new HttpGet(new URL(baseUri + UNCONFIRMED_RESOURCE).toString());
             httpGet.addHeader(ACCEPT, COURTSCHEDULER_GET_UNCONFIRMED_BOOKING_TYPE);
             httpGet.addHeader(CJS_CPP_UID, getUserId().toString());
@@ -60,10 +62,7 @@ public class ProvisionalBookingService {
             params.forEach(uriBuilder::addParameter);
             httpGet.setURI(uriBuilder.build());
 
-            final HttpResponse httpResponse =  HttpClientBuilder
-                    .create()
-                    .build()
-                    .execute(httpGet);
+            final HttpResponse httpResponse = client.execute(httpGet);
 
             if (httpResponse.getStatusLine().getStatusCode() == Response.Status.OK.getStatusCode()) {
                 if (LOGGER.isInfoEnabled()) {
