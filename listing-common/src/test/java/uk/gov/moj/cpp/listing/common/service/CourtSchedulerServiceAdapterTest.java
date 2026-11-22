@@ -510,6 +510,53 @@ class CourtSchedulerServiceAdapterTest {
     }
 
     @Test
+    void crownFallbackSearchAndBook_shouldThrowRejection_on422NoAvailability() {
+        // SPRDT-1539: courtscheduler's single-day MOVE answers 422 NO_AVAILABILITY when nothing is
+        // bookable and keeps the old booking — a rejection for the caller, not a no-session fail-open.
+        final JsonObject body = javax.json.Json.createObjectBuilder()
+                .add("errorCode", "NO_AVAILABILITY")
+                .add("unavailableDates", javax.json.Json.createArrayBuilder().add("2026-11-17"))
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_UNPROCESSABLE_ENTITY);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException rejection =
+                org.junit.jupiter.api.Assertions.assertThrows(
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException.class,
+                        () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                                UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 11, 17), 360,
+                                Optional.of(UUID.randomUUID()), Optional.empty(),
+                                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING,
+                                Optional.empty(), Optional.empty(), Optional.empty()));
+
+        assertThat(rejection.getHttpStatus(), is(HttpStatus.SC_UNPROCESSABLE_ENTITY));
+        assertThat(rejection.getErrorCode(), is("NO_AVAILABILITY"));
+        assertThat(rejection.getUnavailableDates(), is(java.util.List.of("2026-11-17")));
+    }
+
+    @Test
+    void crownFallbackSearchAndBook_shouldThrowNoSession_on422NoSessionFound() {
+        // Any other 422 (NO_SESSION_FOUND) keeps the fail-open "no session" meaning.
+        final JsonObject body = javax.json.Json.createObjectBuilder()
+                .add("errorCode", "NO_SESSION_FOUND")
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_UNPROCESSABLE_ENTITY);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.crownFallbackSearchAndBook(anyMap())).thenReturn(response);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException.class,
+                () -> courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                        UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 11, 17), 360,
+                        Optional.empty(), Optional.empty(),
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING,
+                        Optional.empty(), Optional.empty(), Optional.empty()));
+    }
+
+    @Test
     void crownFallbackSearchAndBook_shouldThrowNoSession_on200WithoutCourtScheduleId() {
         // A 200 whose body carries no courtScheduleId (e.g. a differently-shaped search-and-book
         // response) is not a booking — accepting it would fabricate an all-null hearing day.

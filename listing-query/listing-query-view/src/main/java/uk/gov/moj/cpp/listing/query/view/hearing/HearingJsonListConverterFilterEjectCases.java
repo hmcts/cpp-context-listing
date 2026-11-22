@@ -23,15 +23,18 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
@@ -60,6 +63,8 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     public static final String HEARINGS_BY_HEARING_DATE = "hearingsByHearingDate";
     public static final String HEARING = "hearing";
     public static final String COURT_APPLICATIONS = "courtApplications";
+    private static final String LINKED_CASE_IDS = "linkedCaseIds";
+    private static final String ID = "id";
 
     private static final String ERROR_MESSAGE_FORMAT = "Resource %s unable to parse. Reason: %s";
 
@@ -86,6 +91,45 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
                 .filter(this::casesOrApplicationsExists)
                 .map(hearingJsonNode -> this.jsonFromString(hearingJsonNode.toString()))
                 .collect(toArrayNode());
+    }
+
+    public JsonArray filterExParteOffencesFromHearings(final JsonArray hearingsArray) {
+        if (isNull(hearingsArray) || hearingsArray.isEmpty()) {
+            return hearingsArray;
+        }
+
+        final JsonNode hearingsNode = toJsonNode(hearingsArray);
+
+        final Set<String> exParteCaseIds = new HashSet<>();
+        hearingsNode.forEach(hearing -> exParteCaseIds.addAll(collectExParteCaseIds(hearing)));
+
+        final JsonArrayBuilder builder = createArrayBuilder();
+        hearingsNode.forEach(hearing -> {
+            // a hearing carrying an application linked to an ex-parte case listed elsewhere is left off the list
+            // altogether, including any other case or application on it; when the ex-parte case is on this
+            // hearing, only it and the applications are removed below
+            final Set<String> exParteCaseIdsListedElsewhere = new HashSet<>(exParteCaseIds);
+            exParteCaseIdsListedElsewhere.removeAll(collectExParteCaseIds(hearing));
+            if (hasCourtApplicationLinkedToAnyExParteCase(hearing, exParteCaseIdsListedElsewhere)) {
+                return;
+            }
+            removeCourtApplicationsSharingHearingWithExParteCase(hearing);
+            hearing.findValues(LISTED_CASES).forEach(this::removeNodeForExParteFlag);
+            final JsonNode filteredHearing = removeCourtApplicationsLinkedToExParteCases(hearing, exParteCaseIds);
+            if (nonNull(filteredHearing)) {
+                builder.add(this.jsonFromString(filteredHearing.toString()));
+            }
+        });
+        return builder.build();
+    }
+
+    private JsonNode toJsonNode(final JsonArray jsonArray) {
+        try {
+            return mapper.readTree(jsonArray.toString());
+        } catch (final IOException e) {
+            LOGGER.error(format(ERROR_MESSAGE_FORMAT, jsonArray.toString(), e.getMessage()), e.getCause());
+            throw new IllegalStateException(format(ERROR_MESSAGE_FORMAT, jsonArray.toString(), e.getMessage()));
+        }
     }
 
     private static String generateIdRespKey(UUID hearingId, LocalDate hearingDate) {
@@ -164,10 +208,17 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
 
     @Override
     public JsonArray convertHearingResultForAlphabeticalList(final List<Hearing> hearings) {
-        return hearings.stream()
+        final List<JsonNode> propertiesList = hearings.stream()
                 .map(this::deepCopyProperties)
+                .collect(Collectors.toList());
+
+        final Set<String> exParteCaseIds = new HashSet<>();
+        propertiesList.forEach(properties -> exParteCaseIds.addAll(collectExParteCaseIds(properties)));
+
+        return propertiesList.stream()
                 .map(this::filterEjectedCasesAndCourtApplicationsForAlphabeticalList)
                 .map(this::filterExParteOffenceCasesForPublishList)
+                .map(properties -> removeCourtApplicationsLinkedToExParteCases(properties, exParteCaseIds))
                 .map(this::removeHearingsWhenBothCasesAndApplicationsAreEmpty)
                 .filter(Objects::nonNull)
                 .map(hearingJsonNode -> this.jsonFromString(hearingJsonNode.get(0).toString()))
@@ -298,9 +349,133 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
         if (isNull(properties)) {
             return null;
         }
-        final List<JsonNode> listedCasesNodes = properties.findValues(LISTED_CASES);
-        listedCasesNodes.forEach(this::removeNodeForExParteFlag);
+        final Set<String> exParteCaseIds = collectExParteCaseIds(properties);
+
+        removeCourtApplicationsSharingHearingWithExParteCase(properties);
+        properties.findValues(LISTED_CASES).forEach(this::removeNodeForExParteFlag);
+        return removeCourtApplicationsLinkedToExParteCases(properties, exParteCaseIds);
+    }
+
+    private void removeCourtApplicationsSharingHearingWithExParteCase(final JsonNode properties) {
+        collectHearingScopeNodes(properties).forEach(hearingScopeNode -> {
+            final JsonNode listedCasesNode = hearingScopeNode.get(LISTED_CASES);
+            if (listedCasesNode != null && listedCasesNode.isArray()
+                    && anyMatchExparteOffenceCase(listedCasesNode)) {
+                removeAllCourtApplications(hearingScopeNode.get(COURT_APPLICATIONS));
+            }
+        });
+    }
+
+    private boolean anyMatchExparteOffenceCase(final JsonNode listedCasesNode) {
+        for (final JsonNode listedCase : listedCasesNode) {
+            if (isExparteOffenceCase(listedCase)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void removeAllCourtApplications(final JsonNode courtApplicationsNode) {
+        if (courtApplicationsNode != null && courtApplicationsNode.isArray()) {
+            ((ArrayNode) courtApplicationsNode).removeAll();
+        }
+    }
+
+    private List<JsonNode> collectHearingScopeNodes(final JsonNode node) {
+        final List<JsonNode> hearingScopeNodes = new ArrayList<>();
+        collectHearingScopeNodes(node, hearingScopeNodes);
+        return hearingScopeNodes;
+    }
+
+    private void collectHearingScopeNodes(final JsonNode node, final List<JsonNode> hearingScopeNodes) {
+        if (node == null || node.isMissingNode()) {
+            return;
+        }
+        if (node.isObject()) {
+            if (node.has(LISTED_CASES) && node.has(COURT_APPLICATIONS)) {
+                hearingScopeNodes.add(node);
+            }
+            node.elements().forEachRemaining(child -> collectHearingScopeNodes(child, hearingScopeNodes));
+        } else if (node.isArray()) {
+            node.forEach(child -> collectHearingScopeNodes(child, hearingScopeNodes));
+        }
+    }
+
+    private Set<String> collectExParteCaseIds(final JsonNode properties) {
+        final Set<String> exParteCaseIds = new HashSet<>();
+        if (isNull(properties)) {
+            return exParteCaseIds;
+        }
+        properties.findValues(LISTED_CASES).forEach(listedCasesNode -> addExParteCaseIds(listedCasesNode, exParteCaseIds));
+        return exParteCaseIds;
+    }
+
+    private void addExParteCaseIds(final JsonNode listedCasesNode, final Set<String> exParteCaseIds) {
+        if (!listedCasesNode.isArray()) {
+            return;
+        }
+        for (final JsonNode listedCase : listedCasesNode) {
+            addExParteCaseIdIfApplicable(listedCase, exParteCaseIds);
+        }
+    }
+
+    private void addExParteCaseIdIfApplicable(final JsonNode listedCase, final Set<String> exParteCaseIds) {
+        if (!isExparteOffenceCase(listedCase)) {
+            return;
+        }
+        final JsonNode idNode = listedCase.path(ID);
+        if (!idNode.isMissingNode()) {
+            exParteCaseIds.add(idNode.asText());
+        }
+    }
+
+    private JsonNode removeCourtApplicationsLinkedToExParteCases(final JsonNode properties, final Set<String> exParteCaseIds) {
+        if (isNull(properties) || exParteCaseIds.isEmpty()) {
+            return properties;
+        }
+        properties.findValues(COURT_APPLICATIONS).forEach(node -> removeApplicationsLinkedToCaseIds(node, exParteCaseIds));
         return properties;
+    }
+
+    private void removeApplicationsLinkedToCaseIds(final JsonNode jsonNode, final Set<String> exParteCaseIds) {
+        if (jsonNode == null || !jsonNode.isArray()) {
+            return;
+        }
+        final ArrayNode arrayNode = (ArrayNode) jsonNode;
+        final Iterator<JsonNode> iterator = arrayNode.elements();
+        while (iterator.hasNext()) {
+            final JsonNode courtApplication = iterator.next();
+            if (isLinkedToAnyExParteCase(courtApplication, exParteCaseIds)) {
+                iterator.remove();
+            }
+        }
+    }
+
+    private boolean hasCourtApplicationLinkedToAnyExParteCase(final JsonNode hearing, final Set<String> exParteCaseIds) {
+        if (exParteCaseIds.isEmpty()) {
+            return false;
+        }
+        for (final JsonNode courtApplicationsNode : hearing.findValues(COURT_APPLICATIONS)) {
+            for (final JsonNode courtApplication : courtApplicationsNode) {
+                if (isLinkedToAnyExParteCase(courtApplication, exParteCaseIds)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isLinkedToAnyExParteCase(final JsonNode courtApplication, final Set<String> exParteCaseIds) {
+        final JsonNode linkedCaseIdsNode = courtApplication.findPath(LINKED_CASE_IDS);
+        if (linkedCaseIdsNode.isMissingNode() || !linkedCaseIdsNode.isArray()) {
+            return false;
+        }
+        for (final JsonNode linkedCaseId : linkedCaseIdsNode) {
+            if (exParteCaseIds.contains(linkedCaseId.asText())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private JsonNode removeHearingsWhenBothCasesAndApplicationsAreEmpty(final JsonNode properties) {
@@ -374,16 +549,16 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
 
     private boolean isExparteOffenceCase(JsonNode listedCase) {
 
-        JsonNode offencesNode = listedCase.findPath("offences");
-
-        if (offencesNode.isMissingNode() || !offencesNode.isArray()) {
-            return false;
-        }
-
-        for (JsonNode offence : offencesNode) {
-            JsonNode isExParteNode = offence.findPath("civilOffence").findPath("isExParte");
-            if (!isExParteNode.isMissingNode() && isExParteNode.asBoolean()) {
-                return true;
+        // every defendant's offences, not just the first defendant's
+        for (JsonNode offencesNode : listedCase.findValues("offences")) {
+            if (!offencesNode.isArray()) {
+                continue;
+            }
+            for (JsonNode offence : offencesNode) {
+                JsonNode isExParteNode = offence.findPath("civilOffence").findPath("isExParte");
+                if (!isExParteNode.isMissingNode() && isExParteNode.asBoolean()) {
+                    return true;
+                }
             }
         }
 
