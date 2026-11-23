@@ -39,6 +39,7 @@ import uk.gov.moj.cpp.listing.steps.data.ReportingRestrictionData;
 import uk.gov.moj.cpp.listing.it.util.ItClock;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -146,6 +147,13 @@ public class HearingsDataFactory {
 
     public static List<HearingData> hearingsDataForBookedSlot() {
         return createRandomHearingsWitBookedSlots(1);
+    }
+
+    public static List<HearingData> hearingsDataForBookedSlotWithWeekCommencing(final LocalDate weekCommencingStartDate, final int weekCommencingDuration) {
+        final HearingData hearingData = createRandomHearingWithBookedSlot(null, getRandomCourtRoomId(), null,
+                weekCommencingStartDate.atTime(10, 0).atZone(ZoneOffset.UTC));
+        hearingData.setWeekCommencing(weekCommencingStartDate, weekCommencingDuration);
+        return singletonList(hearingData);
     }
 
     public static List<HearingData> hearingsDataWithLegalEntity() {
@@ -1323,6 +1331,10 @@ public class HearingsDataFactory {
     }
 
     private static HearingData createRandomHearingWithBookedSlot(final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
+        return createRandomHearingWithBookedSlot(hearingEndDate, courtRoomId, judicialRoles, SLOT_START_TIME);
+    }
+
+    private static HearingData createRandomHearingWithBookedSlot(final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles, final ZonedDateTime slotStartTime) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
         final UUID courtCentreId = getRandomCourtCenterId();
         final List<RotaSlot> bookedSlots = Arrays.asList(RotaSlot.rotaSlot()
@@ -1333,7 +1345,7 @@ public class HearingsDataFactory {
                 .withCourtScheduleId(SLOT_SCHEDULE_ID)
                 .withOucode(SLOT_OUCODE)
                 .withSession(SLOT_SESSION)
-                .withStartTime(SLOT_START_TIME)
+                .withStartTime(slotStartTime)
                 .build());
 
         return new HearingData(randomUUID(), courtCentreId, STRING.next(), PTP_HEARING_TYPE, ItClock.today(),

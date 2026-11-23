@@ -93,6 +93,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataForBookedSlot());
     }
 
+    public static HearingsData hearingsDataForBookedSlotWithWeekCommencing(final LocalDate weekCommencingStartDate, final int weekCommencingDuration) {
+        return new HearingsData(HearingsDataFactory.hearingsDataForBookedSlotWithWeekCommencing(weekCommencingStartDate, weekCommencingDuration));
+    }
+
     public static HearingsData hearingsDataWithLegalEntity() {
         return new HearingsData(HearingsDataFactory.hearingsDataWithLegalEntity());
     }

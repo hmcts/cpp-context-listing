@@ -4,6 +4,7 @@ import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -106,6 +107,7 @@ import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
 import uk.gov.justice.core.courts.Prosecutor;
 import uk.gov.justice.core.courts.ReportingRestriction;
+import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.core.courts.SummonsTemplateType;
 import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.commands.HearingListingNeeds;
@@ -308,6 +310,39 @@ public class ListCourtHearingSteps extends AbstractIT {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
+    public void whenCaseWithProsecutionCasesIsSubmittedForListingWithBookedSlot() {
+        stubReferenceDataForFirstHearing();
+        hearingsData.getHearingData().forEach(ListCourtHearingSteps::stubCrownBookedSlotResolution);
+
+        final List<RotaSlot> bookedSlots = hearingsData.getHearingData().get(0).getBookedSlots();
+        final ListCourtHearing listCourtHearing = getListCourtHearingData(hearingsData);
+        final ListCourtHearing listCourtHearingWithBookedSlot = ListCourtHearing.listCourtHearing()
+                .withValuesFrom(listCourtHearing)
+                .withHearings(singletonList(HearingListingNeeds.hearingListingNeeds()
+                        .withValuesFrom(listCourtHearing.getHearings().get(0))
+                        .withBookedSlots(bookedSlots)
+                        .withBookingReference(null)
+                        .withListedStartDateTime(bookedSlots.get(0).getStartTime())
+                        .withEarliestStartDateTime(bookedSlots.get(0).getStartTime())
+                        .build()))
+                .build();
+
+        assertThat(postListCourtHearing(listCourtHearingWithBookedSlot).getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    private Response postListCourtHearing(final ListCourtHearing listCourtHearingData) {
+        final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
+
+        final JsonObject listCourtHearingJsonObject = (JsonObject) objectToJsonValueConverter.convert(listCourtHearingData);
+
+        request = listCourtHearingJsonObject.toString();
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\tHeader = {}\n\n", listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING, request, getLoggedInHeader());
+
+        return restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING,
+                request, getLoggedInHeader());
+    }
+
     public void whenCaseIsSubmittedForListingWithLegalEntity() {
         final Response response = getResponseCaseSubmittedForListingWithLegalEntity();
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
@@ -399,18 +434,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         stubReferenceDataForFirstHearing();
         hearingsData.getHearingData().forEach(ListCourtHearingSteps::stubCrownBookedSlotResolution);
 
-        final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
-                (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
-
-        ListCourtHearing listCourtHearingData = createListCourtHearingBookedSlotData(hearingsData);
-
-        final JsonObject listCourtHearingJsonObject = (JsonObject) objectToJsonValueConverter.convert(listCourtHearingData);
-
-        request = listCourtHearingJsonObject.toString();
-        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\tHeader = {}\n\n", listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING, request, getLoggedInHeader());
-
-        return restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING,
-                request, getLoggedInHeader());
+        return postListCourtHearing(createListCourtHearingBookedSlotData(hearingsData));
     }
 
     protected void stubReferenceDataForFirstHearing(final UUID judicialId) {
@@ -1022,7 +1046,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         //This is how we poll week commencing hearings from UI
         pollForHearingByWeekCommencing(
                 hearingData.getCourtCentreId().toString(),
-                false, // isAllocated should be false always as specified
+                isAllocated,
                 "1970-01-01", // weekCommencingStartDate
                 "2100-12-31", // weekCommencingEndDate
                 getLoggedInUser().toString(),
@@ -1031,7 +1055,25 @@ public class ListCourtHearingSteps extends AbstractIT {
                                 equalTo(hearingData.getId().toString())),
                         withJsonPath("$.hearings[0].weekCommencingStartDate", equalTo(FORMATTER.format(weekCommencingStartDate))),
                         withJsonPath("$.hearings[0].weekCommencingEndDate", equalTo(FORMATTER.format(weekCommencingStartDate.plusWeeks(weekCommencingDuration).minusDays(1)))),
-                        withJsonPath("$.hearings[0].weekCommencingDurationInWeeks", equalTo(weekCommencingDuration))
+                        withJsonPath("$.hearings[0].weekCommencingDurationInWeeks", equalTo(weekCommencingDuration)),
+                        withJsonPath("$.hearings[0].allocated", equalTo(isAllocated))
+                }
+        );
+    }
+
+    public void verifyCrownWeekCommencingHearingHasNoHearingDays() {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        pollForHearingByWeekCommencing(
+                hearingData.getCourtCentreId().toString(),
+                false,
+                "1970-01-01",
+                "2100-12-31",
+                getLoggedInUser().toString(),
+                new Matcher[]{
+                        withJsonPath("$.hearings[0].id", equalTo(hearingData.getId().toString())),
+                        withJsonPath("$.hearings[0].jurisdictionType", equalTo("CROWN")),
+                        withoutJsonPath("$.hearings[0].hearingDays[0]"),
+                        withoutJsonPath("$.hearings[0].startDate")
                 }
         );
     }

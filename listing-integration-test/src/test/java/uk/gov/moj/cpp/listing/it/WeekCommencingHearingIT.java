@@ -1,13 +1,18 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static java.time.DayOfWeek.MONDAY;
+import static java.time.temporal.TemporalAdjusters.next;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingData;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithWeekCommencingDate;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdWithDraftStatus;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyHearingListedOnceInCourtSession;
 
+import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.WeekCommencingHearingSteps;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 import uk.gov.moj.cpp.listing.it.util.ItClock;
@@ -35,6 +40,24 @@ public class WeekCommencingHearingIT extends AbstractIT {
         weekCommencingHearingSteps.whenHearingIsUpdatedForListingForWeekCommencingDate();
 
         weekCommencingHearingSteps.verifyHearingUpdatedWithWeekCommencingDateAndUnallocatedWhenQueryingFromAPI();
+    }
+
+    @Test
+    public void shouldListCrownWeekCommencingHearingWithBookedSlotAndKeepItUnallocated() {
+        final LocalDate weekCommencingStartDate = ItClock.today().with(next(MONDAY));
+        final HearingsData hearingsData = HearingsData.hearingsDataForBookedSlotWithWeekCommencing(weekCommencingStartDate, 1);
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final RotaSlot bookedSlot = hearingData.getBookedSlots().get(0);
+
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseWithProsecutionCasesIsSubmittedForListingWithBookedSlot();
+
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        listCourtHearingSteps.verifyHearingListedWithWeekCommencingFromAPI(UNALLOCATED, weekCommencingStartDate, 1);
+        listCourtHearingSteps.verifyCrownWeekCommencingHearingHasNoHearingDays();
+        verifyHearingListedOnceInCourtSession(hearingData.getId().toString(), bookedSlot.getCourtScheduleId(),
+                bookedSlot.getStartTime(), hearingData.getHearingEstimateMinutes());
+        listCourtHearingSteps.verifyPublicEventHearingListed();
     }
 
     @Test
