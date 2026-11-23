@@ -310,7 +310,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
-    public void whenCaseWithProsecutionCasesIsSubmittedForListingWithBookedSlot() {
+    public void whenCaseIsSubmittedForListingWithProsecutionCasesAndBookedSlot() {
         stubReferenceDataForFirstHearing();
         hearingsData.getHearingData().forEach(ListCourtHearingSteps::stubCrownBookedSlotResolution);
 
@@ -1061,7 +1061,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         );
     }
 
-    public void verifyCrownWeekCommencingHearingHasNoHearingDays() {
+    public void verifyCrownHearingListedWithoutHearingDaysFromAPI() {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         pollForHearingByWeekCommencing(
                 hearingData.getCourtCentreId().toString(),

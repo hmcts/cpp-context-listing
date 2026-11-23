@@ -6,7 +6,7 @@ import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearin
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithWeekCommencingDate;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdWithDraftStatus;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
-import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyHearingListedOnceInCourtSession;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyListHearingInCourtSessionsCalledOnce;
 
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -50,12 +50,12 @@ public class WeekCommencingHearingIT extends AbstractIT {
         final RotaSlot bookedSlot = hearingData.getBookedSlots().get(0);
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        listCourtHearingSteps.whenCaseWithProsecutionCasesIsSubmittedForListingWithBookedSlot();
+        listCourtHearingSteps.whenCaseIsSubmittedForListingWithProsecutionCasesAndBookedSlot();
 
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         listCourtHearingSteps.verifyHearingListedWithWeekCommencingFromAPI(UNALLOCATED, weekCommencingStartDate, 1);
-        listCourtHearingSteps.verifyCrownWeekCommencingHearingHasNoHearingDays();
-        verifyHearingListedOnceInCourtSession(hearingData.getId().toString(), bookedSlot.getCourtScheduleId(),
+        listCourtHearingSteps.verifyCrownHearingListedWithoutHearingDaysFromAPI();
+        verifyListHearingInCourtSessionsCalledOnce(hearingData.getId().toString(), bookedSlot.getCourtScheduleId(),
                 bookedSlot.getStartTime(), hearingData.getHearingEstimateMinutes());
         listCourtHearingSteps.verifyPublicEventHearingListed();
     }

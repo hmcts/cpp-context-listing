@@ -294,18 +294,18 @@ public class CourtSchedulerServiceStub {
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
-    public static void verifyHearingListedOnceInCourtSession(final String hearingId, final String courtScheduleId,
+    public static void verifyListHearingInCourtSessionsCalledOnce(final String hearingId, final String courtScheduleId,
                                                              final ZonedDateTime hearingStartTime, final int durationInMinutes) {
         final String hearingStartTimeUtc = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
                 .format(hearingStartTime.withZoneSameInstant(ZoneOffset.UTC));
-        final String bookedSession = "$.hearingSlots[?(@.hearingId == '" + hearingId + "')]"
+        final String bookedSessionJsonPath = "$.hearingSlots[?(@.hearingId == '" + hearingId + "')]"
                 + ".courtScheduleIds[?(@.courtScheduleId == '" + courtScheduleId + "'"
                 + " && @.hearingStartTime == '" + hearingStartTimeUtc + "'"
                 + " && @.durationInMinutes == " + durationInMinutes + ")]";
 
         WireMock.verify(WireMock.exactly(1), WireMock.postRequestedFor(urlPathEqualTo(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH))
                 .withHeader(CONTENT_TYPE, containing("application/vnd.courtscheduler.list.hearings-in-sessions+json"))
-                .withRequestBody(matchingJsonPath(bookedSession)));
+                .withRequestBody(matchingJsonPath(bookedSessionJsonPath)));
     }
 
     // --- Crown fallback search-and-book stubs (POST /hearings/{hearingId}, crown.search.and.book, durationInMinutes <= 360) ---
