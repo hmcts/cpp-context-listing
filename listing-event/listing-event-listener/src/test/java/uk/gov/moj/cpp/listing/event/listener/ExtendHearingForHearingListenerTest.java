@@ -769,4 +769,137 @@ public class ExtendHearingForHearingListenerTest {
 
         verify(hearingRepository, never()).save(any(uk.gov.moj.cpp.listing.persistence.entity.Hearing.class));
     }
+
+    /**
+     * Real-life trigger: offences 1 and 3 are adjourned to a new hearing, then offence 2 is
+     * adjourned into that same (now existing) hearing. The court list prints offences in stored
+     * order, so offence 2 must not land after offence 3.
+     */
+    @Test
+    public void shouldPlaceAnOffenceAddedForAnExistingDefendantInOrderIndexOrder() throws IOException {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offence1 = randomUUID();
+        final UUID offence2 = randomUUID();
+        final UUID offence3 = randomUUID();
+
+        givenStoredListedCase(listedCaseWithOffences(caseId, defendantId, offenceWithOrderIndex(offence1, 1), offenceWithOrderIndex(offence3, 3)));
+
+        handleCasesAddedToHearing(listedCaseWithOffences(caseId, defendantId, offenceWithOrderIndex(offence2, 2)));
+
+        assertThat(savedOffenceIdsOfFirstDefendant(), Matchers.contains(offence1.toString(), offence2.toString(), offence3.toString()));
+    }
+
+    /**
+     * An offence already on the hearing that arrives again (e.g. re-adjourned into the same
+     * hearing) must keep its position rather than moving to the end.
+     */
+    @Test
+    public void shouldKeepAnExistingOffenceInPlaceWhenItIsAddedToTheHearingAgain() throws IOException {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offence1 = randomUUID();
+        final UUID offence2 = randomUUID();
+        final UUID offence3 = randomUUID();
+
+        givenStoredListedCase(listedCaseWithOffences(caseId, defendantId,
+                offenceWithOrderIndex(offence1, 1), offenceWithOrderIndex(offence2, 2), offenceWithOrderIndex(offence3, 3)));
+
+        handleCasesAddedToHearing(listedCaseWithOffences(caseId, defendantId, offenceWithOrderIndex(offence1, 1)));
+
+        assertThat(savedOffenceIdsOfFirstDefendant(), Matchers.contains(offence1.toString(), offence2.toString(), offence3.toString()));
+    }
+
+    /**
+     * Production incident: every offence already on the hearing was resulted into it again (next
+     * hearing = existing hearing) from another hearing. Progression sent them in its own drifted
+     * order and, via CourtToEventConverter, without orderIndex/count. The stored order changed to
+     * match the incoming array, so the court list stopped matching the UI.
+     */
+    @Test
+    public void shouldKeepTheStoredOrderWhenAllOffencesAreResultedIntoTheExistingHearingAgainInADifferentOrder() throws IOException {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceIndex1 = randomUUID();
+        final UUID offenceIndex4 = randomUUID();
+        final UUID offenceIndex7 = randomUUID();
+
+        givenStoredListedCase(listedCaseWithOffences(caseId, defendantId,
+                offenceWithOrderIndex(offenceIndex1, 1), offenceWithOrderIndex(offenceIndex4, 4), offenceWithOrderIndex(offenceIndex7, 7)));
+
+        handleCasesAddedToHearing(listedCaseWithOffences(caseId, defendantId,
+                offenceWithoutOrdering(offenceIndex4), offenceWithoutOrdering(offenceIndex7), offenceWithoutOrdering(offenceIndex1)));
+
+        assertThat(savedOffenceIdsOfFirstDefendant(), Matchers.contains(offenceIndex1.toString(), offenceIndex4.toString(), offenceIndex7.toString()));
+    }
+
+    /**
+     * Same incident: the incoming offences carry no orderIndex, and the stored offences were
+     * replaced by them, so the hearing lost the one field the court list could sort by.
+     */
+    @Test
+    public void shouldKeepTheStoredOrderIndexWhenAnIncomingOffenceHasNone() throws IOException {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        givenStoredListedCase(listedCaseWithOffences(caseId, defendantId, offenceWithOrderIndex(offenceId, 4)));
+
+        handleCasesAddedToHearing(listedCaseWithOffences(caseId, defendantId, offenceWithoutOrdering(offenceId)));
+
+        final ArgumentCaptor<ArrayNode> savedListedCases = ArgumentCaptor.forClass(ArrayNode.class);
+        verify(properties).replace(eq(LISTED_CASES_FIELD), savedListedCases.capture());
+        final JsonNode savedOffence = savedListedCases.getValue().get(0).get("defendants").get(0).get("offences").get(0);
+        assertThat(savedOffence.path("orderIndex").asInt(-1), Matchers.is(4));
+    }
+
+    private static Offence offenceWithoutOrdering(final UUID offenceId) {
+        return Offence.offence()
+                .withId(offenceId)
+                .build();
+    }
+
+    private void givenStoredListedCase(final ListedCase storedListedCase) throws IOException {
+        final JsonNode storedListedCases = new ObjectMapper().readTree(mapper.writeValueAsString(List.of(storedListedCase)));
+        given(hearingRepository.findBy(any(UUID.class))).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES_FIELD)).willReturn(storedListedCases);
+    }
+
+    private void handleCasesAddedToHearing(final ListedCase incomingListedCase) {
+        final Envelope<CasesAddedToHearing> envelope = (Envelope<CasesAddedToHearing>) mock(Envelope.class);
+        given(envelope.payload()).willReturn(CasesAddedToHearing.casesAddedToHearing()
+                .withHearingId(randomUUID())
+                .withUnAllocatedListedCases(new ArrayList<>(List.of(incomingListedCase)))
+                .build());
+
+        extendHearingForHearingListener.handleCasesAddedToHearingEvent(envelope);
+    }
+
+    private List<String> savedOffenceIdsOfFirstDefendant() {
+        final ArgumentCaptor<ArrayNode> savedListedCases = ArgumentCaptor.forClass(ArrayNode.class);
+        verify(properties).replace(eq(LISTED_CASES_FIELD), savedListedCases.capture());
+        final List<String> offenceIds = new ArrayList<>();
+        savedListedCases.getValue().get(0).get("defendants").get(0).get("offences")
+                .forEach(offence -> offenceIds.add(offence.get("id").asText()));
+        return offenceIds;
+    }
+
+    private static ListedCase listedCaseWithOffences(final UUID caseId, final UUID defendantId, final Offence... offences) {
+        return ListedCase.listedCase()
+                .withId(caseId)
+                .withDefendants(new ArrayList<>(List.of(Defendant.defendant()
+                        .withId(defendantId)
+                        .withOffences(new ArrayList<>(Arrays.asList(offences)))
+                        .build())))
+                .build();
+    }
+
+    private static Offence offenceWithOrderIndex(final UUID offenceId, final int orderIndex) {
+        return Offence.offence()
+                .withId(offenceId)
+                .withOrderIndex(orderIndex)
+                .withCount(0)
+                .build();
+    }
 }

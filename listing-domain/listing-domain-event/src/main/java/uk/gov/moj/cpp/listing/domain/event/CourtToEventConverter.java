@@ -280,7 +280,9 @@ public class CourtToEventConverter {
                 .withLaaApplnReference(buildLaaReference(ofNullable(o.getLaaApplnReference())))
                 .withLaidDate(o.getLaidDate())
                 .withSeedingHearing(nonNull(o.getSeedingHearing()) ? buildSeedingHearing(o.getSeedingHearing()) : null)
-                .withShadowListed(isNotEmpty(shadowListedOffences) && shadowListedOffences.contains(o.getId()));
+                .withShadowListed(isNotEmpty(shadowListedOffences) && shadowListedOffences.contains(o.getId()))
+                .withOrderIndex(o.getOrderIndex())
+                .withCount(o.getCount());
 
         if (!isNull(o.getReportingRestrictions()) && !o.getReportingRestrictions().isEmpty()) {
             builder.withReportingRestrictions(o.getReportingRestrictions().stream()
@@ -305,7 +307,9 @@ public class CourtToEventConverter {
                 .withLaaApplnReference(buildLaaReference(ofNullable(o.getLaaApplnReference())))
                 .withLaidDate(o.getLaidDate())
                 .withSeedingHearing(nonNull(o.getSeedingHearing()) ? buildSeedingHearing(o.getSeedingHearing()) : null)
-                .withShadowListed(isNotEmpty(shadowListedOffences) && shadowListedOffences.contains(o.getId()));
+                .withShadowListed(isNotEmpty(shadowListedOffences) && shadowListedOffences.contains(o.getId()))
+                .withOrderIndex(o.getOrderIndex())
+                .withCount(o.getCount());
 
         if (!isNull(o.getReportingRestrictions()) && !o.getReportingRestrictions().isEmpty()) {
             builder.withReportingRestrictions(o.getReportingRestrictions().stream()
