@@ -224,6 +224,7 @@ public class SplitHearingIT extends AbstractIT {
      */
     @ParameterizedTest(name = "progression {0} is returned to the caller unchanged")
     @ValueSource(ints = {HttpStatus.SC_BAD_REQUEST, HttpStatus.SC_NOT_FOUND})
+    @ExpectedServerErrors("progression rejection is stubbed; ListingCommandApi deliberately logs ERROR 'split-hearing for hearing ... rejected by progression with status ...' before rethrowing SplitHearingRejectedException")
     void shouldReturnProgressionsRejectionStatusUnchanged(final int rejectionStatus) throws Exception {
         final UUID hearingId = randomUUID();
         givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
@@ -239,6 +240,7 @@ public class SplitHearingIT extends AbstractIT {
     }
 
     @Test
+    @ExpectedServerErrors("progression rejection is stubbed; ListingCommandApi deliberately logs ERROR 'split-hearing for hearing ... rejected by progression with status ...' before rethrowing SplitHearingRejectedException")
     void shouldReturnProgressionsConflictAsUnprocessableEntity() throws Exception {
         final UUID hearingId = randomUUID();
         givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
@@ -258,6 +260,7 @@ public class SplitHearingIT extends AbstractIT {
      * survive the hop back through listing rather than being replaced with listing's own message.
      */
     @Test
+    @ExpectedServerErrors("progression rejection is stubbed; ListingCommandApi deliberately logs ERROR 'split-hearing for hearing ... rejected by progression with status ...' before rethrowing SplitHearingRejectedException")
     void shouldPassProgressionsErrorCodeBackToTheCaller() throws Exception {
         final UUID hearingId = randomUUID();
         givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);
@@ -275,6 +278,7 @@ public class SplitHearingIT extends AbstractIT {
     }
 
     @Test
+    @ExpectedServerErrors("progression rejection is stubbed; ListingCommandApi deliberately logs ERROR 'split-hearing for hearing ... rejected by progression with status ...' before rethrowing SplitHearingRejectedException")
     void shouldPassProgressionsResultedHearingReasonBackToTheCaller() throws Exception {
         final UUID hearingId = randomUUID();
         givenAUserHasLoggedInAsAListingOfficer(AbstractIT.USER_ID_VALUE);

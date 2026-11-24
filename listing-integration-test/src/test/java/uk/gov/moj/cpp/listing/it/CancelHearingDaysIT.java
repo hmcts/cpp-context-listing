@@ -55,6 +55,7 @@ public class CancelHearingDaysIT extends AbstractIT {
     }
 
     @Test
+    @ExpectedServerErrors("court list search renders the court list PDF; the document-generator stub answers 400 -> WFLYEJB0034 + UT005023 DocumentGeneratorClientException. Test asserts the hearing days returned, not the PDF")
     public void shouldNotRetrieveCancelledDaysWhenCourtListSearchInvokedForAlphabeticListingType() {
         final List<HearingDay> hearingDays = buildHearingDaysWithCancelledFlag(null, false, true);
         final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, MAGISTRATES_JURISDICTION);
@@ -69,6 +70,7 @@ public class CancelHearingDaysIT extends AbstractIT {
     }
 
     @Test
+    @ExpectedServerErrors("court list search renders the court list PDF; the document-generator stub answers 400 -> WFLYEJB0034 + UT005023 DocumentGeneratorClientException. Test asserts the hearing days returned, not the PDF")
     public void shouldNotRetrieveCancelledDaysWhenCourtListSearchInvokedForPublicOrStandardListingType() {
         final List<HearingDay> hearingDays = buildHearingDaysWithCancelledFlag(null, false, true);
         final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, MAGISTRATES_JURISDICTION);

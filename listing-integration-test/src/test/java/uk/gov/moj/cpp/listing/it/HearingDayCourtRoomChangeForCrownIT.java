@@ -125,6 +125,7 @@ class HearingDayCourtRoomChangeForCrownIT extends AbstractIT {
     }
 
     @Test
+    @ExpectedServerErrors("courtscheduler crown.search.and.book is stubbed to 422 -> HearingSlotsService logs ERROR 'POST ...crown.search.and.book+json failed with status code:422'; listing returns the 422 to the caller")
     void shouldReturn422NamingOnlyTheNewDayWhenCourtschedulerCannotExtendTheBlock() {
         final AllocatedCrownBlock block = givenAllocatedMondayToWednesdayCrownBlock();
         final UUID secondRoom = UUID.randomUUID();

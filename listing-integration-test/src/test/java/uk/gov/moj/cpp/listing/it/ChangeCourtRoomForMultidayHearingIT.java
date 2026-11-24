@@ -514,6 +514,7 @@ class ChangeCourtRoomForMultidayHearingIT extends AbstractIT {
     }
 
     @Test
+    @ExpectedServerErrors("courtscheduler is stubbed to 422 NO_SESSION_FOUND -> CourtSchedulerServiceAdapter logs ERROR 'changeCourtRoomForMultidayHearing from courtscheduler returned status 422'; listing returns the 422 to the caller")
     void shouldReturn422WhenCourtSchedulerReturnsNoSessionFound() {
         final ThreeDayCrownHearing hearing = givenAllocatedThreeDayCrownHearing();
 
