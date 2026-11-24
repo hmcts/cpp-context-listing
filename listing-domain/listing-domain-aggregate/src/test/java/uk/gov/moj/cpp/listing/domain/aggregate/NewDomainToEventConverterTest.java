@@ -13,10 +13,14 @@ import static uk.gov.moj.cpp.listing.domain.CourtApplicationParty.courtApplicati
 import static uk.gov.moj.cpp.listing.domain.CourtApplication.courtApplication;
 import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON;
 import static uk.gov.moj.cpp.listing.domain.aggregate.NewDomainToEventConverter.buildCourtApplications;
-import static org.junit.Assert.*;
+import static uk.gov.moj.cpp.listing.domain.aggregate.NewDomainToEventConverter.convertHearingDaysDomainToEvent;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import uk.gov.justice.listing.events.NewBaseDefendant;
 import uk.gov.moj.cpp.listing.domain.Address;
+import uk.gov.moj.cpp.listing.domain.HearingDay;
 import uk.gov.moj.cpp.listing.domain.CivilOffence;
 import uk.gov.moj.cpp.listing.domain.CommittingCourt;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
@@ -31,7 +35,10 @@ import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.NewBaseDefendant;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -289,6 +296,54 @@ public class NewDomainToEventConverterTest {
     }
 
     @Test
+    public void shouldMapIsDraftFromDomainToEventHearingDay() {
+        final UUID courtScheduleId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+        final UUID courtCentreId = randomUUID();
+        final ZonedDateTime startTime = ZonedDateTime.of(2026, 4, 10, 10, 0, 0, 0, ZoneOffset.UTC);
+        final ZonedDateTime endTime = startTime.plusMinutes(30);
+
+        final HearingDay domainHearingDay = HearingDay.hearingDay()
+                .withCourtScheduleId(of(courtScheduleId))
+                .withCourtRoomId(of(courtRoomId))
+                .withCourtCentreId(of(courtCentreId))
+                .withHearingDate(startTime.toLocalDate())
+                .withStartTime(startTime)
+                .withEndTime(endTime)
+                .withDurationMinutes(30)
+                .withSequence(0)
+                .withIsCancelled(of(false))
+                .withIsDraft(of(true))
+                .build();
+
+        final List<uk.gov.justice.listing.events.HearingDay> eventHearingDays = convertHearingDaysDomainToEvent(List.of(domainHearingDay));
+
+        assertThat(eventHearingDays.size(), is(1));
+        assertThat(eventHearingDays.get(0).getIsDraft(), is(true));
+        assertThat(eventHearingDays.get(0).getCourtScheduleId(), is(courtScheduleId));
+        assertThat(eventHearingDays.get(0).getCourtRoomId(), is(courtRoomId));
+        assertThat(eventHearingDays.get(0).getCourtCentreId(), is(courtCentreId));
+    }
+
+    @Test
+    public void shouldMapIsDraftNullWhenNotSetOnDomainHearingDay() {
+        final ZonedDateTime startTime = ZonedDateTime.of(2026, 4, 10, 10, 0, 0, 0, ZoneOffset.UTC);
+
+        final HearingDay domainHearingDay = HearingDay.hearingDay()
+                .withHearingDate(startTime.toLocalDate())
+                .withStartTime(startTime)
+                .withEndTime(startTime.plusMinutes(30))
+                .withDurationMinutes(30)
+                .withSequence(0)
+                .build();
+
+        final List<uk.gov.justice.listing.events.HearingDay> eventHearingDays = convertHearingDaysDomainToEvent(List.of(domainHearingDay));
+
+        assertThat(eventHearingDays.size(), is(1));
+        assertThat(eventHearingDays.get(0).getIsDraft(), is((Boolean) null));
+    }
+
+    @Test
     public void existingIsYouthTrue_newIsNull_retainsTrue() {
         final UUID defendantId = randomUUID();
         final UUID masterDefendantId = randomUUID();
@@ -390,7 +445,6 @@ public class NewDomainToEventConverterTest {
         // master id should remain (incoming null -> preserve)
         assertEquals("master id preserved", masterDefendantId, result.getMasterDefendantId());
     }
-
 
     private CourtApplication createCourtApplication() {
         return courtApplication()

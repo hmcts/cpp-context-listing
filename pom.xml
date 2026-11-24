@@ -8,10 +8,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-
     <groupId>uk.gov.moj.cpp.listing</groupId>
     <artifactId>listing-parent</artifactId>
-    <version>17.104.21-SNAPSHOT</version>
+    <version>17.104.36-CCSPH2N-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
@@ -34,7 +33,7 @@
         <hearing.version>17.104.201</hearing.version>
         <documentgenerator-client.version>1.0.4</documentgenerator-client.version>
         <sardine.version>5.7</sardine.version>
-        <progression.version>17.104.308</progression.version>
+        <progression.version>17.104.308-CCSPH2-SNAPSHOT</progression.version>
 
         <org.xmlunit.version>2.6.3</org.xmlunit.version>    <!-- Version property added to common-bom:2.2.1. Replace with org.xmlunit.version after upgrade to Framework 6 -->
 
@@ -113,12 +112,12 @@
               the counter (correct depth accounting) while keeping the guard. 2.5.2 verified against
               the failing payload and compatible with json-path 2.9.0.
               https://github.com/aws-solutions/distributed-load-testing-on-aws/issues/146
-
+            -->
             <dependency>
                 <groupId>net.minidev</groupId>
                 <artifactId>json-smart</artifactId>
                 <version>2.5.2</version>
-            </dependency> -->
+            </dependency>
             <dependency>
                 <groupId>uk.gov.justice.services</groupId>
                 <artifactId>domain-test-dsl</artifactId>

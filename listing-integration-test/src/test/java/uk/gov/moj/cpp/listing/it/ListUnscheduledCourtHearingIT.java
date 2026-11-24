@@ -26,8 +26,26 @@ import org.junit.jupiter.api.Test;
 
 public class ListUnscheduledCourtHearingIT extends AbstractIT {
 
+    /**
+     * Regression guard: when the frontend (via progression / Manage Hearing) submits an
+     * unscheduled hearing with a user-entered estimatedMinutes, that value must be
+     * persisted to the listing viewstore. Previously {@code UnscheduledListingCommandHandler}
+     * always replaced the user value with the hearing-type reference-data default, so the
+     * persisted hearing showed the type duration (390 for PTP via the stub) instead of the
+     * 30 minutes the user typed.
+     */
     @Test
-    
+    public void shouldPersistUserEnteredEstimatedMinutesOnUnscheduledHearing() {
+        final HearingsData hearingsData = notHmiEnabledHearingsData();
+        final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData);
+
+        listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
+
+        listCourtHearingSteps.verifyHearingUnscheduledEstimatedMinutesPersisted();
+    }
+
+    @Test
+
     public void shouldListHearingWithUnallocatedData() throws IOException {
         final HearingsData hearingsData = notHmiEnabledHearingsData();
         final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData);

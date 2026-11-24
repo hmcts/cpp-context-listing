@@ -8,10 +8,28 @@ import static org.hamcrest.Matchers.hasSize;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.it.SearchAvailableHearingIT.CASE_IN_HEARING;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithCourtCenterForMagistrate;
+import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.PLEA_HEARING_TYPE;
+import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.TRIAL_HEARING_TYPE;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetHearingIdsWithBody;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
+import static uk.gov.justice.services.test.utils.core.http.BaseUriProvider.getBaseUri;
+import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.it.util.RestPollerHelper.pollWithDefaults;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasNoJsonPath;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.OK;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
 
+import uk.gov.justice.services.test.utils.core.http.RequestParams;
+import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -39,6 +57,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @SuppressWarnings({"squid:S1607"})
 public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
@@ -49,6 +69,10 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
         put(fromString("28b922c3-0396-3c68-970f-5b805c7ab1bb"), "Courtroom 04");
         put(fromString("02d9847e-00e9-3c6c-b25c-1adbf5355a52"), "Courtroom 05");
     }};
+
+    private static final String CROWN_OU_CODE = "C01CY00";
+    private static final String PTPH = "PTPH";
+    private static final String GENC = "GENC";
 
     private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
 
@@ -62,6 +86,11 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
     public void hearingCanBeSearchedForUsingDifferentCombinationsOfParametersForMagsCourtCalendar() throws JsonProcessingException {
         final UUID magsCourtCenterId = getRandomCourtCenterId();
         final List<TestData> testDataList = new ArrayList<>();
+        // Seed in phases (submit all -> await all -> update all -> await all) instead of one hearing at a
+        // time: the 7 hearings live on independent streams, so the server processes them concurrently.
+        // Stubs are still armed per hearing right before its submission — enrichment reads them
+        // synchronously inside the command-API request.
+        final List<ListCourtHearingSteps> listingSteps = new ArrayList<>();
         IntStream.range(0, 7).forEach(i ->
         {
             final UUID magestirateCourtRoomId = new ArrayList<>(COURT_ROOMS.keySet()).get(i % COURT_ROOMS.size());
@@ -73,15 +102,18 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
             final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciaryWithCourtCenterForMagistrate(magsCourtCenterId, magestirateCourtRoomId, hearingEndDate, hearingStartTime);
             final ListCourtHearingSteps listCourtHearingSteps = getListCourtHearingStepsWithStubbedBookingRef(hearingsData, hearingStartTime);
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED);
-
-            final UpdatedHearingData updatedHearingDataWithUpdatedJudiciary = UpdatedHearingData.updatedHearingDataDifferentJudiciary(hearingsData.getHearingData().get(0));
-            final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithUpdatedJudiciary);
-            updateHearingSteps.whenJudiciaryIsChangedForHearings();
-            updateHearingSteps.verifyHearingWithUpdatedJudiciaryWhenQueryingFromAPI();
+            listingSteps.add(listCourtHearingSteps);
             testDataList.add(new TestData(hearingStartTime.toLocalDate(), magestirateCourtRoomId, COURT_ROOMS.get(magestirateCourtRoomId), hearingStartTime));
-
         });
+        listingSteps.forEach(steps -> steps.verifyHearingListedFromAPIWithJmsDelay(ALLOCATED));
+
+        final List<UpdateHearingSteps> judiciaryUpdates = listingSteps.stream()
+                .map(ListCourtHearingSteps::getHearingsData)
+                .map(hearingsData -> new UpdateHearingSteps(hearingsData,
+                        UpdatedHearingData.updatedHearingDataDifferentJudiciary(hearingsData.getHearingData().get(0))))
+                .toList();
+        judiciaryUpdates.forEach(UpdateHearingSteps::whenJudiciaryIsChangedForHearings);
+        judiciaryUpdates.forEach(UpdateHearingSteps::verifyHearingWithUpdatedJudiciaryWhenQueryingFromAPI);
 
         final String payload = new UpdateHearingSteps().verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(magsCourtCenterId, 5, 1, 5);
         checkPayload(payload, 5, testDataList, 5, 1);
@@ -99,6 +131,7 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
         final List<TestData> testDataList = new ArrayList<>();
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps();
+        final List<UUID> seededHearingIds = new ArrayList<>();
 
         IntStream.range(0, 7).forEach(i ->
         {
@@ -116,14 +149,315 @@ public class RangeSearchQueryForCourtCalendarIT extends AbstractIT {
             ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData, crownCourtCenterId, crownCourtRoomId, hearingEndDate, hearingStartTime));
             testDataList.add(new TestData(hearingStartTime.toLocalDate(), crownCourtRoomId, COURT_ROOMS.get(crownCourtRoomId), hearingStartTime));
             listCourtHearingSteps1.whenCaseIsSubmittedForListing();
-            updateHearingSteps.pollUntilHearingIsPresentWithHearingId(crownCourtCenterId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingId.toString());
+            seededHearingIds.add(hearingId);
         });
+        // Await after submitting all 7 (independent streams, processed concurrently) rather than one at a time.
+        seededHearingIds.forEach(hearingId -> updateHearingSteps.pollUntilHearingIsPresentWithHearingId(
+                crownCourtCenterId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingId.toString()));
 
         final String payload = updateHearingSteps.verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(crownCourtCenterId, 5, 1, 5);
         checkPayload(payload, 5, testDataList, 5, 1);
 
         final String payload2 = updateHearingSteps.verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDateCourtCalendarWithPagination(crownCourtCenterId, 5, 2, 2);
         checkPayload(payload2, 2, testDataList, 5, 2);
+    }
+
+    /**
+     * PATH A (courtscheduler-backed) regression for SPRDT-1164. When the courtscheduler returns the same
+     * allocated CROWN hearing id for more than one hearing-day, each day must render as its own row with its
+     * own hearing-day data. Before the fix, the shared Hearing/properties instance was mutated and re-added,
+     * so the day-of-week the enrichment finished on won: every row collapsed onto the last date and the real
+     * date {@code dA} disappeared. The assertion below (dA present in the rendered hearing-days) fails on the
+     * old code and passes on the fixed code.
+     */
+    @Test
+    public void crownCourtSchedulerPathKeepsEachHearingDayDistinct() {
+        final String jurisdictionType = JurisdictionType.CROWN.name();
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID courtRoomId = new ArrayList<>(COURT_ROOMS.keySet()).get(0);
+        final UUID hearingId = randomUUID();
+        final UUID masterDefendantId = randomUUID();
+        final String caseUrn = STRING.next();
+
+        final ZonedDateTime hearingStartTime = ItClock.nowUtc();
+        final LocalDate hearingEndDate = ItClock.today().plusDays(1);
+        final LocalDate dA = hearingStartTime.toLocalDate();     // the hearing's real (seeded) date
+        final LocalDate dB = dA.plusDays(1);                     // a second courtscheduler day for the same id
+
+        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, caseUrn, caseUrn,
+                masterDefendantId, CASE_IN_HEARING, jurisdictionType, jurisdictionType, null, null);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(
+                HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData, courtCentreId, courtRoomId, hearingEndDate, hearingStartTime));
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        new UpdateHearingSteps().pollUntilHearingIsPresentWithHearingId(courtCentreId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingId.toString());
+
+        // Courtscheduler returns the SAME allocated hearing id for two hearing-days.
+        final String body = "{ \"results\": 2, \"pageCount\": 1, \"hearingIds\": ["
+                + "{\"hearingId\":\"" + hearingId + "\",\"courtScheduleId\":\"" + randomUUID() + "\",\"hearingDate\":\"" + dA + "\",\"hearingDayCount\":2,\"hearingDayPosition\":1},"
+                + "{\"hearingId\":\"" + hearingId + "\",\"courtScheduleId\":\"" + randomUUID() + "\",\"hearingDate\":\"" + dB + "\",\"hearingDayCount\":2,\"hearingDayPosition\":2}"
+                + "] }";
+        stubGetHearingIdsWithBody(body);
+
+        final String url = String.format("%s/listing-query-api/query/api/rest/listing/hearings/range-search"
+                        + "?allocated=true&jurisdictionType=CROWN&courtSession=AD&ouCode=C01CY00&courtCentreId=%s"
+                        + "&startDate=%s&endDate=%s&pageSize=40&pageNumber=1",
+                getBaseUri(), courtCentreId, ItClock.today(), ItClock.today().plusDays(3));
+        final RequestParams requestParams = requestParams(url, "application/vnd.listing.search.hearings.court.calendar+json")
+                .withHeader(CPP_UID_HEADER.getName(), CPP_UID_HEADER.getValue())
+                .build();
+
+        final ResponseData response = pollWithDefaults(requestParams).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.hearings.size()", is(2)),
+                        withJsonPath("$.hearings[0].id", is(hearingId.toString())),
+                        withJsonPath("$.hearings[0].allocated", is(true)),
+                        withJsonPath("$.hearings[0].jurisdictionType", is("CROWN")),
+                        // the real date survives per-row de-duplication (collapses to a single wrong date pre-fix)
+                        withJsonPath("$.hearings[*].hearingDays[*].hearingDate", hasItem(dA.toString()))
+                ))
+        );
+
+        // Explicit assertion on the settled response (also satisfies Sonar java:S2699): the seeded date
+        // dA is still present after per-day de-duplication instead of collapsing onto a single date.
+        assertThat(response.getPayload(),
+                isJson(withJsonPath("$.hearings[*].hearingDays[*].hearingDate", hasItem(dA.toString()))));
+    }
+
+    /**
+     * PATH A / PATH B routing regression for SPRDT-1164. Two allocated multi-day CROWN hearings — one
+     * Trial, one Plea — are seeded in the same court centre over the same 3 consecutive working days.
+     * courtscheduler's get.hearing.ids is stubbed so a courtSession=AD query returns hearing #1's
+     * day-tuples and courtSession=AM returns hearing #2's — the AM/AD split is enforced purely by the
+     * stub, since courtscheduler itself has no notion of hearing type. Covers:
+     * <ul>
+     *   <li>Any (no courtSession) — PATH B (listing viewstore), both hearings visible</li>
+     *   <li>AM / AD — PATH A (courtscheduler), only the matching hearing's rows come back</li>
+     *   <li>Any + hearingTypeId=Trial — PATH B's hearingTypeId filter narrows to hearing #1 only</li>
+     *   <li>AM + hearingTypeId=Trial — PATH A returns hearing #2's rows, but listing's
+     *       post-enrichment hearingTypeId filter removes them (hearing #2 is Plea, not Trial) — empty</li>
+     * </ul>
+     */
+    @Test
+    public void shouldRouteCourtCalendarPathAByCourtSessionAndFilterByHearingType() {
+        final String jurisdictionType = JurisdictionType.CROWN.name();
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID courtRoomId = new ArrayList<>(COURT_ROOMS.keySet()).get(0);
+        final String ouCode = "C01CY00";
+
+        final LocalDate day0 = ItClock.nextWorkingDay();
+        final LocalDate day1 = ItClock.plusWorkingDays(day0, 1);
+        final LocalDate day2 = ItClock.plusWorkingDays(day0, 2);
+        final List<LocalDate> hearingDates = List.of(day0, day1, day2);
+        final ZonedDateTime hearingStartTime = day0.atTime(10, 0).atZone(ItClock.LONDON).withZoneSameInstant(ItClock.UTC);
+
+        // HEARING #1 -- Trial, representing courtscheduler AD sessions
+        final UUID hearingId1 = randomUUID();
+        final CaseAndDefendantData caseAndDefendantData1 = new CaseAndDefendantData(hearingId1, STRING.next(), STRING.next(),
+                randomUUID(), CASE_IN_HEARING, jurisdictionType, jurisdictionType, null, null);
+        new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(
+                caseAndDefendantData1, courtCentreId, courtRoomId, day2, hearingStartTime, TRIAL_HEARING_TYPE))
+                .whenCaseIsSubmittedForListing();
+        new UpdateHearingSteps().pollUntilHearingIsPresentWithHearingId(courtCentreId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingId1.toString());
+
+        // HEARING #2 -- Plea, representing courtscheduler AM sessions
+        final UUID hearingId2 = randomUUID();
+        final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(hearingId2, STRING.next(), STRING.next(),
+                randomUUID(), CASE_IN_HEARING, jurisdictionType, jurisdictionType, null, null);
+        new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(
+                caseAndDefendantData2, courtCentreId, courtRoomId, day2, hearingStartTime, PLEA_HEARING_TYPE))
+                .whenCaseIsSubmittedForListing();
+        new UpdateHearingSteps().pollUntilHearingIsPresentWithHearingId(courtCentreId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingId2.toString());
+
+        // PATH A stubs: courtSession=AD -> hearing #1's day-tuples, courtSession=AM -> hearing #2's
+        stubGetHearingIdsWithBody("AD", hearingIdsBodyForDays(hearingId1, hearingDates));
+        stubGetHearingIdsWithBody("AM", hearingIdsBodyForDays(hearingId2, hearingDates));
+
+        final String baseUrl = String.format("%s/listing-query-api/query/api/rest/listing/hearings/range-search"
+                        + "?allocated=true&jurisdictionType=CROWN&courtCentreId=%s&ouCode=%s"
+                        + "&startDate=%s&endDate=%s&pageSize=50&pageNumber=1",
+                getBaseUri(), courtCentreId, ouCode, day0, day2);
+
+        // 3. Any (no courtSession) -> PATH B, both hearings present
+        pollWithDefaults(courtCalendarRequest(baseUrl)).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.hearings[*].id", hasItem(hearingId1.toString())),
+                        withJsonPath("$.hearings[*].id", hasItem(hearingId2.toString()))
+                )));
+
+        // 4. AM -> PATH A, only hearing #2
+        pollWithDefaults(courtCalendarRequest(baseUrl + "&courtSession=AM")).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.hearings[*].id", Matchers.everyItem(is(hearingId2.toString()))),
+                        withJsonPath("$.hearings[0].id", is(hearingId2.toString()))
+                )));
+
+        // 5. AD -> PATH A, only hearing #1
+        pollWithDefaults(courtCalendarRequest(baseUrl + "&courtSession=AD")).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.hearings[*].id", Matchers.everyItem(is(hearingId1.toString()))),
+                        withJsonPath("$.hearings[0].id", is(hearingId1.toString()))
+                )));
+
+        // 6. Any + hearingTypeId=Trial -> PATH B's viewstore type filter -> only hearing #1
+        pollWithDefaults(courtCalendarRequest(baseUrl + "&hearingTypeId=" + TRIAL_HEARING_TYPE.getTypeId())).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.hearings[*].id", hasItem(hearingId1.toString())),
+                        withJsonPath("$.hearings[*].id", Matchers.not(hasItem(hearingId2.toString())))
+                )));
+
+        // 7. AM + hearingTypeId=Trial -> PATH A returns hearing #2's rows, but the post-enrichment
+        // hearingTypeId filter removes them (hearing #2 is Plea, not Trial) -> empty
+        final ResponseData response = pollWithDefaults(courtCalendarRequest(baseUrl + "&courtSession=AM&hearingTypeId=" + TRIAL_HEARING_TYPE.getTypeId())).until(status().is(OK),
+                payload().isJson(withJsonPath("$.hearings.size()", is(0))));
+        // explicit assertion on the final polled payload (Sonar java:S2699 does not recognise the
+        // pollWithDefaults(...).until(...) matchers as assertions)
+        assertThat(response.getPayload(), isJson(withJsonPath("$.hearings.size()", is(0))));
+    }
+
+    /**
+     * businessType/courtSession are court-schedule session attributes, so court-calendar searches filtered on
+     * them are answered by courtscheduler: unallocated CROWN searches DRAFT sessions in the week-commencing
+     * window the unallocated panel sends, allocated searches FINAL sessions. Each status is stubbed to return a
+     * different hearing, so only correct routing returns the expected one (an unfiltered or unrouted request
+     * misses both stubs). The viewstore lookup that follows is by hearing id, independent of allocation state.
+     */
+    @Test
+    public void crownCourtCalendarBusinessTypeSearchRoutesUnallocatedToDraftAndAllocatedToFinalSessions() {
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID courtRoomId = new ArrayList<>(COURT_ROOMS.keySet()).get(0);
+        final LocalDate windowStart = ItClock.nextWorkingDay();
+        final LocalDate windowEnd = ItClock.plusWorkingDays(windowStart, 4);
+        final ZonedDateTime hearingStartTime = windowStart.atTime(10, 0).atZone(ItClock.LONDON).withZoneSameInstant(ItClock.UTC);
+
+        final UUID draftSessionHearingId = listCrownHearing(courtCentreId, courtRoomId, windowStart, hearingStartTime);
+        final UUID finalSessionHearingId = listCrownHearing(courtCentreId, courtRoomId, windowStart, hearingStartTime);
+
+        stubGetHearingIdsWithBody(Map.of("status", "DRAFT", "businessType", PTPH, "ouCode", CROWN_OU_CODE,
+                        "sessionStartDate", windowStart.toString(), "sessionEndDate", windowEnd.toString()),
+                hearingIdsBodyForDays(draftSessionHearingId, List.of(windowStart)));
+        stubGetHearingIdsWithBody(Map.of("status", "FINAL", "businessType", PTPH, "ouCode", CROWN_OU_CODE,
+                        "sessionStartDate", windowStart.toString(), "sessionEndDate", windowEnd.toString()),
+                hearingIdsBodyForDays(finalSessionHearingId, List.of(windowStart)));
+
+        final String unallocatedUrl = String.format("%s/listing-query-api/query/api/rest/listing/hearings/range-search"
+                        + "?allocated=false&jurisdictionType=CROWN&businessType=%s&ouCode=%s&courtCentreId=%s"
+                        + "&weekCommencingStartDate=%s&weekCommencingEndDate=%s&pageSize=40&pageNumber=1",
+                getBaseUri(), PTPH, CROWN_OU_CODE, courtCentreId, windowStart, windowEnd);
+        pollWithDefaults(courtCalendarRequest(unallocatedUrl)).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.hearings.size()", is(1)),
+                        withJsonPath("$.hearings[0].id", is(draftSessionHearingId.toString()))
+                )));
+
+        final String allocatedUrl = String.format("%s/listing-query-api/query/api/rest/listing/hearings/range-search"
+                        + "?allocated=true&jurisdictionType=CROWN&businessType=%s&ouCode=%s&courtCentreId=%s"
+                        + "&startDate=%s&endDate=%s&pageSize=40&pageNumber=1",
+                getBaseUri(), PTPH, CROWN_OU_CODE, courtCentreId, windowStart, windowEnd);
+        final ResponseData response = pollWithDefaults(courtCalendarRequest(allocatedUrl)).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.hearings.size()", is(1)),
+                        withJsonPath("$.hearings[0].id", is(finalSessionHearingId.toString()))
+                )));
+        // explicit assertion on the final polled payload (Sonar java:S2699)
+        assertThat(response.getPayload(), isJson(withJsonPath("$.hearings[0].id", is(finalSessionHearingId.toString()))));
+    }
+
+    /**
+     * courtscheduler returns one DRAFT row per hearing day, but the unallocated panel lists each hearing once with
+     * its own hearing days and counts hearings, as the unfiltered search does. Without that, a three-day hearing
+     * came back as three one-day rows carrying the allocated calendar's hearingDayCount/hearingDayPosition.
+     */
+    @Test
+    public void crownUnallocatedBusinessTypeSearchReturnsMultiDayHearingOnceWithItsHearingDays() {
+        final UUID courtCentreId = getRandomCourtCenterId();
+        final UUID courtRoomId = new ArrayList<>(COURT_ROOMS.keySet()).get(0);
+        final LocalDate windowStart = ItClock.nextWorkingDay();
+        final LocalDate windowEnd = ItClock.plusWorkingDays(windowStart, 4);
+        final List<LocalDate> hearingDates = List.of(windowStart, ItClock.plusWorkingDays(windowStart, 1), ItClock.plusWorkingDays(windowStart, 2));
+        final ZonedDateTime hearingStartTime = windowStart.atTime(10, 0).atZone(ItClock.LONDON).withZoneSameInstant(ItClock.UTC);
+
+        final UUID hearingId = listCrownHearing(courtCentreId, courtRoomId, hearingDates.get(2), hearingStartTime);
+
+        stubGetHearingIdsWithBody(Map.of("status", "DRAFT", "businessType", GENC, "ouCode", CROWN_OU_CODE,
+                        "sessionStartDate", windowStart.toString(), "sessionEndDate", windowEnd.toString()),
+                hearingIdsBodyForDays(hearingId, hearingDates));
+
+        final String unallocatedUrl = String.format("%s/listing-query-api/query/api/rest/listing/hearings/range-search"
+                        + "?allocated=false&jurisdictionType=CROWN&businessType=%s&ouCode=%s&courtCentreId=%s"
+                        + "&weekCommencingStartDate=%s&weekCommencingEndDate=%s&pageSize=40&pageNumber=1",
+                getBaseUri(), GENC, CROWN_OU_CODE, courtCentreId, windowStart, windowEnd);
+        final ResponseData response = pollWithDefaults(courtCalendarRequest(unallocatedUrl)).until(status().is(OK),
+                payload().isJson(allOf(
+                        withJsonPath("$.results", is(1)),
+                        withJsonPath("$.hearings.size()", is(1)),
+                        withJsonPath("$.hearings[0].id", is(hearingId.toString())),
+                        withJsonPath("$.hearings[0].hearingDays[*].hearingDate", hasItem(windowStart.toString())),
+                        hasNoJsonPath("$.hearings[0].hearingDayCount"),
+                        hasNoJsonPath("$.hearings[0].hearingDayPosition")
+                )));
+        // explicit assertion on the final polled payload (Sonar java:S2699)
+        assertThat(response.getPayload(), isJson(withJsonPath("$.results", is(1))));
+    }
+
+    /**
+     * Session filters that cannot be honoured are rejected instead of being silently dropped (which used to
+     * return every hearing): unallocated MAGS hearings have no court-schedule session to filter on, and without
+     * ouCode courtscheduler would search every court.
+     */
+    @ParameterizedTest(name = "[{index}] {0} -> 400")
+    @ValueSource(strings = {
+            "allocated=false&jurisdictionType=MAGISTRATES&businessType=GENC&ouCode=B01LY00",
+            "allocated=false&jurisdictionType=MAGISTRATES&courtSession=AM&ouCode=B01LY00",
+            "allocated=false&jurisdictionType=CROWN&businessType=PTPH",
+            "allocated=true&jurisdictionType=CROWN&courtSession=AM",
+            "allocated=true&jurisdictionType=MAGISTRATES&businessType=GENC"
+    })
+    public void courtCalendarSessionFilterThatCannotBeHonouredIsRejectedWithBadRequest(final String filter) {
+        final LocalDate windowStart = ItClock.nextWorkingDay();
+        final String url = String.format("%s/listing-query-api/query/api/rest/listing/hearings/range-search?%s"
+                        + "&courtCentreId=%s&weekCommencingStartDate=%s&weekCommencingEndDate=%s&pageSize=40&pageNumber=1",
+                getBaseUri(), filter, getRandomCourtCenterId(), windowStart, ItClock.plusWorkingDays(windowStart, 4));
+
+        final ResponseData response = pollWithDefaults(courtCalendarRequest(url)).until(status().is(BAD_REQUEST));
+
+        assertThat(response.getStatus().getStatusCode(), is(BAD_REQUEST.getStatusCode()));
+    }
+
+    private UUID listCrownHearing(final UUID courtCentreId, final UUID courtRoomId, final LocalDate hearingEndDate, final ZonedDateTime hearingStartTime) {
+        final UUID hearingId = randomUUID();
+        final String jurisdictionType = JurisdictionType.CROWN.name();
+        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, STRING.next(), STRING.next(),
+                randomUUID(), CASE_IN_HEARING, jurisdictionType, jurisdictionType, null, null);
+        new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(
+                caseAndDefendantData, courtCentreId, courtRoomId, hearingEndDate, hearingStartTime))
+                .whenCaseIsSubmittedForListing();
+        new UpdateHearingSteps().pollUntilHearingIsPresentWithHearingId(courtCentreId.toString(), ALLOCATED, getLoggedInUser().toString(), hearingId.toString());
+        return hearingId;
+    }
+
+    private static RequestParams courtCalendarRequest(final String url) {
+        return requestParams(url, "application/vnd.listing.search.hearings.court.calendar+json")
+                .withHeader(CPP_UID_HEADER.getName(), CPP_UID_HEADER.getValue())
+                .build();
+    }
+
+    /** Builds a get.hearing.ids stub body with one IdResponse tuple per supplied date, all sharing the
+     * same hearingId (mirrors how courtscheduler represents a single multi-day hearing). */
+    private static String hearingIdsBodyForDays(final UUID hearingId, final List<LocalDate> hearingDates) {
+        final StringBuilder body = new StringBuilder("{\"results\":").append(hearingDates.size())
+                .append(",\"pageCount\":1,\"hearingIds\":[");
+        for (int i = 0; i < hearingDates.size(); i++) {
+            if (i > 0) {
+                body.append(",");
+            }
+            body.append("{\"hearingId\":\"").append(hearingId).append("\",")
+                    .append("\"courtScheduleId\":\"").append(randomUUID()).append("\",")
+                    .append("\"hearingDate\":\"").append(hearingDates.get(i)).append("\",")
+                    .append("\"hearingDayCount\":").append(hearingDates.size()).append(",")
+                    .append("\"hearingDayPosition\":").append(i + 1).append("}");
+        }
+        body.append("]}");
+        return body.toString();
     }
 
     private static void checkPayload(final String payload, final int hearingCount, List<TestData> testDataList, final int pageSize, final int pageNumber) throws JsonProcessingException {

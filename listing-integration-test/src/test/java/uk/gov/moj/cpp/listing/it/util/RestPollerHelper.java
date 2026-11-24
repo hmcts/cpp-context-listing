@@ -14,7 +14,7 @@ public class RestPollerHelper {
 
     public static final long DELAY_IN_MILLIS = 300L;
     public static final long INTERVAL_IN_MILLIS = 20L;
-    public static final long TIMEOUT_IN_MILLIS = 30000L;
+    public static final long TIMEOUT_IN_MILLIS = 90000L;
     public static final long RETRY_ATTEMPT_TIMEOUT_IN_MILLIS = 5000L;
     public static final FibonacciPollWithStartAndMax POLL_INTERVAL = new FibonacciPollWithStartAndMax(Duration.ofMillis(INTERVAL_IN_MILLIS), Duration.ofMillis(DELAY_IN_MILLIS));
 

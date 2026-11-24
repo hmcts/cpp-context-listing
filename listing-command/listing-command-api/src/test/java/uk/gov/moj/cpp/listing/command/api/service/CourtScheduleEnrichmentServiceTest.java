@@ -5,9 +5,20 @@ import uk.gov.justice.services.messaging.JsonObjects;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,17 +29,41 @@ import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JudicialRoleType;
 import uk.gov.justice.listing.commands.HearingDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
+import uk.gov.justice.core.courts.CourtCentre;
+import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.RotaSlot;
+import uk.gov.justice.core.courts.WeekCommencingDate;
+import uk.gov.justice.listing.commands.HearingDay;
+import uk.gov.justice.listing.commands.HearingListingNeeds;
+import uk.gov.justice.listing.commands.NonDefaultDay;
+import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.SelectedCourtCentre;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.JsonObjects;
 import uk.gov.moj.cpp.listing.command.api.util.SlotsToJsonStringConverter;
 import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
+import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse;
 import uk.gov.moj.cpp.listing.domain.ListUpdateHearing;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult;
+import uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -39,6 +74,7 @@ import javax.ws.rs.core.Response;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -57,6 +93,10 @@ class CourtScheduleEnrichmentServiceTest {
     private JsonObjectToObjectConverter jsonObjectConverter;
     @Mock
     private SlotsToJsonStringConverter slotsToJsonStringConverter;
+    @Mock
+    private uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
+    @Mock
+    private HearingLookupService hearingLookupService;
 
     @Test
     void searchAndBookShouldReturnBookedHearingSlots() {
@@ -91,82 +131,65 @@ class CourtScheduleEnrichmentServiceTest {
         final LocalDate day1 = LocalDate.now();
         final LocalDate day2 = day1.plusDays(1);
 
-        final uk.gov.justice.listing.commands.HearingDay hd1 =
-                uk.gov.justice.listing.commands.HearingDay.hearingDay()
-                        .withCourtRoomId(courtRoomId)
-                        .withHearingDate(day1)
-                        .withStartTime(java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC))
-                        .withDurationMinutes(30)
-                        .build();
+        final HearingDay hd1 = HearingDay.hearingDay()
+                .withCourtRoomId(courtRoomId)
+                .withHearingDate(day1)
+                .withStartTime(ZonedDateTime.now(ZoneOffset.UTC))
+                .withDurationMinutes(30)
+                .build();
 
-        final uk.gov.justice.listing.commands.HearingDay hd2 =
-                uk.gov.justice.listing.commands.HearingDay.hearingDay()
-                        .withCourtRoomId(courtRoomId)
-                        .withHearingDate(day2)
-                        .withStartTime(java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC).plusHours(1))
-                        .withDurationMinutes(30)
-                        .build();
+        final HearingDay hd2 = HearingDay.hearingDay()
+                .withCourtRoomId(courtRoomId)
+                .withHearingDate(day2)
+                .withStartTime(ZonedDateTime.now(ZoneOffset.UTC).plusHours(1))
+                .withDurationMinutes(30)
+                .build();
 
-        // Build a minimal UpdateHearingForListing with 2 days
-        final uk.gov.justice.listing.commands.UpdateHearingForListing update =
-                uk.gov.justice.listing.commands.UpdateHearingForListing.updateHearingForListing()
-                        .withHearingId(hearingId)
-                        // ensure ouCode resolution does not hit CourtCentreFactory
-                        .withSelectedCourtCentre(
-                                SelectedCourtCentre.selectedCourtCentre()
-                                        .withOuCode("OU123")
-                                        .build())
-                        .withCourtRoomId(courtRoomId)
-                        .withStartDate(day1) // non-null, not strictly used here but safe
-                        .withHearingDays(java.util.Arrays.asList(hd1, hd2))
-                        .build();
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(day1)
+                .withHearingDays(Arrays.asList(hd1, hd2))
+                .build();
 
-        // Mock search response (first available slot). Shape must match getFirstAvailableSlot()
-        final String bookedCourtScheduleId = java.util.UUID.randomUUID().toString();
-        final javax.json.JsonObject searchJson =
-                JsonObjects.createObjectBuilder()
-                        .add("hearingSlots", JsonObjects.createArrayBuilder()
-                                .add(JsonObjects.createObjectBuilder()
-                                        .add("courtScheduleId", bookedCourtScheduleId)
-                                        .add("courtRoomId", courtRoomId.toString())
-                                        .add("sessionStartTime", "2020-01-01T09:00:00Z")))
-                        .build();
+        final String bookedCourtScheduleId = UUID.randomUUID().toString();
+        final JsonObject searchJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", bookedCourtScheduleId)
+                                .add("courtRoomId", courtRoomId.toString())
+                                .add("sessionStartTime", "2020-01-01T09:00:00Z")))
+                .build();
 
-        final Response searchResponse = org.mockito.Mockito.mock(Response.class);
-        when(searchResponse.getStatus()).thenReturn(org.apache.http.HttpStatus.SC_OK);
+        final Response searchResponse = mock(Response.class);
+        when(searchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(searchResponse.getEntity()).thenReturn(searchJson);
         when(hearingSlotsService.search(anyMap())).thenReturn(searchResponse);
         when(objectToJsonObjectConverter.convert(searchJson)).thenReturn(searchJson);
 
-        // Stub SlotsToJsonStringConverter so getUpdateSlotsPayload() never sees nulls
-        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(org.mockito.ArgumentMatchers.anyList()))
-                .thenReturn(JsonObjects.createArrayBuilder()
-                        .add(bookedCourtScheduleId)
-                        .build());
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(bookedCourtScheduleId).build());
 
-        // Mock list response used by combineSearchAndBookResponseAndListResponse()
-        final javax.json.JsonObject listJson =
-                JsonObjects.createObjectBuilder()
-                        .add("hearings", JsonObjects.createArrayBuilder()
-                                .add(JsonObjects.createObjectBuilder()
-                                        .add("courtScheduleId", bookedCourtScheduleId)
-                                        .add("hearingStartTime", "2020-01-01T09:00:00Z")
-                                        .add("duration", 30)))
-                        .build();
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", bookedCourtScheduleId)
+                                .add("hearingStartTime", "2020-01-01T09:00:00Z")
+                                .add("duration", 30)))
+                .build();
 
-        final Response listResponse = org.mockito.Mockito.mock(Response.class);
-        when(listResponse.getStatus()).thenReturn(org.apache.http.HttpStatus.SC_OK);
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(listResponse.getEntity()).thenReturn(listJson);
-        when(hearingSlotsService.listHearingInCourtSessions(any(javax.json.JsonObject.class))).thenReturn(listResponse);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
         when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
 
-        // jsonObjectConverter must translate each "hearings" item to ListUpdateHearing (POJO with setters)
-        when(jsonObjectConverter.convert(
-                org.mockito.ArgumentMatchers.any(javax.json.JsonObject.class),
-                org.mockito.ArgumentMatchers.eq(uk.gov.moj.cpp.listing.domain.ListUpdateHearing.class)))
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
                 .thenAnswer(inv -> {
-                    javax.json.JsonObject jo = inv.getArgument(0);
-                    uk.gov.moj.cpp.listing.domain.ListUpdateHearing luh = new uk.gov.moj.cpp.listing.domain.ListUpdateHearing();
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
                     luh.setCourtScheduleId(jo.getString("courtScheduleId"));
                     luh.setHearingStartTime(jo.getString("hearingStartTime"));
                     luh.setDuration(jo.getInt("duration"));
@@ -178,19 +201,22 @@ class CourtScheduleEnrichmentServiceTest {
         final org.mockito.ArgumentCaptor<java.util.Map<String, String>> mapCaptor =
                 org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
 
-        // Act
-        courtScheduleEnrichmentService.enrichWithCourtSchedules(
-                update,
-                org.mockito.Mockito.mock(uk.gov.justice.services.messaging.JsonEnvelope.class));
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
 
         // Assert: search() called twice (two days) and includes multi-day params
         verify(hearingSlotsService, times(2)).search(mapCaptor.capture());
+        // SPRDT-1539: a MAGISTRATES update without courtScheduleIds searches and lists; it never posts a
+        // search-and-book action, MAGS or Crown.
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(
+                any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
 
         // Each captured map must contain the multi-day flags
         for (java.util.Map<String, String> qp : mapCaptor.getAllValues()) {
-            org.hamcrest.MatcherAssert.assertThat(qp.get("courtSession"), is("AD"));
-            org.hamcrest.MatcherAssert.assertThat(qp.get("showOverbookedSlots"), is(Boolean.TRUE.toString()));
-            org.hamcrest.MatcherAssert.assertThat(qp.get("isSlotBased"), is(Boolean.FALSE.toString()));
+            assertThat(qp.get("courtSession"), is("AD"));
+            assertThat(qp.get("showOverbookedSlots"), is(Boolean.TRUE.toString()));
+            assertThat(qp.get("isSlotBased"), is(Boolean.FALSE.toString()));
         }
     }
 
@@ -202,78 +228,65 @@ class CourtScheduleEnrichmentServiceTest {
         final LocalDate day1 = LocalDate.now();
         final LocalDate day2 = day1.plusDays(1);
 
-        final uk.gov.justice.listing.commands.HearingDay hd1 =
-                uk.gov.justice.listing.commands.HearingDay.hearingDay()
-                        .withCourtRoomId(courtRoomId)
-                        .withHearingDate(day1)
-                        .withStartTime(java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC))
-                        .withDurationMinutes(30)
-                        .build();
+        final HearingDay hd1 = HearingDay.hearingDay()
+                .withCourtRoomId(courtRoomId)
+                .withHearingDate(day1)
+                .withStartTime(ZonedDateTime.now(ZoneOffset.UTC))
+                .withDurationMinutes(30)
+                .build();
 
-        final uk.gov.justice.listing.commands.HearingDay hd2 =
-                uk.gov.justice.listing.commands.HearingDay.hearingDay()
-                        .withCourtRoomId(courtRoomId)
-                        .withHearingDate(day2)
-                        .withStartTime(java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC).plusHours(1))
-                        .withDurationMinutes(30)
-                        .build();
+        final HearingDay hd2 = HearingDay.hearingDay()
+                .withCourtRoomId(courtRoomId)
+                .withHearingDate(day2)
+                .withStartTime(ZonedDateTime.now(ZoneOffset.UTC).plusHours(1))
+                .withDurationMinutes(30)
+                .build();
 
-        final uk.gov.justice.listing.commands.UpdateHearingForListing update =
-                uk.gov.justice.listing.commands.UpdateHearingForListing.updateHearingForListing()
-                        .withHearingId(hearingId)
-                        .withSelectedCourtCentre(
-                                uk.gov.justice.listing.courts.SelectedCourtCentre.selectedCourtCentre()
-                                        .withOuCode("OU123")
-                                        .build())
-                        .withCourtRoomId(courtRoomId)
-                        .withStartDate(day1)
-                        .withHearingDays(java.util.Arrays.asList(hd1, hd2))
-                        .build();
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(day1)
+                .withHearingDays(Arrays.asList(hd1, hd2))
+                .build();
 
-        // Mock search response (first available slot)
-        final String bookedCourtScheduleId = java.util.UUID.randomUUID().toString();
-        final javax.json.JsonObject searchJson =
-                JsonObjects.createObjectBuilder()
-                        .add("hearingSlots", JsonObjects.createArrayBuilder()
-                                .add(JsonObjects.createObjectBuilder()
-                                        .add("courtScheduleId", bookedCourtScheduleId)
-                                        .add("courtRoomId", courtRoomId.toString())
-                                        .add("sessionStartTime", "2020-01-01T09:00:00Z")))
-                        .build();
+        final String bookedCourtScheduleId = UUID.randomUUID().toString();
+        final JsonObject searchJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", bookedCourtScheduleId)
+                                .add("courtRoomId", courtRoomId.toString())
+                                .add("sessionStartTime", "2020-01-01T09:00:00Z")))
+                .build();
 
-        final Response searchResponse = org.mockito.Mockito.mock(Response.class);
-        when(searchResponse.getStatus()).thenReturn(org.apache.http.HttpStatus.SC_OK);
+        final Response searchResponse = mock(Response.class);
+        when(searchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(searchResponse.getEntity()).thenReturn(searchJson);
         when(hearingSlotsService.search(anyMap())).thenReturn(searchResponse);
         when(objectToJsonObjectConverter.convert(searchJson)).thenReturn(searchJson);
 
-        // Ensure payload building doesn't see nulls
-        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(org.mockito.ArgumentMatchers.anyList()))
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
                 .thenReturn(JsonObjects.createArrayBuilder().add(bookedCourtScheduleId).build());
 
-        // Mock list response used by combineSearchAndBookResponseAndListResponse()
-        final javax.json.JsonObject listJson =
-                JsonObjects.createObjectBuilder()
-                        .add("hearings", JsonObjects.createArrayBuilder()
-                                .add(JsonObjects.createObjectBuilder()
-                                        .add("courtScheduleId", bookedCourtScheduleId)
-                                        .add("hearingStartTime", "2020-01-01T09:00:00Z")
-                                        .add("duration", 30)))
-                        .build();
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", bookedCourtScheduleId)
+                                .add("hearingStartTime", "2020-01-01T09:00:00Z")
+                                .add("duration", 30)))
+                .build();
 
-        final Response listResponse = org.mockito.Mockito.mock(Response.class);
-        when(listResponse.getStatus()).thenReturn(org.apache.http.HttpStatus.SC_OK);
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(listResponse.getEntity()).thenReturn(listJson);
-        when(hearingSlotsService.listHearingInCourtSessions(any(javax.json.JsonObject.class))).thenReturn(listResponse);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
         when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
 
-        // Map each "hearings" item to ListUpdateHearing
-        when(jsonObjectConverter.convert(
-                org.mockito.ArgumentMatchers.any(javax.json.JsonObject.class),
-                org.mockito.ArgumentMatchers.eq(uk.gov.moj.cpp.listing.domain.ListUpdateHearing.class)))
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
                 .thenAnswer(inv -> {
-                    javax.json.JsonObject jo = inv.getArgument(0);
-                    uk.gov.moj.cpp.listing.domain.ListUpdateHearing luh = new uk.gov.moj.cpp.listing.domain.ListUpdateHearing();
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
                     luh.setCourtScheduleId(jo.getString("courtScheduleId"));
                     luh.setHearingStartTime(jo.getString("hearingStartTime"));
                     luh.setDuration(jo.getInt("duration"));
@@ -285,23 +298,17 @@ class CourtScheduleEnrichmentServiceTest {
         final org.mockito.ArgumentCaptor<java.util.Map<String, String>> mapCaptor =
                 org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
 
-        // Act
-        courtScheduleEnrichmentService.enrichWithCourtSchedules(
-                update,
-                org.mockito.Mockito.mock(uk.gov.justice.services.messaging.JsonEnvelope.class));
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
 
         // Assert: search() called twice and multi-day flags present…
         verify(hearingSlotsService, times(2)).search(mapCaptor.capture());
         for (java.util.Map<String, String> qp : mapCaptor.getAllValues()) {
-            // multi-day flags
-            org.hamcrest.MatcherAssert.assertThat(qp.get("courtSession"), is("AD"));
-            org.hamcrest.MatcherAssert.assertThat(qp.get("isSlotBased"), is(Boolean.FALSE.toString()));
-            // …and hearingStartTime MUST NOT be present
-            org.hamcrest.MatcherAssert.assertThat("hearingStartTime should not be sent for multi-day search",
+            assertThat(qp.get("courtSession"), is("AD"));
+            assertThat(qp.get("isSlotBased"), is(Boolean.FALSE.toString()));
+            assertThat("hearingStartTime should not be sent for multi-day search",
                     qp.containsKey(CourtScheduleEnrichmentService.HEARING_START_TIME), is(false));
         }
     }
-
 
     @Test
     void enrichUpdateShouldUseCourtScheduleJudiciaryAndSetFlagWhenRequestJudiciaryIsEmpty() {
@@ -380,5 +387,7251 @@ class CourtScheduleEnrichmentServiceTest {
         when(response.getEntity()).thenReturn(listResponse);
         when(objectToJsonObjectConverter.convert(listResponse)).thenReturn(listResponse);
         when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class))).thenReturn(listUpdateHearing);
+    }
+
+    // ─── CROWN needsCourtScheduleEnrichment tests ────────────────────────
+
+    @Test
+    void shouldReturnTrueForCrownFixedDateWithCourtScheduleId() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(UUID.randomUUID())
+                                .withHearingDate(LocalDate.now())
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(true));
+    }
+
+    @Test
+    void shouldReturnFalseForCrownWeekCommencing() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withWeekCommencingDate(WeekCommencingDate.weekCommencingDate()
+                        .withStartDate(LocalDate.now().toString())
+                        .withDuration(1)
+                        .build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(UUID.randomUUID())
+                                .withHearingDate(LocalDate.now())
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(false));
+    }
+
+    @Test
+    void shouldReturnFalseForCrownWithNoCourtScheduleIds() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now())
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(false));
+    }
+
+    @Test
+    void shouldReturnFalseForCrownWithEmptyHearingDays() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.emptyList())
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(false));
+    }
+
+    @Test
+    void shouldNeedEnrichmentForCrownAllocationCandidateWithoutCourtScheduleIds() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withListedStartDateTime(ZonedDateTime.now())
+                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now())
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(true));
+    }
+
+    @Test
+    void shouldNotNeedEnrichmentForCrownWeekCommencingEvenIfAllocationCandidate() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withListedStartDateTime(ZonedDateTime.now())
+                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build())
+                .withWeekCommencingDate(WeekCommencingDate.weekCommencingDate()
+                        .withStartDate(LocalDate.now().toString())
+                        .withDuration(1)
+                        .build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now())
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(false));
+    }
+
+    // ─── CROWN single-day enrichment tests ───────────────────────────────
+
+    @Test
+    void shouldEnrichCrownSingleDayWithNonDraftSession() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(240)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds
+        final CourtSchedule cs = new CourtSchedule();
+        cs.setCourtScheduleId(courtScheduleId.toString());
+        cs.setSessionDate(sessionDate);
+        cs.setCourtRoomId(courtRoomId.toString());
+        cs.setCourtHouseId(courtHouseId.toString());
+        cs.setDraft(false);
+        cs.setHearingStartTime("2026-03-16T10:00:00Z");
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("isDraft", false)))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", "2026-03-16T10:00:00Z")
+                                .add("duration", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // listHearingInCourtSessions should be called for non-draft sessions
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId().toString(), is(courtScheduleId.toString()));
+    }
+
+    @Test
+    void shouldNotCallListHearingWhenCrownSingleDaySessionIsDraft() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(240)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds - isDraft=true
+        final CourtSchedule cs = new CourtSchedule();
+        cs.setCourtScheduleId(courtScheduleId.toString());
+        cs.setSessionDate(sessionDate);
+        cs.setCourtRoomId(courtRoomId.toString());
+        cs.setCourtHouseId(courtHouseId.toString());
+        cs.setDraft(true);
+        cs.setHearingStartTime("2026-03-16T10:00:00Z");
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("isDraft", true)))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions (now always called, even for draft)
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", "2026-03-16T10:00:00Z")
+                                .add("duration", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // listHearingInCourtSessions IS now called for draft sessions (for slot deduction)
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        // HearingDays should carry isDraft=true from sanity check
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        // courtRoomId should be null for draft sessions
+        assertThat(result.getHearingDays().get(0).getCourtRoomId(), is((UUID) null));
+    }
+
+    @Test
+    void shouldSkipCrownEnrichmentWhenWeekCommencing() {
+        final UUID hearingId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withWeekCommencingDate(WeekCommencingDate.weekCommencingDate()
+                        .withStartDate(LocalDate.now().toString())
+                        .withDuration(1)
+                        .build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(UUID.randomUUID())
+                                .withHearingDate(LocalDate.now())
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // No court scheduler calls should be made
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        // Hearing should be returned unchanged
+        assertThat(result.getId(), is(hearingId));
+    }
+
+    @Test
+    void shouldBookCrownListWithoutCourtScheduleIdsThroughCrownSearchAndBookWhenAllocationCandidate() {
+        // SPRDT-1539: a CROWN list payload without courtScheduleIds books through the Crown single-day
+        // search-and-book — never the MAGS search-and-book (NCFL-only matcher).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.fromString("23681024-8eac-4890-8c44-4651ad48cb24");
+        final LocalDate day = LocalDate.of(2026, 11, 17);
+
+        final HearingListingNeeds hearing = crownListWithoutIds(hearingId, courtCentreId, courtRoomId, day);
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(eq(hearingId), eq(courtCentreId), eq(day), eq(240),
+                eq(Optional.of(courtRoomId)), any(), eq(CrownFallbackSource.LIST_COURT_HEARING), any(), any(), any()))
+                .thenReturn(new CrownFallbackResult(hearingId, courtScheduleId, courtRoomId, day,
+                        ZonedDateTime.parse("2026-11-17T10:00:00Z"), ZonedDateTime.parse("2026-11-17T16:00:00Z"),
+                        240, false, "LGT", "CROWN_FB_LIST", false));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(false));
+    }
+
+    @Test
+    void shouldSetIsDraftTrueOnHearingDaysWhenCrownSearchAndBookReturnsDraftForCrownAllocationCandidate() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.fromString("23681024-8eac-4890-8c44-4651ad48cb24");
+        final LocalDate day = LocalDate.of(2026, 11, 17);
+
+        final HearingListingNeeds hearing = crownListWithoutIds(hearingId, courtCentreId, courtRoomId, day);
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new CrownFallbackResult(hearingId, courtScheduleId, null, day,
+                        ZonedDateTime.parse("2026-11-17T10:00:00Z"), ZonedDateTime.parse("2026-11-17T16:00:00Z"),
+                        240, true, "LGT", "CROWN_FB_LIST", false));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+    }
+
+    @Test
+    void shouldListMultiDayCrownWithoutCourtScheduleIdsUnallocatedWhenNoFinalSessionOnTheFirstDay() {
+        // SPRDT-1539 (list side): fail open like list-court-hearing — no anchor, no booking, no MAGS.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final LocalDate day = LocalDate.of(2026, 11, 17);
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withValuesFrom(crownListWithoutIds(hearingId, courtCentreId, courtRoomId, day))
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtCentreId).withRoomId(courtRoomId).withCode("C01CY00").build())
+                .withHearingDays(List.of(
+                        HearingDay.hearingDay().withHearingDate(day).withStartTime(ZonedDateTime.parse("2026-11-17T10:00:00Z")).withDurationMinutes(360).build(),
+                        HearingDay.hearingDay().withHearingDate(day.plusDays(1)).withStartTime(ZonedDateTime.parse("2026-11-18T10:00:00Z")).withDurationMinutes(360).build()))
+                .build();
+        final Response searchResponse = mock(Response.class);
+        final JsonObject emptySlots = JsonObjects.createObjectBuilder().add("hearingSlots", JsonObjects.createArrayBuilder()).build();
+        when(searchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(searchResponse.getEntity()).thenReturn(emptySlots);
+        when(objectToJsonObjectConverter.convert(emptySlots)).thenReturn(emptySlots);
+        when(hearingSlotsService.search(anyMap())).thenReturn(searchResponse);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        assertThat(result.getHearingDays().size(), is(2));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(org.hamcrest.CoreMatchers.nullValue()));
+    }
+
+    @Test
+    void shouldBookMagistratesListCandidateThroughTheMagsSearchAndBookOnly() {
+        // SPRDT-1539: a MAGISTRATES list payload without courtScheduleIds books through the MAGS
+        // search-and-book and never reaches a Crown search-and-book.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final LocalDate day = LocalDate.of(2026, 11, 17);
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withValuesFrom(crownListWithoutIds(hearingId, courtCentreId, courtRoomId, day))
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .build();
+        final JsonObject magsResponse = JsonObjects.createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("sessions", JsonObjects.createArrayBuilder().add(JsonObjects.createObjectBuilder()
+                        .add("courtScheduleId", courtScheduleId.toString())
+                        .add("courtRoomId", courtRoomId.toString())
+                        .add("sessionStartTime", "2026-11-17T10:00:00Z")
+                        .add("draft", false)))
+                .build();
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(magsResponse);
+        when(objectToJsonObjectConverter.convert(magsResponse)).thenReturn(magsResponse);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, times(1)).searchBookSlots(anyMap());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(
+                any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+    }
+
+    private static HearingListingNeeds crownListWithoutIds(final UUID hearingId, final UUID courtCentreId,
+                                                          final UUID courtRoomId, final LocalDate day) {
+        return HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withListedStartDateTime(ZonedDateTime.parse(day + "T10:00:00Z"))
+                .withEndDate(day.toString())
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtCentreId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(day)
+                                .withStartTime(ZonedDateTime.parse(day + "T10:00:00Z"))
+                                .withDurationMinutes(240)
+                                .build()))
+                .withEstimatedMinutes(240)
+                .build();
+    }
+
+    // ─── CROWN multi-day enrichment tests ────────────────────────────────
+
+    @Test
+    void shouldEnrichCrownMultiDayWithConsecutiveSessions() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtScheduleId3 = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        // Multi-day: estimatedMinutes > 360. Anchor lives on bookedSlots (new contract).
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(1080)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId1.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withRoomId(courtRoomId.toString())
+                                .build()))
+                .build();
+
+        // Mock multiDaySearchAndBook
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, day1.plusDays(1), false);
+        final CourtSchedule cs3 = buildCourtSchedule(courtScheduleId3, courtRoomId, courtHouseId, day1.plusDays(2), false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2))
+                        .add(buildCsJson(cs3)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2, cs3);
+
+        // Mock listHearingInCourtSessions for booking
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, "2026-03-16T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, "2026-03-17T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId3, "2026-03-18T10:00:00Z", 360)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .add(courtScheduleId3.toString())
+                        .build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).multiDaySearchAndBook(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        assertThat(result.getHearingDays().size(), is(3));
+        result.getHearingDays().forEach(day -> assertThat(day.getCourtRoomId(), is(courtRoomId)));
+    }
+
+    @Test
+    void shouldNotSetCourtRoomIdOnHearingDays_whenSessionCourtRoomIdIsNull() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtScheduleId3 = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(1080)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId1.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .build()))
+                .build();
+
+        final CourtSchedule cs1 = new CourtSchedule();
+        cs1.setCourtScheduleId(courtScheduleId1.toString());
+        cs1.setCourtHouseId(courtHouseId.toString());
+        cs1.setSessionDate(day1);
+        cs1.setSessionStartTime(Date.from(day1.atTime(10, 0).toInstant(ZoneOffset.UTC)));
+
+        final CourtSchedule cs2 = new CourtSchedule();
+        cs2.setCourtScheduleId(courtScheduleId2.toString());
+        cs2.setCourtHouseId(courtHouseId.toString());
+        cs2.setSessionDate(day1.plusDays(1));
+        cs2.setSessionStartTime(Date.from(day1.plusDays(1).atTime(10, 0).toInstant(ZoneOffset.UTC)));
+
+        final CourtSchedule cs3 = new CourtSchedule();
+        cs3.setCourtScheduleId(courtScheduleId3.toString());
+        cs3.setCourtHouseId(courtHouseId.toString());
+        cs3.setSessionDate(day1.plusDays(2));
+        cs3.setSessionStartTime(Date.from(day1.plusDays(2).atTime(10, 0).toInstant(ZoneOffset.UTC)));
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId1.toString()).build())
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId2.toString()).build())
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId3.toString()).build()))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2, cs3);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, "2026-03-16T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, "2026-03-17T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId3, "2026-03-18T10:00:00Z", 360)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .add(courtScheduleId3.toString())
+                        .build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(3));
+        result.getHearingDays().forEach(day -> assertThat(day.getCourtRoomId(), is((UUID) null)));
+    }
+
+    @Test
+    void shouldReturnUnchangedWhenMultiDaySearchReturnsEmpty() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(1080)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withRoomId(courtRoomId.toString())
+                                .build()))
+                .build();
+
+        // Mock multiDaySearchAndBook returning empty
+        final JsonObject emptyResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder())
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(emptyResponseJson);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        // Original hearingDays should be preserved
+        assertThat(result.getHearingDays().size(), is(1));
+    }
+
+    @Test
+    void shouldNotCallListHearingWhenMultiDaySessionsHaveDraft() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtScheduleId3 = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(1080)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId1.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withRoomId(courtRoomId.toString())
+                                .build()))
+                .build();
+
+        // Mock multiDaySearchAndBook - one session is draft
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, day1.plusDays(1), true);  // draft!
+        final CourtSchedule cs3 = buildCourtSchedule(courtScheduleId3, courtRoomId, courtHouseId, day1.plusDays(2), false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2))
+                        .add(buildCsJson(cs3)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2, cs3);
+
+        // Mock listHearingInCourtSessions (now always called, even when some sessions are draft)
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, day1 + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, day1.plusDays(1) + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId3, day1.plusDays(2) + "T10:00:00Z", 360)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .add(courtScheduleId3.toString())
+                        .build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // listHearingInCourtSessions IS now called even when some sessions are draft
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        // Expanded hearingDays should be returned with isDraft from sessions
+        assertThat(result.getHearingDays().size(), is(3));
+    }
+
+    // ─── SPRDT-1220: resizing a multi-day block down ─────────────────────
+
+    /** An allocated hearing being resized: it keeps its courtroom (SPRDT-1446 clamps only these). */
+    private UpdateHearingForListing crownBlockResize(final UUID hearingId,
+                                                     final UUID courtScheduleId,
+                                                     final UUID courtCentreId,
+                                                     final LocalDate start,
+                                                     final LocalDate end,
+                                                     final int blockMinutes) {
+        return UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(UUID.randomUUID())
+                .withStartDate(start)
+                .withEndDate(end)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(start)
+                                .withDurationMinutes(blockMinutes)
+                                .build()))
+                .build();
+    }
+
+    private void givenSingleBookedSession(final UUID courtScheduleId, final UUID courtCentreId, final LocalDate day) {
+        final CourtSchedule session = new CourtSchedule();
+        session.setCourtScheduleId(courtScheduleId.toString());
+        session.setCourtHouseId(courtCentreId.toString());
+        session.setSessionDate(day);
+        session.setSessionStartTime(Date.from(day.atTime(10, 0).toInstant(ZoneOffset.UTC)));
+
+        final JsonObject responseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId.toString()).build()))
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", day.atTime(10, 0).atZone(ZoneOffset.UTC).toString())
+                                .add("duration", HearingDurationEnrichmentService.MINUTES_IN_DAY)
+                                .build()))
+                .build();
+
+        final Response okResponse = mock(Response.class);
+        when(okResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(okResponse);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(okResponse);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(responseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(session);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(invocation -> {
+                    final JsonObject jo = invocation.getArgument(0);
+                    final ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+    }
+
+    @Test
+    void shouldClampBlockDurationToTheRequestedWindow_whenMultiDayHearingIsConvertedToSingleDay() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate monday = LocalDate.now().plusDays(5).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+
+        givenSingleBookedSession(courtScheduleId, courtCentreId, monday);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(
+                crownBlockResize(hearingId, courtScheduleId, courtCentreId, monday, monday, 1440),
+                mock(JsonEnvelope.class));
+
+        final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(params.capture());
+        assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES),
+                is(String.valueOf(HearingDurationEnrichmentService.MINUTES_IN_DAY)));
+
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getDurationMinutes(),
+                is(HearingDurationEnrichmentService.MINUTES_IN_DAY));
+    }
+
+    @Test
+    void shouldNotClampBlockDuration_whenTheRequestedWindowStillSpansTheWholeBlock() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate monday = LocalDate.now().plusDays(5).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+
+        givenSingleBookedSession(courtScheduleId, courtCentreId, monday);
+
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(
+                crownBlockResize(hearingId, courtScheduleId, courtCentreId, monday, monday.plusDays(2), 1080),
+                mock(JsonEnvelope.class));
+
+        final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(params.capture());
+        assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES), is("1080"));
+    }
+
+    @Test
+    void shouldNotClampBlockDuration_whenAMultiDayWindowIsShorterThanTheBlock() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate monday = LocalDate.now().plusDays(5).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+
+        givenSingleBookedSession(courtScheduleId, courtCentreId, monday);
+
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(
+                crownBlockResize(hearingId, courtScheduleId, courtCentreId, monday, monday.plusDays(1), 1440),
+                mock(JsonEnvelope.class));
+
+        final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(params.capture());
+        assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES), is("1440"));
+    }
+
+    // ─── SPRDT-1446: Court Calendar unallocation of a multi-day block ─────
+
+    /**
+     * The payload Court Calendar sends to unallocate a CROWN hearing (cpp-ui-listing
+     * AllocateHearingFactory.unallocateHearing): endDate == startDate, no courtroom anywhere, and ONE
+     * virtual nonDefaultDay carrying the chosen draft session and the hearing's whole duration.
+     */
+    private UpdateHearingForListing courtCalendarUnallocation(final UUID hearingId,
+                                                              final UUID draftCourtScheduleId,
+                                                              final UUID courtCentreId,
+                                                              final LocalDate day,
+                                                              final int blockMinutes) {
+        return UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withStartDate(day)
+                .withEndDate(day)
+                .withNonSittingDays(Collections.emptyList())
+                .withNonDefaultDays(Collections.singletonList(NonDefaultDay.nonDefaultDay()
+                        .withStartTime(ZonedDateTime.parse(day + "T09:00:00Z"))
+                        .withCourtCentreId(courtCentreId.toString())
+                        .withCourtScheduleId(draftCourtScheduleId.toString())
+                        .withDuration(blockMinutes)
+                        .withVirtual(Boolean.TRUE)
+                        .build()))
+                .build();
+    }
+
+    @Test
+    void shouldSendTheWholeBlockToCourtScheduler_whenCourtCalendarUnallocatesAMultiDayHearing() {
+        // Clamped to one court day, courtscheduler takes its single-day idempotent path: the FINAL
+        // sessions stay booked and no draft session is booked. The whole block makes it MOVE the
+        // hearing onto a draft run instead.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID draftDay1 = UUID.randomUUID();
+        final UUID draftDay2 = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate monday = LocalDate.now().plusDays(5).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+
+        mockMultiDaySearchAndBook(draftDay1, draftDay2,
+                buildCourtSchedule(draftDay1, UUID.randomUUID(), courtCentreId, monday, true),
+                buildCourtSchedule(draftDay2, UUID.randomUUID(), courtCentreId, monday.plusDays(1), true));
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(
+                courtCalendarUnallocation(hearingId, draftDay1, courtCentreId, monday, 720));
+
+        final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(params.capture());
+        assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES), is("720"));
+        assertThat(params.getValue().get("courtScheduleId"), is(draftDay1.toString()));
+
+        assertThat(result.getHearingDays().size(), is(2));
+        result.getHearingDays().forEach(day -> {
+            assertThat(day.getIsDraft(), is(Boolean.TRUE));
+            assertThat(day.getCourtRoomId(), is(nullValue()));
+        });
+    }
+
+    @Test
+    void shouldStillClampToOneCourtDay_whenTheSameSingleDayRequestCarriesTheHearingsCourtroom() {
+        // The SPRDT-1220 conversion of an allocated hearing keeps its courtroom, so it is still clamped.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate monday = LocalDate.now().plusDays(5).with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+
+        givenSingleBookedSession(courtScheduleId, courtCentreId, monday);
+
+        final UpdateHearingForListing unallocation = courtCalendarUnallocation(hearingId, courtScheduleId, courtCentreId, monday, 720);
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(
+                UpdateHearingForListing.updateHearingForListing()
+                        .withValuesFrom(unallocation)
+                        .withCourtRoomId(UUID.randomUUID())
+                        .build());
+
+        final ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(params.capture());
+        assertThat(params.getValue().get(CourtScheduleEnrichmentService.DURATION_MINUTES),
+                is(String.valueOf(HearingDurationEnrichmentService.MINUTES_IN_DAY)));
+    }
+
+    // ─── CROWN update hearing enrichment tests ───────────────────────────
+
+    @Test
+    void shouldSkipCrownUpdateEnrichmentWhenNoCourtScheduleIds() {
+        final UUID hearingId = UUID.randomUUID();
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now())
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        // No court scheduler calls
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        assertThat(result.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldBookSingleDayCrownUpdateWithoutCourtScheduleIdThroughCrownSearchAndBook() {
+        // SPRDT-1539: a single-day CROWN update with a courtroom and no courtScheduleId books through
+        // the Crown single-day search-and-book — never the MAGS search-and-book (NCFL-only matcher).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final LocalDate tuesday = LocalDate.of(2026, 11, 17);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(tuesday)
+                .withEndDate(tuesday)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(tuesday)
+                                .withDurationMinutes(240)
+                                .withCourtRoomId(courtRoomId)
+                                .withCourtCentreId(courtCentreId)
+                                .build()))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(eq(hearingId), eq(courtCentreId), eq(tuesday), eq(240),
+                eq(Optional.of(courtRoomId)), any(), eq(CrownFallbackSource.UPDATE_HEARING_FOR_LISTING), any(), any(), any()))
+                .thenReturn(new CrownFallbackResult(hearingId, courtScheduleId, courtRoomId, tuesday,
+                        ZonedDateTime.parse("2026-11-17T10:00:00Z"), ZonedDateTime.parse("2026-11-17T16:00:00Z"),
+                        240, false, "LGT", "CROWN_FB_UPDATE", false));
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        assertThat(result.getHearingDays().get(0).getCourtRoomId(), is(courtRoomId));
+        assertThat(result.getHearingDays().get(0).getHearingDate(), is(tuesday));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(false));
+    }
+
+    @Test
+    void shouldLeaveSingleDayCrownUpdateUnallocatedWhenNoCrownSessionIsBookable() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final LocalDate tuesday = LocalDate.of(2026, 11, 17);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(tuesday)
+                .withEndDate(tuesday)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(tuesday)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any()))
+                .thenThrow(new CrownFallbackNoSessionException("no session"));
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        assertThat(result.getHearingId(), is(hearingId));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(org.hamcrest.CoreMatchers.nullValue()));
+    }
+
+    @Test
+    void shouldEnrichCrownUpdateSingleDay() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds - non-draft
+        final CourtSchedule cs = new CourtSchedule();
+        cs.setCourtScheduleId(courtScheduleId.toString());
+        cs.setSessionDate(sessionDate);
+        cs.setCourtRoomId(courtRoomId.toString());
+        cs.setCourtHouseId(courtHouseId.toString());
+        cs.setDraft(false);
+        cs.setHearingStartTime("2026-03-16T10:00:00Z");
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, "2026-03-16T10:00:00Z", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        assertThat(result.getHearingDays().size(), is(1));
+    }
+
+    @Test
+    void shouldSetIsDraftOnCrownUpdateWhenDraftSessions() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds - isDraft=true
+        final CourtSchedule cs = new CourtSchedule();
+        cs.setCourtScheduleId(courtScheduleId.toString());
+        cs.setSessionDate(sessionDate);
+        cs.setCourtRoomId(courtRoomId.toString());
+        cs.setCourtHouseId(courtHouseId.toString());
+        cs.setDraft(true);
+        cs.setHearingStartTime("2026-03-16T10:00:00Z");
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions (now always called, even for draft)
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", "2026-03-16T10:00:00Z")
+                                .add("duration", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        // courtRoomId should be null for draft sessions
+        assertThat(result.getHearingDays().get(0).getCourtRoomId(), is((UUID) null));
+    }
+
+    // ─── Sanity check tests ──────────────────────────────────────────────
+
+    @Test
+    void shouldUseSchedulerDateWhenHearingDateMismatches() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 3, 16);
+        final LocalDate schedulerDate = LocalDate.of(2026, 3, 17);  // different!
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(240)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Session has different date than hearingDay
+        final CourtSchedule cs = new CourtSchedule();
+        cs.setCourtScheduleId(courtScheduleId.toString());
+        cs.setSessionDate(schedulerDate);  // scheduler wins
+        cs.setCourtRoomId(courtRoomId.toString());
+        cs.setCourtHouseId(courtHouseId.toString());
+        cs.setDraft(true);  // draft
+        cs.setHearingStartTime("2026-03-17T10:00:00Z");
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions (now always called, even for draft)
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", "2026-03-17T10:00:00Z")
+                                .add("duration", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // Scheduler date should win
+        assertThat(result.getHearingDays().get(0).getHearingDate(), is(schedulerDate));
+    }
+
+    // ─── CROWN update multi-day enrichment tests ───────────────────────
+
+    @Test
+    void shouldEnrichCrownUpdateMultiDay() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        // Multi-day: totalDuration > 360
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(day1.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build()))
+                .build();
+
+        // Mock multiDaySearchAndBook
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, day1.plusDays(1), false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2);
+
+        // Mock listHearingInCourtSessions
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, "2026-03-16T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, "2026-03-17T10:00:00Z", 360)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).multiDaySearchAndBook(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        assertThat(result.getHearingDays().size(), is(2));
+        result.getHearingDays().forEach(day -> assertThat(day.getCourtRoomId(), is(courtRoomId)));
+    }
+
+    /**
+     * The block courtscheduler books is exactly the one requested (startDate + duration over
+     * consecutive business days). A session booked on a non-sitting date does not become a hearing
+     * day and TAKES ITS MINUTES WITH IT: the surviving days stay at one court day each instead of
+     * absorbing the dropped day's share (1080 over three booked days, one non-sitting, is two
+     * 360-minute days — not 720+360). The booking on the dropped date stays with courtscheduler.
+     */
+    @Test
+    void shouldDropTheNonSittingDaysMinutesWhenCrownUpdateMultiDayBlockSpansANonSittingDay() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID nonSittingCourtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        // Anchored on a Monday so the three booked dates are consecutive business days.
+        final LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        final LocalDate nonSittingDay = monday.plusDays(2);
+
+        // The Tuesday is a genuine non-default day: it keeps its session but starts at 11:30.
+        final ZonedDateTime nonDefaultDayStart =
+                ZonedDateTime.of(monday.plusDays(1), LocalTime.of(11, 30), ZoneOffset.UTC);
+
+        // 1080 minutes requested from the Monday; the Wednesday inside that block is not sat on.
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(monday)
+                .withNonSittingDays(Collections.singletonList(nonSittingDay))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(nonDefaultDayStart)
+                                .withDuration(360)
+                                .withVirtual(false)
+                                .build()))
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(monday)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(monday.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(nonSittingCourtScheduleId)
+                                .withHearingDate(nonSittingDay)
+                                .withDurationMinutes(360)
+                                .build()))
+                .build();
+
+        // courtscheduler lays 1080 minutes over three consecutive business days, the non-sitting
+        // Wednesday among them — it has no notion of non-sitting days.
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, monday, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, monday.plusDays(1), false);
+        final CourtSchedule csNonSitting =
+                buildCourtSchedule(nonSittingCourtScheduleId, courtRoomId, courtHouseId, nonSittingDay, false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2))
+                        .add(buildCsJson(csNonSitting)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2, csNonSitting);
+
+        // Covers the non-sitting session too, so that without the fix this test still reaches its
+        // assertions (the unfixed path carries that session through) instead of erroring on the mock.
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, monday + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, monday.plusDays(1) + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(nonSittingCourtScheduleId, nonSittingDay + "T10:00:00Z", 360)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .build());
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
+        assertThat("the request is the duration that was asked for — non-sitting days do not change it",
+                paramsCaptor.getValue().get("durationInMinutes"), is("1080"));
+
+        assertThat("the non-sitting day does not become a hearing day",
+                result.getHearingDays().size(), is(2));
+        assertThat("the non-sitting day does not become a hearing day",
+                result.getHearingDays().stream().anyMatch(day -> nonSittingDay.equals(day.getHearingDate())), is(false));
+        assertThat("the dropped day's minutes go with it — the surviving days stay at one court day each",
+                result.getHearingDays().stream().mapToInt(HearingDay::getDurationMinutes).sum(), is(720));
+        assertThat("the non-default day keeps its own start time, not the session's",
+                result.getHearingDays().stream()
+                        .filter(day -> monday.plusDays(1).equals(day.getHearingDate()))
+                        .map(HearingDay::getStartTime)
+                        .findFirst().orElseThrow(),
+                is(nonDefaultDayStart));
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<List<HearingDay>> sentDaysCaptor = ArgumentCaptor.forClass(List.class);
+        verify(slotsToJsonStringConverter).convertHearingDaysToCourtScheduleIdsJson(sentDaysCaptor.capture());
+        sentDaysCaptor.getValue().forEach(day ->
+                assertThat("the per-day minutes sent to courtscheduler never exceed one court day",
+                        day.getDurationMinutes(), is(360)));
+    }
+
+    /**
+     * A hearing day is at most one court day. The block total (virtual anchor) only sizes the BOOKING;
+     * dropping a non-sitting day takes its minutes with it instead of inflating the surviving days
+     * past MINUTES_IN_DAY. Reported repro: 5-day block, total 1800, genuine non-default Thursday,
+     * non-sitting Friday — without the cap Mon/Tue/Wed came out at (1800-360)/3 = 480.
+     */
+    @Test
+    void shouldCapEveryHearingDayAtOneCourtDayWhenCrownUpdateDropsANonSittingDay() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID[] csIds = {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        // Anchored on a Monday so the five booked dates are consecutive business days.
+        final LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        final LocalDate thursday = monday.plusDays(3);
+        final LocalDate nonSittingFriday = monday.plusDays(4);
+
+        // The Thursday is a genuine non-default day starting at 11:00 with a full court day's minutes.
+        final ZonedDateTime nonDefaultDayStart = ZonedDateTime.of(thursday, LocalTime.of(11, 0), ZoneOffset.UTC);
+
+        final List<HearingDay> storedDays = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            storedDays.add(HearingDay.hearingDay()
+                    .withCourtScheduleId(csIds[i])
+                    .withHearingDate(monday.plusDays(i))
+                    .withDurationMinutes(360)
+                    .build());
+        }
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(monday)
+                .withEndDate(nonSittingFriday)
+                .withNonSittingDays(Collections.singletonList(nonSittingFriday))
+                .withNonDefaultDays(Arrays.asList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(ZonedDateTime.of(monday, LocalTime.of(9, 0), ZoneOffset.UTC))
+                                .withDuration(1800)
+                                .withVirtual(true)
+                                .withCourtScheduleId(csIds[0].toString())
+                                .build(),
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(nonDefaultDayStart)
+                                .withDuration(360)
+                                .withVirtual(false)
+                                .build()))
+                .withHearingDays(storedDays)
+                .build();
+
+        // courtscheduler lays 1800 minutes over five consecutive business days, the non-sitting
+        // Friday among them — it has no notion of non-sitting days.
+        final CourtSchedule[] schedules = new CourtSchedule[5];
+        final var sessionsArray = JsonObjects.createArrayBuilder();
+        for (int i = 0; i < 5; i++) {
+            schedules[i] = buildCourtSchedule(csIds[i], courtRoomId, courtHouseId, monday.plusDays(i), false);
+            sessionsArray.add(buildCsJson(schedules[i]));
+        }
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", sessionsArray)
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(schedules[0], schedules[1], schedules[2], schedules[3], schedules[4]);
+
+        final var hearingsArray = JsonObjects.createArrayBuilder();
+        for (int i = 0; i < 5; i++) {
+            hearingsArray.add(buildListHearingJson(csIds[i], monday.plusDays(i) + "T10:00:00Z", 360));
+        }
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", hearingsArray)
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(csIds[0].toString())
+                        .add(csIds[1].toString())
+                        .add(csIds[2].toString())
+                        .add(csIds[3].toString())
+                        .build());
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
+        assertThat("the booking request is the duration that was asked for — non-sitting days do not change it",
+                paramsCaptor.getValue().get("durationInMinutes"), is("1800"));
+
+        assertThat("the non-sitting day does not become a hearing day",
+                result.getHearingDays().size(), is(4));
+        assertThat("the non-sitting day does not become a hearing day",
+                result.getHearingDays().stream().anyMatch(day -> nonSittingFriday.equals(day.getHearingDate())), is(false));
+        result.getHearingDays().forEach(day ->
+                assertThat("every hearing day is exactly one court day — the dropped day's minutes are not redistributed",
+                        day.getDurationMinutes(), is(360)));
+
+        // The durations listing sends to courtscheduler are what it deducts, persists on
+        // allocated_listings and echoes back — assert at the minting point, not just on the echo.
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<List<HearingDay>> sentDaysCaptor = ArgumentCaptor.forClass(List.class);
+        verify(slotsToJsonStringConverter).convertHearingDaysToCourtScheduleIdsJson(sentDaysCaptor.capture());
+        final List<HearingDay> sentDays = sentDaysCaptor.getValue();
+        assertThat(sentDays.size(), is(4));
+        sentDays.forEach(day ->
+                assertThat("the per-day minutes sent to courtscheduler are capped at one court day",
+                        day.getDurationMinutes(), is(360)));
+        assertThat("the non-default day keeps its own start time, not the session's",
+                result.getHearingDays().stream()
+                        .filter(day -> thursday.equals(day.getHearingDate()))
+                        .map(HearingDay::getStartTime)
+                        .findFirst().orElseThrow(),
+                is(nonDefaultDayStart));
+    }
+
+    /**
+     * The booking must reach the requested endDate even when the caller's block total is the SITTING
+     * total rather than the window total. The reallocate screen (update-hearings-for-listing) sends
+     * duration = the hearing's actual sitting minutes plus the window's endDate; courtscheduler sizes
+     * the block from the duration alone (crownDaysNeeded ignores endDate when a duration is present),
+     * so a 1080-minute ask over a Mon–Thu window with a non-sitting Wednesday booked Mon–Wed: ON the
+     * non-sitting day and never reaching the Thursday, which was then silently lost (SPRDT-1267
+     * rework). The request must be sized from the window the payload itself states — business days
+     * from startDate to endDate inclusive — while the hearing days still fill from the caller's total.
+     */
+    @Test
+    void shouldSizeTheBookingFromTheRequestedWindowWhenTheBlockTotalIsOnlyTheSittingTotal() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCourtScheduleId = UUID.randomUUID();
+        final UUID[] bookedCsIds = {anchorCourtScheduleId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        // Anchored on a Monday so the four booked dates are consecutive business days.
+        final LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        final LocalDate nonSittingWednesday = monday.plusDays(2);
+        final LocalDate thursday = monday.plusDays(3);
+
+        // The Thursday is a genuine non-default day starting at 10:00 with a full court day's minutes.
+        final ZonedDateTime nonDefaultDayStart = ZonedDateTime.of(thursday, LocalTime.of(10, 0), ZoneOffset.UTC);
+
+        // Reallocate shape: duration 1080 = the three days the hearing SITS on (Mon, Tue, Thu) —
+        // NOT the four-business-day window total (1440) the edit screen would send.
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(monday)
+                .withEndDate(thursday)
+                .withNonSittingDays(Collections.singletonList(nonSittingWednesday))
+                .withNonDefaultDays(Arrays.asList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(ZonedDateTime.of(monday, LocalTime.of(9, 0), ZoneOffset.UTC))
+                                .withDuration(1080)
+                                .withVirtual(true)
+                                .withCourtScheduleId(anchorCourtScheduleId.toString())
+                                .build(),
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(nonDefaultDayStart)
+                                .withDuration(360)
+                                .withVirtual(false)
+                                .build()))
+                .build();
+
+        // courtscheduler, asked for the full window, lays the block over all four consecutive
+        // business days — the non-sitting Wednesday among them (it has no notion of non-sitting days).
+        final CourtSchedule[] schedules = new CourtSchedule[4];
+        final var sessionsArray = JsonObjects.createArrayBuilder();
+        for (int i = 0; i < 4; i++) {
+            schedules[i] = buildCourtSchedule(bookedCsIds[i], courtRoomId, courtHouseId, monday.plusDays(i), false);
+            sessionsArray.add(buildCsJson(schedules[i]));
+        }
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", sessionsArray)
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(schedules[0], schedules[1], schedules[2], schedules[3]);
+
+        final var hearingsArray = JsonObjects.createArrayBuilder();
+        for (int i = 0; i < 4; i++) {
+            hearingsArray.add(buildListHearingJson(bookedCsIds[i], monday.plusDays(i) + "T10:00:00Z", 360));
+        }
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", hearingsArray)
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(bookedCsIds[0].toString())
+                        .add(bookedCsIds[1].toString())
+                        .add(bookedCsIds[3].toString())
+                        .build());
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
+        assertThat("the booking is sized from the requested window (4 business days), not the sitting total",
+                paramsCaptor.getValue().get("durationInMinutes"), is("1440"));
+        assertThat("the requested window's endDate still rides along",
+                paramsCaptor.getValue().get("endDate"), is(thursday.toString()));
+
+        assertThat("the non-sitting day does not become a hearing day",
+                result.getHearingDays().size(), is(3));
+        assertThat("the non-sitting day does not become a hearing day",
+                result.getHearingDays().stream().anyMatch(day -> nonSittingWednesday.equals(day.getHearingDate())), is(false));
+        assertThat("the hearing keeps its sitting total — the window sizing never inflates the hearing days",
+                result.getHearingDays().stream().mapToInt(HearingDay::getDurationMinutes).sum(), is(1080));
+        assertThat("the last requested day survives the reallocation",
+                result.getHearingDays().stream().anyMatch(day -> thursday.equals(day.getHearingDate())), is(true));
+        assertThat("the non-default day keeps its own start time, not the session's",
+                result.getHearingDays().stream()
+                        .filter(day -> thursday.equals(day.getHearingDate()))
+                        .map(HearingDay::getStartTime)
+                        .findFirst().orElseThrow(),
+                is(nonDefaultDayStart));
+    }
+
+    /**
+     * The window sizing must count BUSINESS days: a Thursday-to-Wednesday window spans seven calendar
+     * days but only five business days. The old calendar-day expansion (DAYS.between + 1) over-booked
+     * exactly this shape, which is why courtscheduler was made to ignore endDate in the first place.
+     */
+    @Test
+    void shouldCountOnlyBusinessDaysWhenSizingTheBookingFromTheRequestedWindow() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCourtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        // Thursday anchor; endDate the following Wednesday: 7 calendar days, 5 business days.
+        final LocalDate thursday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.THURSDAY));
+        final LocalDate nextWednesday = thursday.plusDays(6);
+        final LocalDate nonSittingFriday = thursday.plusDays(1);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(thursday)
+                .withEndDate(nextWednesday)
+                .withNonSittingDays(Collections.singletonList(nonSittingFriday))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(ZonedDateTime.of(thursday, LocalTime.of(9, 0), ZoneOffset.UTC))
+                                .withDuration(1440)
+                                .withVirtual(true)
+                                .withCourtScheduleId(anchorCourtScheduleId.toString())
+                                .build()))
+                .build();
+
+        // Booked run: Thu, Fri, Mon, Tue, Wed — five business-day sessions.
+        final LocalDate[] bookedDates = {thursday, nonSittingFriday, thursday.plusDays(4), thursday.plusDays(5), nextWednesday};
+        final CourtSchedule[] schedules = new CourtSchedule[5];
+        final var sessionsArray = JsonObjects.createArrayBuilder();
+        final UUID[] bookedCsIds = new UUID[5];
+        for (int i = 0; i < 5; i++) {
+            bookedCsIds[i] = i == 0 ? anchorCourtScheduleId : UUID.randomUUID();
+            schedules[i] = buildCourtSchedule(bookedCsIds[i], courtRoomId, courtHouseId, bookedDates[i], false);
+            sessionsArray.add(buildCsJson(schedules[i]));
+        }
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", sessionsArray)
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(schedules[0], schedules[1], schedules[2], schedules[3], schedules[4]);
+
+        final var hearingsArray = JsonObjects.createArrayBuilder();
+        for (int i = 0; i < 5; i++) {
+            hearingsArray.add(buildListHearingJson(bookedCsIds[i], bookedDates[i] + "T10:00:00Z", 360));
+        }
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", hearingsArray)
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(bookedCsIds[0].toString())
+                        .add(bookedCsIds[2].toString())
+                        .add(bookedCsIds[3].toString())
+                        .add(bookedCsIds[4].toString())
+                        .build());
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
+        assertThat("five business days, never seven calendar days: 5 x 360, not 7 x 360",
+                paramsCaptor.getValue().get("durationInMinutes"), is("1800"));
+
+        assertThat("the non-sitting Friday does not become a hearing day",
+                result.getHearingDays().size(), is(4));
+        assertThat("the hearing keeps the caller's total",
+                result.getHearingDays().stream().mapToInt(HearingDay::getDurationMinutes).sum(), is(1440));
+    }
+
+    /**
+     * Without non-sitting days the endDate must NOT size the booking — courtscheduler (not a
+     * startDate→endDate expansion) stays the authority on session count, so a payload whose window
+     * is deliberately far wider than its duration (the CrownUpdateHearingMultidayIT ~2-month shape)
+     * keeps its duration-derived ask. Window sizing exists only to pay for the non-sitting days the
+     * block steps over.
+     */
+    @Test
+    void shouldKeepTheDurationDerivedBookingWhenTheWindowIsWideButNoDayIsNonSitting() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCourtScheduleId = UUID.randomUUID();
+        final UUID[] bookedCsIds = {anchorCourtScheduleId, UUID.randomUUID(), UUID.randomUUID()};
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        // endDate ~2 months out, duration three court days — deliberately inconsistent.
+        final LocalDate farEndDate = monday.plusDays(57);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(monday)
+                .withEndDate(farEndDate)
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(ZonedDateTime.of(monday, LocalTime.of(9, 0), ZoneOffset.UTC))
+                                .withDuration(1080)
+                                .withVirtual(true)
+                                .withCourtScheduleId(anchorCourtScheduleId.toString())
+                                .build()))
+                .build();
+
+        final CourtSchedule[] schedules = new CourtSchedule[3];
+        final var sessionsArray = JsonObjects.createArrayBuilder();
+        for (int i = 0; i < 3; i++) {
+            schedules[i] = buildCourtSchedule(bookedCsIds[i], courtRoomId, courtHouseId, monday.plusDays(i), false);
+            sessionsArray.add(buildCsJson(schedules[i]));
+        }
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", sessionsArray)
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(schedules[0], schedules[1], schedules[2]);
+
+        final var hearingsArray = JsonObjects.createArrayBuilder();
+        for (int i = 0; i < 3; i++) {
+            hearingsArray.add(buildListHearingJson(bookedCsIds[i], monday.plusDays(i) + "T10:00:00Z", 360));
+        }
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", hearingsArray)
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(bookedCsIds[0].toString())
+                        .add(bookedCsIds[1].toString())
+                        .add(bookedCsIds[2].toString())
+                        .build());
+
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
+        assertThat("no non-sitting days: the ask stays duration-derived, the wide window does not inflate it",
+                paramsCaptor.getValue().get("durationInMinutes"), is("1080"));
+    }
+
+    /**
+     * A non-sitting day that matches none of the booked dates must leave the block untouched — no day
+     * dropped and no minutes redistributed.
+     */
+    @Test
+    void shouldLeaveTheBlockUntouchedWhenNoBookedDayIsNonSitting() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtScheduleId3 = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        // Three sitting days run Mon-Wed; the non-sitting Friday sits outside them.
+        final LocalDate nonSittingDay = monday.plusDays(4);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(monday)
+                .withNonSittingDays(Collections.singletonList(nonSittingDay))
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(monday)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(monday.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId3)
+                                .withHearingDate(monday.plusDays(2))
+                                .withDurationMinutes(360)
+                                .build()))
+                .build();
+
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, monday, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, monday.plusDays(1), false);
+        final CourtSchedule cs3 = buildCourtSchedule(courtScheduleId3, courtRoomId, courtHouseId, monday.plusDays(2), false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2))
+                        .add(buildCsJson(cs3)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2, cs3);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, monday + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, monday.plusDays(1) + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId3, monday.plusDays(2) + "T10:00:00Z", 360)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .add(courtScheduleId3.toString())
+                        .build());
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
+        assertThat(paramsCaptor.getValue().get("durationInMinutes"), is("1080"));
+        assertThat(result.getHearingDays().size(), is(3));
+        assertThat(result.getHearingDays().stream().mapToInt(HearingDay::getDurationMinutes).sum(), is(1080));
+    }
+
+    @Test
+    void shouldNotSetCourtRoomIdOnUpdateHearingDays_whenSessionCourtRoomIdIsNull() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(day1.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build()))
+                .build();
+
+        final CourtSchedule cs1 = new CourtSchedule();
+        cs1.setCourtScheduleId(courtScheduleId1.toString());
+        cs1.setCourtHouseId(courtHouseId.toString());
+        cs1.setSessionDate(day1);
+        cs1.setSessionStartTime(Date.from(day1.atTime(10, 0).toInstant(ZoneOffset.UTC)));
+
+        final CourtSchedule cs2 = new CourtSchedule();
+        cs2.setCourtScheduleId(courtScheduleId2.toString());
+        cs2.setCourtHouseId(courtHouseId.toString());
+        cs2.setSessionDate(day1.plusDays(1));
+        cs2.setSessionStartTime(Date.from(day1.plusDays(1).atTime(10, 0).toInstant(ZoneOffset.UTC)));
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId1.toString()).build())
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId2.toString()).build()))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, "2026-03-16T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, "2026-03-17T10:00:00Z", 360)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(2));
+        result.getHearingDays().forEach(day -> assertThat(day.getCourtRoomId(), is((UUID) null)));
+    }
+
+    @Test
+    void shouldSetCourtCentreIdButNotCourtRoomIdOnHearingDays_whenCrownMultiDaySessionsAreDraft() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        // Multi-day: 540 * 2 = 1080 > MINUTES_IN_DAY (360)
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(540)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(day1.plusDays(1))
+                                .withDurationMinutes(540)
+                                .build()))
+                .build();
+
+        // isDraft=true: courtHouseId is present; courtRoomId is on the CourtSchedule object
+        // but the service must NOT propagate it to HearingDay for draft sessions.
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, day1, true);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, day1.plusDays(1), true);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, "2026-03-16T10:00:00Z", 540))
+                        .add(buildListHearingJson(courtScheduleId2, "2026-03-17T10:00:00Z", 540)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).multiDaySearchAndBook(anyMap());
+        assertThat(result.getHearingDays().size(), is(2));
+        result.getHearingDays().forEach(day -> {
+            // courtCentreId must be set from the session's courtHouseId regardless of draft status (the fix)
+            assertThat(day.getCourtCentreId(), is(courtHouseId));
+            // courtRoomId must not be set for draft sessions
+            assertThat(day.getCourtRoomId(), is((UUID) null));
+        });
+    }
+
+    @Test
+    void shouldSetCourtCentreIdButNotCourtRoomIdOnHearingDays_whenCrownSingleDaySessionIsDraft() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID inheritedCourtRoomId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        // Single-day: 180 <= MINUTES_IN_DAY (360). The incoming hearingDay carries an inherited
+        // courtRoomId (e.g. from a prior allocation) but no courtCentreId — the draft session
+        // must still supply courtCentreId while clearing the inherited courtRoomId.
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(180)
+                                .withCourtRoomId(inheritedCourtRoomId)
+                                .build()))
+                .build();
+
+        // isDraft=true: courtHouseId is present; courtRoomId is on the CourtSchedule object
+        // but the service must NOT propagate it to HearingDay for draft sessions.
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, sessionCourtRoomId, courtHouseId, day1, true);
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs)))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, "2026-03-16T10:00:00Z", 180)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        assertThat(result.getHearingDays().size(), is(1));
+        final HearingDay resultDay = result.getHearingDays().get(0);
+        // courtCentreId must be set from the session's courtHouseId regardless of draft status (the fix)
+        assertThat(resultDay.getCourtCentreId(), is(courtHouseId));
+        // courtRoomId must not be set (inherited value cleared) for draft sessions
+        assertThat(resultDay.getCourtRoomId(), is((UUID) null));
+    }
+
+    @Test
+    void shouldMarkDaysDraftAndSuppressAllocation_whenCrownUpdateMultiDaySearchReturnsEmpty() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtRoomId(UUID.randomUUID())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(720)
+                                .build()))
+                .build();
+
+        // Mock multiDaySearchAndBook returning empty
+        final JsonObject emptyResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder())
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(emptyResponseJson);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        assertThat(result.getHearingId(), is(hearingId));
+        // The requested sessions could not be booked/verified: every day must be marked draft so
+        // Hearing.canAllocateForCrown() stays closed and the hearing cannot silently allocate onto
+        // unverified sessions (the courtScheduleId is preserved for traceability).
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+    }
+
+    @Test
+    void shouldMarkDaysDraftAndSuppressAllocation_whenCrownUpdateMultiDayBookedBlockStartsOnDifferentDate() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate requestedStart = LocalDate.now().plusDays(8);
+        final LocalDate bookedStart = LocalDate.now().plusDays(5);
+
+        // Date-move: the command asks for a window starting on requestedStart.
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(requestedStart)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(requestedStart)
+                                .withDurationMinutes(720)
+                                .build()))
+                .build();
+
+        // courtscheduler answers with a block starting on a DIFFERENT day (live J07 failure: its
+        // idempotency guard returned the hearing's OLD block instead of moving the window).
+        final CourtSchedule cs1 = buildCourtSchedule(UUID.randomUUID(), sessionCourtRoomId, courtHouseId, bookedStart, false);
+        final CourtSchedule cs2 = buildCourtSchedule(UUID.randomUUID(), sessionCourtRoomId, courtHouseId, bookedStart.plusDays(1), false);
+        final JsonObject responseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2)))
+                .build();
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(responseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs1, cs2);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        // A booked window that ignores the requested start date must NOT be silently adopted:
+        // the command's days stay, marked draft, so allocation stays closed and the divergence is
+        // an explicit deferred state instead of a corrupted hearing window.
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        assertThat(result.getStartDate(), is(requestedStart));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_multiDay_shouldEnrichNormally_whenBookedBlockStartsOnRequestedDate() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(day1)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(day1.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build()))
+                .build();
+
+        // Booked block starts exactly on the requested start date — enrichment proceeds normally.
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, sessionCourtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, sessionCourtRoomId, courtHouseId, day1.plusDays(1), false);
+        mockMultiDaySearchAndBook(courtScheduleId1, courtScheduleId2, cs1, cs2);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(2));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(false));
+        assertThat(result.getHearingDays().get(1).getIsDraft(), is(false));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_multiDay_virtualNonDefaultDayCarriesTotalAndAnchor_genuineDayGetsItsStartTime() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCsId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(10);
+        final LocalDate genuineDay = day1.plusDays(2);
+
+        // Frontend multi-day shape (real steccm22 payload): NO hearingDays; one virtual=true proxy
+        // carrying the block TOTAL (1440 = 4 days) + the anchor csId, plus one genuine nonDefaultDay
+        // inside the window asking for a 09:00 start on its date. Summing both (1800) would over-book
+        // a 5th day past the requested endDate.
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withStartDate(day1)
+                .withEndDate(day1.plusDays(3))
+                .withNonDefaultDays(Arrays.asList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(ZonedDateTime.parse(day1 + "T09:00:00Z"))
+                                .withDuration(1440)
+                                .withCourtScheduleId(anchorCsId.toString())
+                                .withCourtCentreId(courtCentreId.toString())
+                                .withVirtual(Boolean.TRUE)
+                                .build(),
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(ZonedDateTime.parse(genuineDay + "T09:00:00Z"))
+                                .withDuration(360)
+                                .withCourtCentreId(courtCentreId.toString())
+                                .build()))
+                .build();
+
+        final UUID cs2Id = UUID.randomUUID();
+        final UUID cs3Id = UUID.randomUUID();
+        final UUID cs4Id = UUID.randomUUID();
+        final CourtSchedule cs1 = buildCourtSchedule(anchorCsId, sessionCourtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(cs2Id, sessionCourtRoomId, courtHouseId, day1.plusDays(1), false);
+        final CourtSchedule cs3 = buildCourtSchedule(cs3Id, sessionCourtRoomId, courtHouseId, genuineDay, false);
+        final CourtSchedule cs4 = buildCourtSchedule(cs4Id, sessionCourtRoomId, courtHouseId, day1.plusDays(3), false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1)).add(buildCsJson(cs2)).add(buildCsJson(cs3)).add(buildCsJson(cs4)))
+                .build();
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs1, cs2, cs3, cs4);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(anchorCsId, day1 + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(cs2Id, day1.plusDays(1) + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(cs3Id, genuineDay + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(cs4Id, day1.plusDays(3) + "T10:00:00Z", 360)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    final JsonObject jo = inv.getArgument(0);
+                    final ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(anchorCsId.toString()).add(cs2Id.toString()).add(cs3Id.toString()).add(cs4Id.toString())
+                        .build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        // The virtual day's duration IS the block total (1440, not 1440+360) and its csId/date anchor the call.
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService, atLeastOnce()).multiDaySearchAndBook(paramsCaptor.capture());
+        final Map<String, String> params = paramsCaptor.getValue();
+        assertThat(params.get(CourtScheduleEnrichmentService.DURATION_MINUTES), is("1440"));
+        assertThat(params.get("courtScheduleId"), is(anchorCsId.toString()));
+        assertThat(params.get(CourtScheduleEnrichmentService.HEARING_DATE), is(day1.toString()));
+
+        // 4 booked days; the genuine nonDefaultDay's date keeps ITS start time (09:00, endTime follows),
+        // every other day keeps the session start time (10:00).
+        assertThat(result.getHearingDays().size(), is(4));
+        final HearingDay genuine = result.getHearingDays().stream()
+                .filter(d -> genuineDay.equals(d.getHearingDate())).findFirst().orElseThrow();
+        assertThat(genuine.getStartTime(), is(ZonedDateTime.parse(genuineDay + "T09:00:00Z")));
+        assertThat(genuine.getEndTime(), is(ZonedDateTime.parse(genuineDay + "T15:00:00Z")));
+        final HearingDay anchorDay = result.getHearingDays().stream()
+                .filter(d -> day1.equals(d.getHearingDate())).findFirst().orElseThrow();
+        assertThat(anchorDay.getStartTime(), is(ZonedDateTime.parse(day1 + "T10:00:00Z")));
+    }
+
+    @Test
+    void shouldMarkDaysDraftAndSuppressAllocation_whenCrownUpdateSingleDayFetchReturnsEmpty() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds returning no sessions (courtscheduler could not resolve the id)
+        final JsonObject emptyResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder())
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(emptyResponseJson);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        // Unresolved session ⇒ day marked draft ⇒ allocation suppressed downstream.
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+    }
+
+    @Test
+    void shouldNotCallListHearingWhenCrownUpdateMultiDaySessionsHaveDraft() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(720)
+                                .build()))
+                .build();
+
+        // Mock multiDaySearchAndBook - one session is draft
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, day1.plusDays(1), true);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2);
+
+        // Mock listHearingInCourtSessions (now always called, even when some sessions are draft)
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, day1 + "T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, day1.plusDays(1) + "T10:00:00Z", 360)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        assertThat(result.getHearingDays().size(), is(2));
+    }
+
+    @Test
+    void shouldSkipCrownUpdateWhenHearingDaysEmpty() {
+        final UUID hearingId = UUID.randomUUID();
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.emptyList())
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        assertThat(result.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldKeepExistingJudiciaryOnCrownUpdate() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID judicialId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final uk.gov.justice.core.courts.JudicialRole existingJudiciary = uk.gov.justice.core.courts.JudicialRole.judicialRole()
+                .withJudicialId(judicialId)
+                .build();
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withJudiciary(Collections.singletonList(existingJudiciary))
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds - non-draft
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, false);
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs)))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, "2026-03-16T10:00:00Z", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        // Existing judiciary should be preserved
+        assertThat(result.getJudiciary().size(), is(1));
+        assertThat(result.getJudiciary().get(0).getJudicialId(), is(judicialId));
+    }
+
+    // ─── fetchCourtSchedulesByIds error paths ────────────────────────────
+
+    @Test
+    void shouldReturnEmptyWhenFetchCourtSchedulesByIdsFailsResponse() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(240)
+                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds returning error status
+        final Response errorResponse = mock(Response.class);
+        when(errorResponse.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(errorResponse);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // Should return unchanged since sessions is empty
+        assertThat(result.getHearingDays().size(), is(1));
+    }
+
+    @Test
+    void shouldReturnEmptyWhenFetchCourtSchedulesByIdsReturnsNullResponse() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(240)
+                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds returning null JSON
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(null);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(1));
+    }
+
+    // ─── multiDaySearchAndBook error paths ───────────────────────────────
+
+    @Test
+    void shouldReturnUnchangedWhenMultiDaySearchAndBookFailsResponse() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(1080)
+                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .build()))
+                .build();
+
+        // Mock multiDaySearchAndBook returning error status
+        final Response errorResponse = mock(Response.class);
+        when(errorResponse.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(errorResponse);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        assertThat(result.getHearingDays().size(), is(1));
+    }
+
+    @Test
+    void shouldReturnUnchangedWhenMultiDaySearchAndBookReturnsNullJson() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(1080)
+                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .build()))
+                .build();
+
+        // Mock multiDaySearchAndBook returning null json
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(null);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        assertThat(result.getHearingDays().size(), is(1));
+    }
+
+    // ─── needsCourtScheduleEnrichment static tests ───────────────────────
+
+    @Test
+    void shouldNeedEnrichmentForMagistratesWithBookingReference() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withId(UUID.randomUUID())
+                .withBookingReference(UUID.randomUUID())
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(true));
+    }
+
+    @Test
+    void shouldNotNeedEnrichmentForCrownWithoutCourtScheduleIds() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(UUID.randomUUID())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now())
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(false));
+    }
+
+    @Test
+    void shouldNotNeedEnrichmentForUnknownJurisdiction() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(UUID.randomUUID())
+                                .withHearingDate(LocalDate.now())
+                                .build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(false));
+    }
+
+    @Test
+    void shouldNeedEnrichmentForCrownWithCourtScheduleIds() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(UUID.randomUUID())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(UUID.randomUUID())
+                                .withHearingDate(LocalDate.now())
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(true));
+    }
+
+    // ─── isCandidateForAllocation tests ──────────────────────────────────
+
+    @Test
+    void shouldBeAllocationCandidateWithStartDateTimeAndCourtRoom() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withId(UUID.randomUUID())
+                .withListedStartDateTime(ZonedDateTime.now())
+                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build())
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.isCandidateForAllocation(hearing), is(true));
+    }
+
+    @Test
+    void shouldNotBeAllocationCandidateWithoutStartDateTime() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withId(UUID.randomUUID())
+                .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build())
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.isCandidateForAllocation(hearing), is(false));
+    }
+
+    @Test
+    void shouldBeUpdateAllocationCandidateWithStartDateAndCourtRoom() {
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(LocalDate.now())
+                .withCourtRoomId(UUID.randomUUID())
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.isCandidateForAllocation(update), is(true));
+    }
+
+    @Test
+    void shouldNotBeUpdateAllocationCandidateWithoutCourtRoom() {
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(LocalDate.now())
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.isCandidateForAllocation(update), is(false));
+    }
+
+    // ─── sanityCheckAndEnrichCrown edge cases ────────────────────────────
+
+    @Test
+    void shouldPassThroughHearingDayWithNoCourtScheduleId() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        // One hearingDay with courtScheduleId matching a fetched session, one with a different courtScheduleId (no matching session)
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(240)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(120)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(sessionDate.plusDays(1))
+                                .withDurationMinutes(120)
+                                .build()))
+                .build();
+
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, true);
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs)))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions (now always called, even for draft)
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", sessionDate + "T10:00:00Z")
+                                .add("duration", 120))
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId2.toString())
+                                .add("hearingStartTime", sessionDate.plusDays(1) + "T10:00:00Z")
+                                .add("duration", 120)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId.toString())
+                        .add(courtScheduleId2.toString())
+                        .build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // Both days should be present; one enriched from session, one passed through (no matching session in fetched list)
+        assertThat(result.getHearingDays().size(), is(2));
+    }
+
+    @Test
+    void searchAndBookShouldReturnBookedHearingSlotsWithJudiciaries() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = LocalDate.now().toString();
+        final Integer durationInMinutes = 20;
+
+        final JsonObject searchBookResponse = givenPayload("/courtscheduler.search.book.hearing.slots.with.judiciaries.json");
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(searchBookResponse);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(searchBookResponse);
+
+        final HearingSlotSearchResponse hearingSlotSearchResponse = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, true);
+
+        assertThat(hearingSlotSearchResponse.courtScheduleId(), is("23681024-8eac-4890-8c44-4651ad48cb24"));
+        assertThat(hearingSlotSearchResponse.judiciaries().size(), is(2));
+        assertThat(hearingSlotSearchResponse.judiciaries().get(0).getJudicialId().toString(), is("a1b2c3d4-e5f6-7890-abcd-ef1234567890"));
+        assertThat(hearingSlotSearchResponse.judiciaries().get(0).getJudicialRoleType().getJudiciaryType(), is("CIRCUIT_JUDGE"));
+        assertThat(hearingSlotSearchResponse.judiciaries().get(0).getIsBenchChairman().orElse(false), is(true));
+        assertThat(hearingSlotSearchResponse.judiciaries().get(0).getIsDeputy().orElse(true), is(false));
+        assertThat(hearingSlotSearchResponse.judiciaries().get(1).getJudicialId().toString(), is("b2c3d4e5-f6a7-8901-bcde-f12345678901"));
+        assertThat(hearingSlotSearchResponse.judiciaries().get(1).getJudicialRoleType().getJudiciaryType(), is("RECORDER"));
+        assertThat(hearingSlotSearchResponse.judiciaries().get(1).getIsDeputy().orElse(false), is(true));
+    }
+
+    // ─── MAGISTRATES update hearing judiciary enrichment tests ─────────
+
+    @Test
+    void shouldPreserveMagistratesExistingJudiciaryOnUpdateHearing() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID judicialId = UUID.randomUUID();
+
+        final uk.gov.justice.core.courts.JudicialRole existingJudiciary = uk.gov.justice.core.courts.JudicialRole.judicialRole()
+                .withJudicialId(judicialId)
+                .build();
+
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtScheduleId(courtScheduleId)
+                .withCourtRoomId(courtRoomId)
+                .withHearingDate(LocalDate.now().plusDays(3))
+                .withStartTime(ZonedDateTime.now(ZoneOffset.UTC))
+                .withDurationMinutes(30)
+                .build();
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withJudiciary(Collections.singletonList(existingJudiciary))
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(LocalDate.now().plusDays(3))
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .build();
+
+        // Mock slotsToJsonStringConverter
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        // Mock listHearingInCourtSessions — the response has NO judiciaries
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", "2026-03-16T10:00:00Z")
+                                .add("duration", 30)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        // Existing judiciary should be preserved even though response has none
+        assertThat(result.getJudiciary().size(), is(1));
+        assertThat(result.getJudiciary().get(0).getJudicialId(), is(judicialId));
+    }
+
+    @Test
+    void shouldEnrichMagistratesUpdateHearingWithJudiciaryFromListResponse() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID judicialId = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
+
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtScheduleId(courtScheduleId)
+                .withCourtRoomId(courtRoomId)
+                .withHearingDate(LocalDate.now().plusDays(3))
+                .withStartTime(ZonedDateTime.now(ZoneOffset.UTC))
+                .withDurationMinutes(30)
+                .build();
+
+        // No existing judiciary on the update
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(LocalDate.now().plusDays(3))
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .build();
+
+        // Mock slotsToJsonStringConverter
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        // Mock listHearingInCourtSessions — response includes judiciaries
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", "2026-03-16T10:00:00Z")
+                                .add("duration", 30)
+                                .add("judiciaries", JsonObjects.createArrayBuilder()
+                                        .add(JsonObjects.createObjectBuilder()
+                                                .add("judiciaryId", judicialId.toString())
+                                                .add("judiciaryType", "MAGISTRATE")
+                                                .add("benchChairman", true)
+                                                .add("deputy", false)))))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        // Judiciary should be populated from the list response, converted from domain to core model
+        assertThat(result.getJudiciary().size(), is(1));
+        assertThat(result.getJudiciary().get(0).getJudicialId(), is(judicialId));
+        assertThat(result.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType(), is("MAGISTRATE"));
+        assertThat(result.getJudiciary().get(0).getIsBenchChairman(), is(true));
+        assertThat(result.getJudiciary().get(0).getIsDeputy(), is(false));
+    }
+
+    @Test
+    void shouldNotSetJudiciaryWhenNeitherExistingNorEnrichedPresent() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtScheduleId(courtScheduleId)
+                .withCourtRoomId(courtRoomId)
+                .withHearingDate(LocalDate.now().plusDays(3))
+                .withStartTime(ZonedDateTime.now(ZoneOffset.UTC))
+                .withDurationMinutes(30)
+                .build();
+
+        // No existing judiciary on the update
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(LocalDate.now().plusDays(3))
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .build();
+
+        // Mock slotsToJsonStringConverter
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        // Mock listHearingInCourtSessions — no judiciaries in response
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", "2026-03-16T10:00:00Z")
+                                .add("duration", 30)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        // No judiciary should be set — neither existing nor enriched
+        assertThat(result.getJudiciary() == null || result.getJudiciary().isEmpty(), is(true));
+    }
+
+    @Test
+    void shouldReturnUnchangedWhenCrownMultiDayHasNoCourtScheduleIdOnAnyDay() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(720)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withHearingDate(sessionDate.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build()))
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(2));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(any());
+    }
+
+    // ─── getFirstAvailableSlot error paths ────────────────────────────────
+
+    @Test
+    void shouldThrowWhenGetFirstAvailableSlotSearchFails() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+
+        // HearingDay with NULL courtScheduleId triggers getFirstAvailableSlot
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withHearingDate(hearingDate)
+                .withDurationMinutes(120)
+                .withStartTime(hearingDate.atTime(10, 0).atZone(ZoneOffset.UTC))
+                .withCourtRoomId(courtRoomId)
+                .build();
+
+        final UpdateHearingForListing updateHearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .build();
+
+        final Response failedResponse = mock(Response.class);
+        when(failedResponse.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(failedResponse.hasEntity()).thenReturn(true);
+        when(failedResponse.getEntity()).thenReturn("Server Error");
+        when(hearingSlotsService.search(anyMap())).thenReturn(failedResponse);
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () ->
+                courtScheduleEnrichmentService.enrichWithCourtSchedules(updateHearing, mock(JsonEnvelope.class)));
+    }
+
+    @Test
+    void shouldThrowWhenGetFirstAvailableSlotReturnsEmptySlots() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withHearingDate(hearingDate)
+                .withDurationMinutes(120)
+                .withStartTime(hearingDate.atTime(10, 0).atZone(ZoneOffset.UTC))
+                .withCourtRoomId(courtRoomId)
+                .build();
+
+        final UpdateHearingForListing updateHearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .build();
+
+        final JsonObject emptyResponseJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder())
+                .build();
+
+        final Response emptyResponse = mock(Response.class);
+        when(emptyResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(emptyResponse.getEntity()).thenReturn(emptyResponseJson);
+        when(hearingSlotsService.search(anyMap())).thenReturn(emptyResponse);
+        when(objectToJsonObjectConverter.convert(emptyResponseJson)).thenReturn(emptyResponseJson);
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () ->
+                courtScheduleEnrichmentService.enrichWithCourtSchedules(updateHearing, mock(JsonEnvelope.class)));
+    }
+
+    @Test
+    void shouldPassJurisdictionQueryParamInGetFirstAvailableSlot() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final String bookedCourtScheduleId = UUID.randomUUID().toString();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withHearingDate(hearingDate)
+                .withDurationMinutes(120)
+                .withStartTime(hearingDate.atTime(10, 0).atZone(ZoneOffset.UTC))
+                .withCourtRoomId(courtRoomId)
+                .build();
+
+        final UpdateHearingForListing updateHearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .build();
+
+        final JsonObject searchJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", bookedCourtScheduleId)
+                                .add("courtRoomId", courtRoomId.toString())
+                                .add("sessionStartTime", "2020-01-01T10:00:00Z")))
+                .build();
+
+        final Response searchResponse = mock(Response.class);
+        when(searchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(searchResponse.getEntity()).thenReturn(searchJson);
+        when(hearingSlotsService.search(anyMap())).thenReturn(searchResponse);
+        when(objectToJsonObjectConverter.convert(searchJson)).thenReturn(searchJson);
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(bookedCourtScheduleId).build());
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", bookedCourtScheduleId)
+                                .add("hearingStartTime", "2020-01-01T10:00:00Z")
+                                .add("duration", 120)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        @SuppressWarnings("unchecked")
+        final org.mockito.ArgumentCaptor<java.util.Map<String, String>> mapCaptor =
+                org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(updateHearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).search(mapCaptor.capture());
+        assertThat(mapCaptor.getValue().get("jurisdiction"), is(JurisdictionType.MAGISTRATES.toString()));
+    }
+
+    // ─── populateJudiciaryInfoFromSlots edge case tests ─────────────────
+
+    @Test
+    void shouldReturnNoJudiciaryWhenListResponseFails() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+
+        // HearingDay with courtScheduleId — bypasses getFirstAvailableSlot
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtScheduleId(courtScheduleId)
+                .withCourtRoomId(courtRoomId)
+                .withHearingDate(LocalDate.now().plusDays(3))
+                .withStartTime(ZonedDateTime.now(ZoneOffset.UTC))
+                .withDurationMinutes(30)
+                .build();
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(LocalDate.now().plusDays(3))
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .build();
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        // Mock listHearingInCourtSessions returning 500
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+
+        // combineSearchAndBookResponseAndListResponse throws RuntimeException when response is not success
+        // so populateJudiciaryInfoFromSlots is never reached — the failed list response causes an exception
+        org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () ->
+                courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class)));
+    }
+
+    @Test
+    void shouldPreserveExistingJudiciaryWhenResponseHasNoJudiciariesKey() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID judicialId = UUID.randomUUID();
+
+        final uk.gov.justice.core.courts.JudicialRole existingJudiciary = uk.gov.justice.core.courts.JudicialRole.judicialRole()
+                .withJudicialId(judicialId)
+                .build();
+
+        // HearingDay with courtScheduleId — bypasses getFirstAvailableSlot
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtScheduleId(courtScheduleId)
+                .withCourtRoomId(courtRoomId)
+                .withHearingDate(LocalDate.now().plusDays(3))
+                .withStartTime(ZonedDateTime.now(ZoneOffset.UTC))
+                .withDurationMinutes(30)
+                .build();
+
+        // Update already has existing judiciary
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU123").build())
+                .withCourtRoomId(courtRoomId)
+                .withStartDate(LocalDate.now().plusDays(3))
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .withJudiciary(Collections.singletonList(existingJudiciary))
+                .build();
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        // Response is 200 but hearing has NO "judiciaries" key — enrichment provides nothing
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", "2026-03-16T10:00:00Z")
+                                .add("duration", 30)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        // Existing judiciary is preserved because the response has no judiciaries key to replace it
+        assertThat(result.getJudiciary(), is(not(nullValue())));
+        assertThat(result.getJudiciary().size(), is(1));
+        assertThat(result.getJudiciary().get(0).getJudicialId(), is(judicialId));
+    }
+
+    // ─── Helper methods ──────────────────────────────────────────────────
+
+    // ─── F4 + F6: CROWN unallocation — block-descriptor duration & book-before-release ─────
+
+    @Test
+    void shouldBookTwoDraftDaysFromBlockDescriptorDuration_whenUnallocatingMultidayHearing() {
+        // F4: the single virtual nonDefaultDay carries the block TOTAL (720). The unallocation path
+        // must search and book 720 minutes (2 draft days) — the old dayCount × 360 computation saw
+        // one seeded day and silently converted the multiday hearing to a single day.
+        // F6: when the draft anchor is found first time, the hearing's existing slots are NOT
+        // released up front — booking itself performs the release once the new run is confirmed.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCsId = UUID.randomUUID();
+        final UUID day2CsId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.of(2026, 7, 21);
+
+        final UpdateHearingForListing hearing = buildUnallocationHearing(hearingId, anchorCsId, courtCentreId, day1);
+
+        stubDraftAnchorSearch(anchorCsId.toString());
+        stubMultiDayBooking(
+                buildCourtSchedule(anchorCsId, sessionCourtRoomId, courtCentreId, day1, true),
+                buildCourtSchedule(day2CsId, sessionCourtRoomId, courtCentreId, day1.plusDays(1), true));
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, mock(JsonEnvelope.class));
+
+        // F4: the block total, not dayCount × 360, drives both the anchor search and the booking
+        final ArgumentCaptor<Map<String, String>> searchParams = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).search(searchParams.capture());
+        assertThat(searchParams.getValue().get("durationInMinutes"), is("720"));
+
+        final ArgumentCaptor<Map<String, String>> bookParams = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(bookParams.capture());
+        assertThat(bookParams.getValue().get("durationInMinutes"), is("720"));
+        assertThat(bookParams.getValue().get("courtScheduleId"), is(anchorCsId.toString()));
+        assertThat(bookParams.getValue().get("hearingDate"), is(day1.toString()));
+
+        // Two draft days rebuilt — the multiday shape survives
+        assertThat(result.getHearingDays().size(), is(2));
+        assertThat(result.getHearingDays().get(0).getHearingDate(), is(day1));
+        assertThat(result.getHearingDays().get(1).getHearingDate(), is(day1.plusDays(1)));
+        result.getHearingDays().forEach(day -> {
+            assertThat(day.getIsDraft(), is(Boolean.TRUE));
+            assertThat(day.getCourtRoomId(), is(nullValue()));
+            assertThat(day.getDurationMinutes(), is(360));
+        });
+
+        // F6: no upfront release on the happy path
+        verify(hearingSlotsService, never()).delete(any(UUID.class));
+    }
+
+    @Test
+    void shouldReleaseSlotsAndRetryAnchorSearch_whenOwnBookingHidesDraftCapacity() {
+        // F6 fallback: the first anchor search fails because the hearing's own booked capacity
+        // consumes the draft sessions. Only then are the hearing's slots released, and the search
+        // retried — after which booking proceeds normally.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCsId = UUID.randomUUID();
+        final UUID day2CsId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.of(2026, 7, 21);
+
+        final UpdateHearingForListing hearing = buildUnallocationHearing(hearingId, anchorCsId, courtCentreId, day1);
+
+        // First search: no anchors. Second search (after release): anchor found.
+        final JsonObject emptySearchJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder())
+                .build();
+        final JsonObject anchorSearchJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", anchorCsId.toString())))
+                .build();
+        final Response emptySearchResponse = mock(Response.class);
+        when(emptySearchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(emptySearchResponse.getEntity()).thenReturn(emptySearchJson);
+        when(objectToJsonObjectConverter.convert(emptySearchJson)).thenReturn(emptySearchJson);
+        final Response anchorSearchResponse = mock(Response.class);
+        when(anchorSearchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(anchorSearchResponse.getEntity()).thenReturn(anchorSearchJson);
+        when(objectToJsonObjectConverter.convert(anchorSearchJson)).thenReturn(anchorSearchJson);
+        when(hearingSlotsService.search(anyMap())).thenReturn(emptySearchResponse, anchorSearchResponse);
+
+        stubMultiDayBooking(
+                buildCourtSchedule(anchorCsId, sessionCourtRoomId, courtCentreId, day1, true),
+                buildCourtSchedule(day2CsId, sessionCourtRoomId, courtCentreId, day1.plusDays(1), true));
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, times(2)).search(anyMap());
+        verify(hearingSlotsService).delete(hearingId);
+        assertThat(result.getHearingDays().size(), is(2));
+    }
+
+    @Test
+    void shouldReturnHearingUnchanged_whenNoDraftAnchorExistsEvenAfterRelease() {
+        // Both anchor searches come back empty: the hearing is returned unchanged (seeded day only)
+        // and no booking is attempted. The release fallback ran exactly once.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID anchorCsId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.of(2026, 7, 21);
+
+        final UpdateHearingForListing hearing = buildUnallocationHearing(hearingId, anchorCsId, courtCentreId, day1);
+
+        final JsonObject emptySearchJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder())
+                .build();
+        final Response emptySearchResponse = mock(Response.class);
+        when(emptySearchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(emptySearchResponse.getEntity()).thenReturn(emptySearchJson);
+        when(objectToJsonObjectConverter.convert(emptySearchJson)).thenReturn(emptySearchJson);
+        when(hearingSlotsService.search(anyMap())).thenReturn(emptySearchResponse);
+
+        final UpdateHearingForListing result =
+                courtScheduleEnrichmentService.enrichUnallocationWithDraftSlots(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService, times(2)).search(anyMap());
+        verify(hearingSlotsService).delete(hearingId);
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getHearingDate(), is(day1));
+    }
+
+    /** Court-calendar CROWN unallocation shape: ONE virtual block descriptor (720 = 2 court days). */
+    private UpdateHearingForListing buildUnallocationHearing(final UUID hearingId, final UUID anchorCsId,
+                                                             final UUID courtCentreId, final LocalDate day1) {
+        return UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withStartDate(day1)
+                .withEndDate(day1.plusDays(1))
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre()
+                        .withId(courtCentreId)
+                        .withOuCode("C01CY00")
+                        .build())
+                .withNonDefaultDays(Collections.singletonList(NonDefaultDay.nonDefaultDay()
+                        .withStartTime(ZonedDateTime.parse(day1 + "T09:00:00Z"))
+                        .withDuration(720)
+                        .withCourtScheduleId(anchorCsId.toString())
+                        .withCourtCentreId(courtCentreId.toString())
+                        .withVirtual(Boolean.TRUE)
+                        .build()))
+                .build();
+    }
+
+    private void stubDraftAnchorSearch(final String anchorCourtScheduleId) {
+        final JsonObject searchJson = JsonObjects.createObjectBuilder()
+                .add("hearingSlots", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", anchorCourtScheduleId)))
+                .build();
+        final Response searchResponse = mock(Response.class);
+        when(searchResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(searchResponse.getEntity()).thenReturn(searchJson);
+        when(objectToJsonObjectConverter.convert(searchJson)).thenReturn(searchJson);
+        when(hearingSlotsService.search(anyMap())).thenReturn(searchResponse);
+    }
+
+    private void stubMultiDayBooking(final CourtSchedule... sessions) {
+        final var sessionsArray = JsonObjects.createArrayBuilder();
+        for (final CourtSchedule cs : sessions) {
+            sessionsArray.add(buildCsJson(cs));
+        }
+        final JsonObject bookingJson = JsonObjects.createObjectBuilder()
+                .add("sessions", sessionsArray)
+                .build();
+        final Response bookingResponse = mock(Response.class);
+        when(bookingResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(bookingResponse.getEntity()).thenReturn(bookingJson);
+        when(objectToJsonObjectConverter.convert(bookingJson)).thenReturn(bookingJson);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(bookingResponse);
+        if (sessions.length == 1) {
+            when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(sessions[0]);
+        } else if (sessions.length > 1) {
+            when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                    .thenReturn(sessions[0], Arrays.copyOfRange(sessions, 1, sessions.length));
+        }
+    }
+
+    private CourtSchedule buildCourtSchedule(UUID courtScheduleId, UUID courtRoomId, UUID courtHouseId, LocalDate sessionDate, boolean isDraft) {
+        final CourtSchedule cs = new CourtSchedule();
+        cs.setCourtScheduleId(courtScheduleId.toString());
+        cs.setCourtRoomId(courtRoomId.toString());
+        cs.setCourtHouseId(courtHouseId.toString());
+        cs.setSessionDate(sessionDate);
+        cs.setDraft(isDraft);
+        cs.setHearingStartTime(sessionDate + "T10:00:00Z");
+        cs.setSessionStartTime(Date.from(sessionDate.atTime(10, 0).toInstant(ZoneOffset.UTC)));
+        return cs;
+    }
+
+    private JsonObject buildCsJson(CourtSchedule cs) {
+        return JsonObjects.createObjectBuilder()
+                .add("courtScheduleId", cs.getCourtScheduleId())
+                .add("courtRoomId", cs.getCourtRoomId())
+                .add("courtHouseId", cs.getCourtHouseId())
+                .add("sessionDate", cs.getSessionDate().toString())
+                .add("isDraft", cs.isDraft())
+                .build();
+    }
+
+    private JsonObject buildListHearingJson(UUID courtScheduleId, String hearingStartTime, int duration) {
+        return JsonObjects.createObjectBuilder()
+                .add("courtScheduleId", courtScheduleId.toString())
+                .add("hearingStartTime", hearingStartTime)
+                .add("duration", duration)
+                .build();
+    }
+
+    // ─── calculateAggregatedDuration tests ───────────────────────────────
+
+    @Test
+    void shouldCalculateDurationFromHearingDays() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withEstimatedMinutes(100)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay().withDurationMinutes(360).build(),
+                        HearingDay.hearingDay().withDurationMinutes(360).build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing), is(720));
+    }
+
+    @Test
+    void shouldCalculateDurationFromNonDefaultDaysWhenNoHearingDays() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withEstimatedMinutes(100)
+                .withNonDefaultDays(Arrays.asList(
+                        new uk.gov.justice.core.courts.NonDefaultDay(null, null, null, 180, null, null, null, null),
+                        new uk.gov.justice.core.courts.NonDefaultDay(null, null, null, 180, null, null, null, null)))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing), is(360));
+    }
+
+    @Test
+    void shouldFallbackToEstimatedMinutesWhenNoHearingDaysOrNonDefaultDays() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withEstimatedMinutes(240)
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing), is(240));
+    }
+
+    @Test
+    void shouldSumBookedSlotsDurationWhenNoHearingDaysOrNonDefaultDays() {
+        // Multi-day CROWN adjournment shape: bookedSlots carries the booked window; estimatedMinutes
+        // may be 0 or a per-offence value. bookedSlots aggregated total wins over estimatedMinutes.
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withEstimatedMinutes(0)
+                .withBookedSlots(Arrays.asList(
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).withDuration(360).build(),
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).withDuration(360).build(),
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).withDuration(360).build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing), is(1080));
+    }
+
+    @Test
+    void shouldFallBackToEstimatedMinutesWhenBookedSlotsHaveNoDuration() {
+        // Guard case: bookedSlots present but all durations null -> must not collapse to 0; keep estimatedMinutes.
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withEstimatedMinutes(240)
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing), is(240));
+    }
+
+    @Test
+    void shouldReturnZeroWhenNoDurationInfoAvailable() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing), is(0));
+    }
+
+    @Test
+    void shouldCalculateAggregatedDurationForUpdateFromHearingDays() {
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay().withDurationMinutes(360).build(),
+                        HearingDay.hearingDay().withDurationMinutes(360).build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(update), is(720));
+    }
+
+    @Test
+    void shouldCalculateAggregatedDurationForUpdateFromNonDefaultDays() {
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay().withDuration(360).build()))
+                .build();
+
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(update), is(360));
+    }
+
+    // ─── enrichCrownCourtScheduleFirst tests ────────────────────────────
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldReturnUnchanged_whenNoCourtScheduleIdAnywhere() {
+        final UUID hearingId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.of(2026, 4, 10))
+                                .withDurationMinutes(120)
+                                .build()))
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result, is(hearing));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+    }
+
+    // ─── Crown fallback (HearingListingNeeds) tests — Option C wiring ────
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldCallCrownFallback_whenNoCourtScheduleIdAndCourtCentrePresent() {
+        // A naked Crown payload: courtCentre + listedStartDateTime + estimatedMinutes but no courtScheduleId.
+        // The fallback should fire and the hearing should be enriched with the booked courtScheduleId.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID bookedScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+        final java.time.ZonedDateTime listedStart = hearingDate.atStartOfDay(java.time.ZoneOffset.UTC).plusHours(9);
+
+        final uk.gov.justice.core.courts.CourtCentre courtCentre = uk.gov.justice.core.courts.CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withCode("C01CY00")
+                .withRoomId(courtRoomId)
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withListedStartDateTime(listedStart)
+                .withEstimatedMinutes(10)
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate),
+                org.mockito.ArgumentMatchers.anyInt(),
+                any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING), any(), any(), any()))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedScheduleId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"), hearingDate,
+                        listedStart, listedStart.plusHours(8),
+                        10, false, "CR", "CROWN_FB_LIST", false));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(false));
+        // SPRDT-1274: the booked session's room UUID is injected on the day AND promoted verbatim
+        // to the hearing-level courtCentre — no nameUUID re-hashing of an already-real UUID.
+        assertThat(result.getHearingDays().get(0).getCourtRoomId(),
+                is(UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0")));
+        assertThat(result.getCourtCentre().getRoomId(),
+                is(UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0")));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldReturnUnchanged_whenFallbackCourtCentreMissing() {
+        // Without a courtCentre we cannot call the fallback; the method returns hearing unchanged.
+        final UUID hearingId = UUID.randomUUID();
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withEstimatedMinutes(10)
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result, is(hearing));
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(
+                any(), any(), any(), org.mockito.ArgumentMatchers.anyInt(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldReturnUnchanged_whenFallbackFindsNoSession() {
+        // Fail-open: an unbookable session must not reject the list command — the hearing proceeds
+        // unallocated (legacy list-court-hearing semantics) and can be allocated later.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+        final java.time.ZonedDateTime listedStart = hearingDate.atStartOfDay(java.time.ZoneOffset.UTC).plusHours(9);
+
+        final uk.gov.justice.core.courts.CourtCentre courtCentre = uk.gov.justice.core.courts.CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withCode("C01CY00")
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withListedStartDateTime(listedStart)
+                .withEstimatedMinutes(10)
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate),
+                org.mockito.ArgumentMatchers.anyInt(),
+                any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING), any(), any(), any()))
+                .thenThrow(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackNoSessionException("no session"));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result, is(hearing));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldThrow_whenNoCourtScheduleIdAndMultiDayDuration() {
+        // Multi-day Crown without an anchor courtScheduleId is a caller contract violation.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+
+        final uk.gov.justice.core.courts.CourtCentre courtCentre = uk.gov.justice.core.courts.CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withCode("C01CY00")
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withEstimatedMinutes(1080) // 3 full days
+                .build();
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException.class,
+                () -> courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldThreadSourceLabel_whenLnhOverloadUsed() {
+        // LIST_NEXT_HEARINGS_V2 must reach the adapter verbatim for observability.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 21);
+
+        final uk.gov.justice.core.courts.CourtCentre courtCentre = uk.gov.justice.core.courts.CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withCode("C01CY00")
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withListedStartDateTime(hearingDate.atStartOfDay(java.time.ZoneOffset.UTC))
+                .withEstimatedMinutes(10)
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                any(), any(), any(), org.mockito.ArgumentMatchers.anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2), any(), any(), any()))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, UUID.randomUUID(), UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"), hearingDate,
+                        hearingDate.atStartOfDay(java.time.ZoneOffset.UTC),
+                        hearingDate.atStartOfDay(java.time.ZoneOffset.UTC).plusHours(8),
+                        10, true, "CR", "CROWN_FB_ADJOURN", false));
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing,
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2);
+
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
+                any(), any(), any(), org.mockito.ArgumentMatchers.anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_NEXT_HEARINGS_V2), any(), any(), any());
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldReturnUnchanged_whenNoCourtScheduleIdAndHasWeekCommencing() {
+        final UUID hearingId = UUID.randomUUID();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withWeekCommencingDate(WeekCommencingDate.weekCommencingDate()
+                        .withStartDate(LocalDate.now().toString())
+                        .withDuration(1)
+                        .build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.of(2026, 4, 10))
+                                .withDurationMinutes(120)
+                                .build()))
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result, is(hearing));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldCallSingleDay_whenCourtScheduleIdOnlyOnBookedSlots() {
+        // When courtScheduleId lives only on bookedSlots (MCC shape), single-day enrichment must still run.
+        // It fetches sessions by that id and materialises a HearingDay from the returned session.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(240)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).build())
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds returning one non-draft session
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, false);
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, "2026-03-16T10:00:00Z", 240)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        // One HearingDay materialised from the fetched session
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId().toString(), is(courtScheduleId.toString()));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldUseBookedSlotDuration_whenOnlyBookedSlotsPresentAndEstimatedMinutesNull() {
+        // Reproduces the CROWN wire duration=0 bug: the client sends ONLY bookedSlots (courtScheduleId + duration),
+        // no hearingDays, no nonDefaultDays and no estimatedMinutes. buildHearingDaysFromSingleDaySessions used to
+        // fall back to estimatedMinutes and then 0, producing hearingDay.durationMinutes=0 that propagated to the
+        // listHearingInCourtSessions wire call. The fix prefers calculateAggregatedDuration so the bookedSlot
+        // duration is honoured.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+        final int bookedSlotDuration = 180;
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                // estimatedMinutes intentionally NOT set (null) to simulate the real-world payload
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).build())
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withDuration(bookedSlotDuration)
+                                .build()))
+                .build();
+
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, false);
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, sessionDate + "T10:00:00Z", bookedSlotDuration)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        // Capture the hearingDays list passed to the wire serializer so we can assert the
+        // duration that would be sent in the listHearingInCourtSessions request body.
+        final org.mockito.ArgumentCaptor<List<HearingDay>> daysCaptor =
+                org.mockito.ArgumentCaptor.forClass(List.class);
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(daysCaptor.capture()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        // The hearingDay serialized to the wire must carry the bookedSlot duration, not 0.
+        final List<HearingDay> wireHearingDays = daysCaptor.getValue();
+        assertThat(wireHearingDays.size(), is(1));
+        assertThat(wireHearingDays.get(0).getDurationMinutes(), is(bookedSlotDuration));
+        assertThat(wireHearingDays.get(0).getCourtScheduleId().toString(), is(courtScheduleId.toString()));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldUseBookedSlotStartTime_whenBookedSlotHasStartTime() {
+        // Verifies that buildHearingDaysFromSingleDaySessions sets withStartTime from the matching
+        // bookedSlot's startTime rather than the court schedule's hearingStartTime.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime bookedSlotStartTime = ZonedDateTime.of(2026, 5, 10, 9, 30, 0, 0, ZoneOffset.UTC);
+        final int bookedSlotDuration = 180;
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).build())
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withDuration(bookedSlotDuration)
+                                .withStartTime(bookedSlotStartTime)
+                                .build()))
+                .build();
+
+        // Court schedule has a different start time (T10:00:00Z) to confirm bookedSlot takes precedence
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, false);
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, sessionDate + "T10:00:00Z", bookedSlotDuration)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final org.mockito.ArgumentCaptor<List<HearingDay>> daysCaptor =
+                org.mockito.ArgumentCaptor.forClass(List.class);
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(daysCaptor.capture()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        final List<HearingDay> wireHearingDays = daysCaptor.getValue();
+        assertThat(wireHearingDays.size(), is(1));
+        assertThat(wireHearingDays.get(0).getStartTime(), is(bookedSlotStartTime));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldFallbackToSessionStartTime_whenBookedSlotStartTimeIsNull() {
+        // Verifies fallback to session.getHearingStartTime() when the matching bookedSlot has no startTime.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+        final int bookedSlotDuration = 180;
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).build())
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withDuration(bookedSlotDuration)
+                                // startTime intentionally not set (null)
+                                .build()))
+                .build();
+
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, false);
+        final String expectedStartTimeStr = sessionDate + "T10:00:00Z"; // set by buildCourtSchedule
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, expectedStartTimeStr, bookedSlotDuration)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final org.mockito.ArgumentCaptor<List<HearingDay>> daysCaptor =
+                org.mockito.ArgumentCaptor.forClass(List.class);
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(daysCaptor.capture()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        final List<HearingDay> wireHearingDays = daysCaptor.getValue();
+        assertThat(wireHearingDays.size(), is(1));
+        assertThat(wireHearingDays.get(0).getStartTime(), is(ZonedDateTime.parse(expectedStartTimeStr)));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldCallSingleDay_whenCourtScheduleIdPresentAndDurationBelow360() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(240)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, false);
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, "2026-03-16T10:00:00Z", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId().toString(), is(courtScheduleId.toString()));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldCallMultiDay_whenCourtScheduleIdPresentAndDurationAbove360() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtScheduleId3 = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(1080)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(1080)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId1.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withRoomId(courtRoomId.toString())
+                                .build()))
+                .build();
+
+        // Mock multiDaySearchAndBook
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, day1.plusDays(1), false);
+        final CourtSchedule cs3 = buildCourtSchedule(courtScheduleId3, courtRoomId, courtHouseId, day1.plusDays(2), false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2))
+                        .add(buildCsJson(cs3)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2, cs3);
+
+        // Mock listHearingInCourtSessions
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, "2026-03-16T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, "2026-03-17T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId3, "2026-03-18T10:00:00Z", 360)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .add(courtScheduleId3.toString())
+                        .build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        verify(hearingSlotsService).multiDaySearchAndBook(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        assertThat(result.getHearingDays().size(), is(3));
+        result.getHearingDays().forEach(day -> assertThat(day.getCourtRoomId(), is(courtRoomId)));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldSkipListHearing_whenSingleDaySessionIsDraft() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(240)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds - isDraft=true
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, true);
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("isDraft", true)))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions (now always called, even for draft)
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, sessionDate + "T10:00:00Z", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        // listHearingInCourtSessions IS now called for draft sessions (for slot deduction)
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        // HearingDays should carry isDraft=true from sanity check
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        // courtRoomId should be null for draft sessions
+        assertThat(result.getHearingDays().get(0).getCourtRoomId(), is((UUID) null));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldSkipListHearing_whenMultiDaySessionsHaveDraft() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtScheduleId3 = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(720)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(720)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId1.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withRoomId(courtRoomId.toString())
+                                .build()))
+                .build();
+
+        // Mock multiDaySearchAndBook - one session is draft
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, day1.plusDays(1), true);  // draft!
+        final CourtSchedule cs3 = buildCourtSchedule(courtScheduleId3, courtRoomId, courtHouseId, day1.plusDays(2), false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2))
+                        .add(buildCsJson(cs3)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2, cs3);
+
+        // Mock listHearingInCourtSessions (now always called, even when some sessions are draft)
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, day1 + "T10:00:00Z", 240))
+                        .add(buildListHearingJson(courtScheduleId2, day1.plusDays(1) + "T10:00:00Z", 240))
+                        .add(buildListHearingJson(courtScheduleId3, day1.plusDays(2) + "T10:00:00Z", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .add(courtScheduleId3.toString())
+                        .build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        // listHearingInCourtSessions IS now called even when some sessions are draft
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        // Expanded hearingDays should be returned with isDraft from sessions
+        assertThat(result.getHearingDays().size(), is(3));
+    }
+
+    // ─── enrichCrownCourtScheduleFirst (UpdateHearingForListing) tests ───
+
+    @Test
+    void enrichCrownCourtScheduleFirst_update_shouldCallCrownFallback_whenNoCourtScheduleId() {
+        // Under Option C: when a CROWN update hearing arrives with no courtScheduleId on
+        // hearingDays/nonDefaultDays, the fallback-aware entry point invokes the Crown fallback
+        // search-and-book via courtSchedulerServiceAdapter. The legacy hearingSlotsService paths
+        // (getCourtSchedulesById, listHearingInCourtSessions, multiDaySearchAndBook) are NOT touched.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID bookedCourtScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 4, 10);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(courtRoomId)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(120)
+                                .build()
+                ))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId),
+                eq(courtCentreId),
+                eq(hearingDate),
+                eq(120),
+                any(),
+                any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING), any(), any(), any()))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedCourtScheduleId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"), hearingDate,
+                        hearingDate.atStartOfDay(java.time.ZoneOffset.UTC),
+                        hearingDate.atStartOfDay(java.time.ZoneOffset.UTC).plusHours(8),
+                        120, false, "CR", "CROWN_FB_UPDATE", false));
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(
+                hearing, uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING);
+
+        // Hearing is enriched: hearingDays now carry the booked courtScheduleId from the fallback
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedCourtScheduleId));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_update_shouldCallSingleDay_whenCourtScheduleIdPresentAndDurationBelow360() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds - non-draft
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, false);
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, "2026-03-16T10:00:00Z", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        verify(hearingSlotsService, never()).multiDaySearchAndBook(anyMap());
+        assertThat(result.getHearingDays().size(), is(1));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_update_shouldCallMultiDay_whenCourtScheduleIdPresentAndDurationAbove360() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        // Multi-day: totalDuration > 360
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(day1.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build()))
+                .build();
+
+        // Mock multiDaySearchAndBook
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, day1.plusDays(1), false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2);
+
+        // Mock listHearingInCourtSessions
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, "2026-03-16T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, "2026-03-17T10:00:00Z", 360)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        verify(hearingSlotsService).multiDaySearchAndBook(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        assertThat(result.getHearingDays().size(), is(2));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_update_shouldCallMultiDay_whenRawPayloadHasCourtScheduleIdOnNonDefaultDayOnly() {
+        // Raw frontend payload shape for CROWN multi-day update:
+        //   hearingDays empty, single nonDefaultDay carrying courtScheduleId + duration=1080 (3 days),
+        //   startDate/endDate span the whole date range (2026-05-27 → 2026-07-23 in the reported bug).
+        // Expected: seed hearingDays from nonDefaultDay, detect multi-day via aggregatedDuration,
+        //   call multiDaySearchAndBook(courtScheduleId, 1080) so courtscheduler deducts 3 sessions.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(10);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(day1)
+                .withEndDate(day1.plusDays(57))
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(courtRoomId)
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(day1.atTime(9, 0).atZone(java.time.ZoneOffset.UTC))
+                                .withDuration(1080)
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withCourtCentreId(courtCentreId.toString())
+                                .withRoomId(courtRoomId.toString())
+                                .build()))
+                .build();
+
+        // multiDaySearchAndBook returns 3 sessions for duration 1080
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(UUID.randomUUID(), courtRoomId, courtHouseId, day1.plusDays(1), false);
+        final CourtSchedule cs3 = buildCourtSchedule(UUID.randomUUID(), courtRoomId, courtHouseId, day1.plusDays(2), false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2))
+                        .add(buildCsJson(cs3)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2, cs3);
+
+        // listHearingInCourtSessions mock — must provide one entry per session returned by multiDaySearchAndBook
+        final UUID cs2Id = UUID.fromString(cs2.getCourtScheduleId());
+        final UUID cs3Id = UUID.fromString(cs3.getCourtScheduleId());
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, day1.atTime(9, 0).atOffset(java.time.ZoneOffset.UTC).toString(), 360))
+                        .add(buildListHearingJson(cs2Id, day1.plusDays(1).atTime(9, 0).atOffset(java.time.ZoneOffset.UTC).toString(), 360))
+                        .add(buildListHearingJson(cs3Id, day1.plusDays(2).atTime(9, 0).atOffset(java.time.ZoneOffset.UTC).toString(), 360)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId.toString())
+                        .add(cs2Id.toString())
+                        .add(cs3Id.toString())
+                        .build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        // The critical assertions: multiDay path taken (not fallback, not single-day),
+        // and hearingDays now contains the 3 sessions returned by courtscheduler (not the 58-day range).
+        verify(hearingSlotsService).multiDaySearchAndBook(anyMap());
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        assertThat(result.getHearingDays().size(), is(3));
+        // Each day carries 1080/3 = 360 minutes
+        result.getHearingDays().forEach(day -> assertThat(day.getDurationMinutes(), is(360)));
+        result.getHearingDays().forEach(day -> assertThat(day.getCourtRoomId(), is(courtRoomId)));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_update_shouldSkipListHearing_whenSingleDaySessionIsDraft() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withStartDate(sessionDate)
+                .withEndDate(sessionDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withCourtCentreId(courtHouseId)
+                                .withCourtRoomId(courtRoomId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds - isDraft=true
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, true);
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("isDraft", true)))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions (now always called, even for draft)
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, sessionDate + "T10:00:00Z", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        // listHearingInCourtSessions IS now called for draft sessions (for slot deduction)
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        // HearingDays should carry isDraft=true
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        // courtRoomId should be null for draft sessions
+        assertThat(result.getHearingDays().get(0).getCourtRoomId(), is((UUID) null));
+    }
+
+    // ─── Additional coverage tests ──────────────────────────────────────
+
+    @Test
+    void calculateAggregatedDuration_update_shouldReturnZeroWhenNoDurationInfo() {
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing().build();
+        assertThat(CourtScheduleEnrichmentService.calculateAggregatedDuration(hearing), is(0));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_shouldMarkDaysDraft_whenMultiDayNoCourtScheduleIdAndSearchFindsNothing() {
+        // SPRDT-1273: a multi-day update WITHOUT a courtScheduleId anchor still goes to
+        // crown.search.and.book (courtscheduler resolves fresh-book/extend/shrink/move from the
+        // hearing's own state). When the search yields nothing the fail-safe marks days draft.
+        final UUID hearingId = UUID.randomUUID();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withCourtCentreId(UUID.randomUUID())
+                .withStartDate(LocalDate.now().plusDays(5))
+                .withEndDate(LocalDate.now().plusDays(7))
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(720)
+                                .build()))  // no courtScheduleId
+                .build();
+
+        final Response sabResponse = mock(Response.class);
+        when(sabResponse.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(sabResponse);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).multiDaySearchAndBook(anyMap());
+        assertThat(result.getHearingDays().stream().allMatch(d -> Boolean.TRUE.equals(d.getIsDraft())), is(true));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_shouldMarkDaysDraft_whenSingleDayAndFetchReturnsEmpty() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withStartDate(LocalDate.now().plusDays(5))
+                .withEndDate(LocalDate.now().plusDays(5))
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withCourtCentreId(UUID.randomUUID())
+                                .withCourtRoomId(UUID.randomUUID())
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds to return empty
+        final JsonObject emptyResponse = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder())
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(emptyResponse);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // An unresolved session means the days are marked draft so the aggregate cannot allocate
+        // on them, while the hearing id and courtScheduleId are preserved untouched.
+        assertThat(result.getHearingId(), is(hearingId));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_shouldEnrichJudiciary_whenListHearingReturnsJudiciaries() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID judicialId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(240)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Mock fetchCourtSchedulesByIds - non-draft
+        final CourtSchedule cs = buildCourtSchedule(courtScheduleId, courtRoomId, courtHouseId, sessionDate, false);
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("isDraft", false)))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // Mock listHearingInCourtSessions with judiciaries
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, "2026-03-16T10:00:00Z", 240)))
+                .add("judiciaries", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("judicialId", judicialId.toString())
+                                .add("judicialRoleTypeId", UUID.randomUUID().toString())
+                                .add("isPrimary", true)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+        assertThat(result.getHearingDays().size(), is(1));
+    }
+
+    @Test
+    void needsCourtScheduleEnrichment_shouldReturnFalse_forUnknownJurisdiction() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(null)
+                .build();
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(false));
+    }
+
+    @Test
+    void needsCourtScheduleEnrichment_shouldReturnTrue_forMagistratesWithBookingReference() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withBookingReference(UUID.randomUUID())
+                .build();
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(true));
+    }
+
+    @Test
+    void needsCourtScheduleEnrichment_shouldReturnTrue_forCrownFixedDateWithCourtScheduleId() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(UUID.randomUUID())
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .build()))
+                .build();
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(true));
+    }
+
+    @Test
+    void needsCourtScheduleEnrichment_shouldReturnFalse_forCrownWithWeekCommencing() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withWeekCommencingDate(WeekCommencingDate.weekCommencingDate()
+                        .withStartDate(LocalDate.now().plusDays(7).toString())
+                        .withDuration(1)
+                        .build())
+                .build();
+        assertThat(CourtScheduleEnrichmentService.needsCourtScheduleEnrichment(hearing), is(false));
+    }
+
+    @Test
+    void isCandidateForAllocation_shouldReturnFalse_whenNoCourtCentre() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withListedStartDateTime(java.time.ZonedDateTime.now())
+                .build();
+        assertThat(CourtScheduleEnrichmentService.isCandidateForAllocation(hearing), is(false));
+    }
+
+    @Test
+    void isCandidateForAllocation_shouldReturnTrue_whenAllCriteriaMet() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withListedStartDateTime(java.time.ZonedDateTime.now())
+                .withCourtCentre(CourtCentre.courtCentre().withRoomId(UUID.randomUUID()).build())
+                .build();
+        assertThat(CourtScheduleEnrichmentService.isCandidateForAllocation(hearing), is(true));
+    }
+
+    @Test
+    void isCandidateForAllocation_shouldReturnTrue_whenEarliestStartDateTimeUsed() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withEarliestStartDateTime(java.time.ZonedDateTime.now())
+                .withCourtCentre(CourtCentre.courtCentre().withRoomId(UUID.randomUUID()).build())
+                .build();
+        assertThat(CourtScheduleEnrichmentService.isCandidateForAllocation(hearing), is(true));
+    }
+
+    @Test
+    void isCandidateForAllocation_update_shouldReturnFalse_whenNoStartDate() {
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtRoomId(UUID.randomUUID())
+                .build();
+        assertThat(CourtScheduleEnrichmentService.isCandidateForAllocation(hearing), is(false));
+    }
+
+    @Test
+    void isCandidateForAllocation_update_shouldReturnTrue_whenAllCriteriaMet() {
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(LocalDate.now())
+                .withCourtRoomId(UUID.randomUUID())
+                .build();
+        assertThat(CourtScheduleEnrichmentService.isCandidateForAllocation(hearing), is(true));
+    }
+
+    @Test
+    void hasCourtScheduleIdOnInput_shouldReturnFalse_whenNoHearingDaysOrBookedSlots() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds().build();
+        assertThat(CourtScheduleEnrichmentService.hasCourtScheduleIdOnInput(hearing), is(false));
+    }
+
+    @Test
+    void hasCourtScheduleIdOnInput_shouldReturnTrue_whenBookedSlotsHaveCourtScheduleId() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(UUID.randomUUID().toString())
+                                .build()))
+                .build();
+        assertThat(CourtScheduleEnrichmentService.hasCourtScheduleIdOnInput(hearing), is(true));
+    }
+
+    // --- populateBookedSlots tests ---
+
+    @Test
+    void populateBookedSlots_shouldMatchAndPopulate_whenRoomIdIsNullOnBothSides() {
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final ZonedDateTime startTime = ZonedDateTime.of(2026, 5, 1, 9, 0, 0, 0, ZoneOffset.UTC);
+
+        RotaSlot slot = RotaSlot.rotaSlot()
+                .withCourtCentreId(courtCentreId.toString())
+                .withCourtScheduleId(courtScheduleId.toString())
+                .withStartTime(startTime)
+                .withDuration(60)
+                .build();
+
+        HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtCentreId(courtCentreId)
+                .withCourtScheduleId(courtScheduleId)
+                .withStartTime(startTime)
+                .withDurationMinutes(60)
+                .build();
+
+        List<RotaSlot> result = CourtScheduleEnrichmentService.populateBookedSlots(
+                List.of(slot), List.of(hearingDay));
+
+        assertEquals(1, result.size());
+        assertEquals(courtScheduleId.toString(), result.get(0).getCourtScheduleId());
+        assertNull(result.get(0).getRoomId());
+    }
+
+    @Test
+    void populateBookedSlots_shouldMatchAndKeepOriginalRoom_whenSlotHasRoomButHearingDayDoesNot() {
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID roomId = UUID.randomUUID();
+        final ZonedDateTime startTime = ZonedDateTime.of(2026, 5, 1, 9, 0, 0, 0, ZoneOffset.UTC);
+
+        RotaSlot slot = RotaSlot.rotaSlot()
+                .withCourtCentreId(courtCentreId.toString())
+                .withRoomId(roomId.toString())
+                .withCourtScheduleId(courtScheduleId.toString())
+                .withStartTime(startTime)
+                .withDuration(60)
+                .build();
+
+        HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtCentreId(courtCentreId)
+                .withCourtScheduleId(courtScheduleId)
+                .withStartTime(startTime)
+                .withDurationMinutes(60)
+                .build();
+
+        List<RotaSlot> result = CourtScheduleEnrichmentService.populateBookedSlots(
+                List.of(slot), List.of(hearingDay));
+
+        assertEquals(1, result.size());
+        // roomId from original slot preserved via withValuesFrom; hearingDay has no courtRoomId to override
+        assertEquals(roomId.toString(), result.get(0).getRoomId());
+    }
+
+    @Test
+    void populateBookedSlots_shouldMatchAndPopulateRoomId_whenBothHaveRoomId() {
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID roomId = UUID.randomUUID();
+        final ZonedDateTime startTime = ZonedDateTime.of(2026, 5, 1, 9, 0, 0, 0, ZoneOffset.UTC);
+
+        RotaSlot slot = RotaSlot.rotaSlot()
+                .withCourtCentreId(courtCentreId.toString())
+                .withRoomId(roomId.toString())
+                .withCourtScheduleId(courtScheduleId.toString())
+                .withStartTime(startTime)
+                .withDuration(60)
+                .build();
+
+        HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(roomId)
+                .withCourtScheduleId(courtScheduleId)
+                .withStartTime(startTime)
+                .withDurationMinutes(60)
+                .build();
+
+        List<RotaSlot> result = CourtScheduleEnrichmentService.populateBookedSlots(
+                List.of(slot), List.of(hearingDay));
+
+        assertEquals(1, result.size());
+        assertEquals(roomId.toString(), result.get(0).getRoomId());
+    }
+
+    @Test
+    void populateBookedSlots_shouldNotMatch_whenCentreIdsDiffer() {
+        final ZonedDateTime startTime = ZonedDateTime.of(2026, 5, 1, 9, 0, 0, 0, ZoneOffset.UTC);
+
+        RotaSlot slot = RotaSlot.rotaSlot()
+                .withCourtCentreId(UUID.randomUUID().toString())
+                .withCourtScheduleId(UUID.randomUUID().toString())
+                .withStartTime(startTime)
+                .withDuration(60)
+                .build();
+
+        HearingDay hearingDay = HearingDay.hearingDay()
+                .withCourtCentreId(UUID.randomUUID())
+                .withCourtScheduleId(UUID.randomUUID())
+                .withStartTime(startTime)
+                .withDurationMinutes(60)
+                .build();
+
+        List<RotaSlot> result = CourtScheduleEnrichmentService.populateBookedSlots(
+                List.of(slot), List.of(hearingDay));
+
+        assertTrue(result.isEmpty());
+    }
+
+    // ─── nonDefaultDays → hearingDays courtScheduleId merge (Crown update path) ───
+
+    @Test
+    void enrichCrownUpdateHearing_shouldMergeCourtScheduleIdFromNonDefaultDaysOntoHearingDay_whenHearingDayHasNoCourtScheduleId() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID finalCourtScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime startTime = hearingDate.atStartOfDay(ZoneOffset.UTC);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withCourtScheduleId(finalCourtScheduleId.toString())
+                                .withStartTime(startTime)
+                                .withDuration(240)
+                                .build()))
+                .build();
+
+        // Mock downstream fetch to return empty so the method returns the (merged) hearing unchanged
+        final JsonObject emptyResponse = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder())
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(emptyResponse);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(finalCourtScheduleId));
+        // Downstream fetch should have been called with the merged id (not search-and-book)
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_shouldPromoteNonDefaultDayCourtScheduleIdOntoHearingDay_evenWhenHearingDayAlreadyHasOne() {
+        // Reschedule case: hearingDays carries the OLD (stale) courtScheduleId from the pre-reschedule
+        // session; nonDefaultDays carries the NEW (authoritative) courtScheduleId returned by
+        // courtscheduler after the reschedule. The merge must overwrite the stale id with the new one.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID existingDraftCourtScheduleId = UUID.randomUUID();
+        final UUID newNonDraftCourtScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime startTime = hearingDate.atStartOfDay(ZoneOffset.UTC);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(existingDraftCourtScheduleId)
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withCourtScheduleId(newNonDraftCourtScheduleId.toString())
+                                .withStartTime(startTime)
+                                .withDuration(240)
+                                .build()))
+                .build();
+
+        // Mock downstream fetch to return empty (simulates courtscheduler returning nothing for the
+        // session lookup — sufficient to verify the new id reached the fetch call).
+        final JsonObject emptyResponse = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder())
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(emptyResponse);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // The NEW id from nonDefaultDays must have been promoted onto the hearingDay.
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(newNonDraftCourtScheduleId));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_reschedule_shouldProduceIsDraftFalse_whenOldHearingDayHasDraftIdButNonDefaultDaysHasNonDraftId() {
+        // Full reschedule bug regression test: hearing was in a DRAFT session (old id); after
+        // reschedule courtscheduler assigns a non-draft session (new id on nonDefaultDays).
+        // The enriched hearingDay must carry the NEW id and isDraft=false so that
+        // Hearing.canAllocateForCrown() passes and hearing-allocated-for-listing-v2 is emitted.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID oldDraftCourtScheduleId = UUID.randomUUID();
+        final UUID newNonDraftCourtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime startTime = hearingDate.atStartOfDay(ZoneOffset.UTC);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(oldDraftCourtScheduleId)  // stale OLD draft id
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withCourtScheduleId(newNonDraftCourtScheduleId.toString())  // NEW non-draft id
+                                .withStartTime(startTime)
+                                .withDuration(240)
+                                .build()))
+                .build();
+
+        // Courtscheduler returns the NEW non-draft session when fetched by the new id
+        final CourtSchedule nonDraftSession = new CourtSchedule();
+        nonDraftSession.setCourtScheduleId(newNonDraftCourtScheduleId.toString());
+        nonDraftSession.setSessionDate(hearingDate);
+        nonDraftSession.setCourtRoomId(courtRoomId.toString());
+        nonDraftSession.setCourtHouseId(courtHouseId.toString());
+        nonDraftSession.setDraft(false);  // non-draft — the reschedule landed on a final session
+        nonDraftSession.setHearingStartTime(startTime.toString());
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", newNonDraftCourtScheduleId.toString())))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(javax.json.JsonObject.class), eq(CourtSchedule.class))).thenReturn(nonDraftSession);
+
+        // listHearingInCourtSessions is called to deduct the slot; return a minimal success response
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", newNonDraftCourtScheduleId.toString())
+                                .add("hearingStartTime", startTime.toString())
+                                .add("isDraft", false)
+                                .add("duration", 240)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(javax.json.JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+        when(jsonObjectConverter.convert(any(javax.json.JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    final javax.json.JsonObject jo = inv.getArgument(0);
+                    final ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(newNonDraftCourtScheduleId.toString()).build());
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(1));
+        // The NEW non-draft id must be on the enriched hearingDay
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(newNonDraftCourtScheduleId));
+        // isDraft must be false so canAllocateForCrown() passes in the aggregate
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(false));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_shouldSkipMerge_whenNonDefaultDayCourtScheduleIdDateDoesNotMatchAnyHearingDay() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID unusedCourtScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+        final LocalDate otherDate = LocalDate.now().plusDays(10);
+        final ZonedDateTime nonDefaultStartTime = otherDate.atStartOfDay(ZoneOffset.UTC);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withCourtCentreId(UUID.randomUUID())
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withCourtScheduleId(unusedCourtScheduleId.toString())
+                                .withStartTime(nonDefaultStartTime)
+                                .withDuration(240)
+                                .build()))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getHearingDays().size(), is(1));
+        assertNull(result.getHearingDays().get(0).getCourtScheduleId());
+    }
+
+    // ─── schedule-only courtroom derivation (derive room from resolved FINAL schedule) ───
+    // A schedule-only update payload carries a courtScheduleId but NO room fields. When the id
+    // resolves to a FINAL (isDraft=false) session, enrichment must derive the command-level
+    // courtroom from the resolved schedule so the handler assigns it and canAllocateForCrown()
+    // opens. Draft sessions stay roomless (ADR-005); payload-supplied rooms are never overridden.
+
+    @Test
+    void enrichCrownUpdateHearing_scheduleOnly_shouldDeriveCommandLevelCourtRoomFromResolvedFinalSession() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime startTime = hearingDate.atStartOfDay(ZoneOffset.UTC);
+
+        // Schedule-only shape: no hearingDays, no courtRoomId, no selectedCourtCentre —
+        // the courtScheduleId on nonDefaultDays is the only session reference.
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withStartTime(startTime)
+                                .withDuration(240)
+                                .build()))
+                .build();
+
+        final CourtSchedule finalSession = buildCourtSchedule(courtScheduleId, sessionCourtRoomId, courtHouseId, hearingDate, false);
+        mockSingleDaySessionLookup(courtScheduleId, finalSession);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // Day-level: room + isDraft=false from the resolved session (existing behaviour).
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(false));
+        assertThat(result.getHearingDays().get(0).getCourtRoomId(), is(sessionCourtRoomId));
+        // Command-level: the courtroom must be DERIVED from the resolved FINAL session so the
+        // handler assigns it (instead of removeCourtRoom) and canAllocateForCrown() opens.
+        assertThat(result.getCourtRoomId(), is(sessionCourtRoomId));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_scheduleOnly_shouldNotDeriveCommandLevelCourtRoom_whenSessionIsDraft() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime startTime = hearingDate.atStartOfDay(ZoneOffset.UTC);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withStartTime(startTime)
+                                .withDuration(240)
+                                .build()))
+                .build();
+
+        // Draft session: courtscheduler sanitises the room on every query path (ADR-005),
+        // so the by-id response carries NO courtRoomId.
+        final CourtSchedule draftSession = new CourtSchedule();
+        draftSession.setCourtScheduleId(courtScheduleId.toString());
+        draftSession.setCourtHouseId(courtHouseId.toString());
+        draftSession.setSessionDate(hearingDate);
+        draftSession.setDraft(true);
+        draftSession.setHearingStartTime(startTime.toString());
+        mockSingleDaySessionLookup(courtScheduleId, draftSession);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // Unallocated Crown hearings stay roomless at every level.
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+        assertNull(result.getHearingDays().get(0).getCourtRoomId());
+        assertNull(result.getCourtRoomId());
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_shouldPreservePayloadCourtRoom_whenCommandAlreadyCarriesOne() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID payloadCourtRoomId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime startTime = hearingDate.atStartOfDay(ZoneOffset.UTC);
+
+        // UI-parity shape: the payload already carries the room at command level.
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withCourtRoomId(payloadCourtRoomId)
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withStartTime(startTime)
+                                .withDuration(240)
+                                .build()))
+                .build();
+
+        final CourtSchedule finalSession = buildCourtSchedule(courtScheduleId, sessionCourtRoomId, courtHouseId, hearingDate, false);
+        mockSingleDaySessionLookup(courtScheduleId, finalSession);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        // A payload-supplied room is never overridden by the derivation.
+        assertThat(result.getCourtRoomId(), is(payloadCourtRoomId));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_scheduleOnly_shouldBackfillRoomlessSelectedCourtCentre_fromResolvedFinalSession() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID selectedCourtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+        final ZonedDateTime startTime = hearingDate.atStartOfDay(ZoneOffset.UTC);
+
+        // selectedCourtCentre present but ROOMLESS: for CROWN the handler prefers
+        // selectedCourtCentre.courtRoomId over the top-level field, so the derivation must
+        // backfill it too or the handler would still resolve a null room.
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingId(hearingId)
+                .withStartDate(hearingDate)
+                .withEndDate(hearingDate)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre()
+                        .withId(selectedCourtCentreId)
+                        .withOuCode("OU123")
+                        .build())
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withCourtScheduleId(courtScheduleId.toString())
+                                .withStartTime(startTime)
+                                .withDuration(240)
+                                .build()))
+                .build();
+
+        final CourtSchedule finalSession = buildCourtSchedule(courtScheduleId, sessionCourtRoomId, courtHouseId, hearingDate, false);
+        mockSingleDaySessionLookup(courtScheduleId, finalSession);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        assertThat(result.getCourtRoomId(), is(sessionCourtRoomId));
+        assertThat(result.getSelectedCourtCentre().getCourtRoomId(), is(sessionCourtRoomId));
+        // The rest of selectedCourtCentre is preserved.
+        assertThat(result.getSelectedCourtCentre().getId(), is(selectedCourtCentreId));
+        assertThat(result.getSelectedCourtCentre().getOuCode(), is("OU123"));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_multiDay_shouldDeriveCommandLevelRoom_whenAllSessionsFinalAndSameRoom() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID sessionCourtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        // Multi-day (total > 360), no room anywhere in the payload.
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(day1.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build()))
+                .build();
+
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, sessionCourtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, sessionCourtRoomId, courtHouseId, day1.plusDays(1), false);
+        mockMultiDaySearchAndBook(courtScheduleId1, courtScheduleId2, cs1, cs2);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        // Every booked session is FINAL and sits in the SAME room — that room becomes the
+        // command-level courtroom.
+        assertThat(result.getCourtRoomId(), is(sessionCourtRoomId));
+    }
+
+    @Test
+    void enrichCrownUpdateHearing_multiDay_shouldNotDeriveCommandLevelRoom_whenSessionsSpanDifferentRooms() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(360)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId2)
+                                .withHearingDate(day1.plusDays(1))
+                                .withDurationMinutes(360)
+                                .build()))
+                .build();
+
+        // Two FINAL sessions in DIFFERENT rooms: ambiguous — no command-level room is derived.
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, UUID.randomUUID(), courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, UUID.randomUUID(), courtHouseId, day1.plusDays(1), false);
+        mockMultiDaySearchAndBook(courtScheduleId1, courtScheduleId2, cs1, cs2);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        assertNull(result.getCourtRoomId());
+    }
+
+    /**
+     * Mocks the single-day CROWN update chain: GET court-schedules-by-id returning the given
+     * session, plus the listHearingInCourtSessions slot-deduction call.
+     */
+    private void mockSingleDaySessionLookup(final UUID courtScheduleId, final CourtSchedule session) {
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(session);
+
+        mockListHearingInCourtSessions(courtScheduleId);
+    }
+
+    /**
+     * Mocks the multi-day CROWN update chain: multiDaySearchAndBook returning the two given
+     * sessions, plus the listHearingInCourtSessions slot-deduction call.
+     */
+    private void mockMultiDaySearchAndBook(final UUID courtScheduleId1, final UUID courtScheduleId2,
+                                           final CourtSchedule cs1, final CourtSchedule cs2) {
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2)))
+                .build();
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs1, cs2);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, "2026-03-16T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, "2026-03-17T10:00:00Z", 360)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    final JsonObject jo = inv.getArgument(0);
+                    final ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .build());
+    }
+
+    private void mockListHearingInCourtSessions(final UUID courtScheduleId) {
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId, "2026-03-16T10:00:00Z", 240)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    final JsonObject jo = inv.getArgument(0);
+                    final ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+    }
+
+    // ─── SPRDT-1273: handleCrownMultiDayExtension routes through crown.search.and.book —
+    // courtscheduler decides fresh-book / extend / shrink / move from the hearing's own
+    // allocation state. The retired extend-multiday-hearing endpoint is no longer called. ───
+
+    @Test
+    void handleCrownMultiDayExtension_routesThroughCrownSearchAndBook_withoutAnchor() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID mainRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final LocalDate startDate = LocalDate.of(2026, 3, 2);
+        final LocalDate endDate = LocalDate.of(2026, 3, 3);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtHouseId)
+                .withCourtRoomId(mainRoomId)
+                .withStartDate(startDate)
+                .withEndDate(endDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay().withHearingDate(startDate).withDurationMinutes(720).build()))
+                .build();
+
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, mainRoomId, courtHouseId, startDate, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, mainRoomId, courtHouseId, endDate, false);
+        mockMultiDaySearchAndBook(courtScheduleId1, courtScheduleId2, cs1, cs2);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing);
+
+        assertThat(result.getHearingDays().size(), is(2));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId1));
+        assertThat(result.getHearingDays().get(1).getCourtScheduleId(), is(courtScheduleId2));
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
+        final Map<String, String> params = paramsCaptor.getValue();
+        assertNull(params.get("courtScheduleId"));
+        assertThat(params.get("endDate"), is(endDate.toString()));
+        assertThat(params.get("courtRoomId"), is(mainRoomId.toString()));
+    }
+
+    @Test
+    void enrichCrownCourtScheduleFirst_update_passesMainRoomEndDateAndUserTime_onAnchoredMultiDay() {
+        // The court-calendar extension shape: ONE virtual block-descriptor nonDefaultDay carrying
+        // the anchor courtScheduleId, the TOTAL duration and the user's daily start time — plus the
+        // main courtroom on the command. All of it must reach crown.search.and.book so a same-start
+        // resize keeps untouched rooms and books the tail into the main room at the user's time.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID mainRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID anchorCsId = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final LocalDate startDate = LocalDate.of(2026, 3, 2);
+        final ZonedDateTime userStart = ZonedDateTime.parse("2026-03-02T09:00:00Z");
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtHouseId)
+                .withCourtRoomId(mainRoomId)
+                .withStartDate(startDate)
+                .withEndDate(startDate.plusDays(1))
+                .withNonDefaultDays(Collections.singletonList(
+                        NonDefaultDay.nonDefaultDay()
+                                .withStartTime(userStart)
+                                .withCourtScheduleId(anchorCsId.toString())
+                                .withDuration(720)
+                                .withVirtual(true)
+                                .build()))
+                .build();
+
+        final CourtSchedule cs1 = buildCourtSchedule(anchorCsId, mainRoomId, courtHouseId, startDate, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, mainRoomId, courtHouseId, startDate.plusDays(1), false);
+        mockMultiDaySearchAndBook(anchorCsId, courtScheduleId2, cs1, cs2);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingDays().size(), is(2));
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, String>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(hearingSlotsService).multiDaySearchAndBook(paramsCaptor.capture());
+        final Map<String, String> params = paramsCaptor.getValue();
+        assertThat(params.get("courtScheduleId"), is(anchorCsId.toString()));
+        assertThat(params.get("endDate"), is(startDate.plusDays(1).toString()));
+        assertThat(params.get("courtRoomId"), is(mainRoomId.toString()));
+        assertThat(params.get("earliestHearingTime"), org.hamcrest.Matchers.notNullValue());
+    }
+
+    @Test
+    void multiDaySearchAndBook_throws_on422_NO_AVAILABILITY_withUnavailableDates() {
+        final UpdateHearingForListing hearing = rawMultiDayUpdate();
+
+        final JsonObject errorBody = JsonObjects.createObjectBuilder()
+                .add("errorCode", "NO_AVAILABILITY")
+                .add("unavailableDates", JsonObjects.createArrayBuilder().add("2026-03-04").add("2026-03-05"))
+                .build();
+        final Response sabResponse = mock(Response.class);
+        when(sabResponse.getStatus()).thenReturn(422);
+        when(sabResponse.hasEntity()).thenReturn(true);
+        when(sabResponse.getEntity()).thenReturn(errorBody);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(sabResponse);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException thrown =
+                org.junit.jupiter.api.Assertions.assertThrows(
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException.class,
+                        () -> courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing));
+
+        assertThat(thrown.getHttpStatus(), is(422));
+        assertThat(thrown.getErrorCode(), is("NO_AVAILABILITY"));
+        assertThat(thrown.getUnavailableDates(), is(Arrays.asList("2026-03-04", "2026-03-05")));
+    }
+
+    @Test
+    void multiDaySearchAndBook_throws_on422_INVALID_DATE_RANGE() {
+        final UpdateHearingForListing hearing = rawMultiDayUpdate();
+
+        final JsonObject errorBody = JsonObjects.createObjectBuilder()
+                .add("errorCode", "INVALID_DATE_RANGE")
+                .build();
+        final Response sabResponse = mock(Response.class);
+        when(sabResponse.getStatus()).thenReturn(422);
+        when(sabResponse.hasEntity()).thenReturn(true);
+        when(sabResponse.getEntity()).thenReturn(errorBody);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(sabResponse);
+
+        final uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException thrown =
+                org.junit.jupiter.api.Assertions.assertThrows(
+                        uk.gov.moj.cpp.listing.common.crownfallback.CrownMultiDayExtensionException.class,
+                        () -> courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing));
+
+        assertThat(thrown.getErrorCode(), is("INVALID_DATE_RANGE"));
+        assertThat(thrown.getUnavailableDates().isEmpty(), is(true));
+    }
+
+    @Test
+    void multiDaySearchAndBook_marksDaysDraft_when422CarriesNoErrorCode() {
+        // A 422 whose body carries no errorCode is not a recognised resize rejection — the
+        // fail-safe (mark days draft so allocation stays closed) applies, as for any other failure.
+        final UpdateHearingForListing hearing = rawMultiDayUpdateWithAnchor();
+
+        final Response sabResponse = mock(Response.class);
+        when(sabResponse.getStatus()).thenReturn(422);
+        when(sabResponse.hasEntity()).thenReturn(false);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(sabResponse);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.handleCrownMultiDayExtension(hearing);
+
+        assertThat(result.getHearingDays().stream().allMatch(d -> Boolean.TRUE.equals(d.getIsDraft())), is(true));
+    }
+
+    private static UpdateHearingForListing rawMultiDayUpdate() {
+        // The raw multiday BOOKING shape: one day entry spanning more than a court day (no csId).
+        // N per-day entries each <= 360 are the per-day room-change shape and deliberately do NOT
+        // route to the block search.
+        return UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(UUID.randomUUID())
+                .withStartDate(LocalDate.of(2026, 3, 2))
+                .withEndDate(LocalDate.of(2026, 3, 5))
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay().withHearingDate(LocalDate.of(2026, 3, 2)).withDurationMinutes(720).build()))
+                .build();
+    }
+
+    private static UpdateHearingForListing rawMultiDayUpdateWithAnchor() {
+        return UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(UUID.randomUUID())
+                .withStartDate(LocalDate.of(2026, 3, 2))
+                .withEndDate(LocalDate.of(2026, 3, 5))
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay().withHearingDate(LocalDate.of(2026, 3, 2))
+                                .withCourtScheduleId(UUID.randomUUID()).withDurationMinutes(360).build(),
+                        HearingDay.hearingDay().withHearingDate(LocalDate.of(2026, 3, 3))
+                                .withCourtScheduleId(UUID.randomUUID()).withDurationMinutes(360).build()))
+                .build();
+    }
+
+    @Test
+    void promoteCrownBookingReferenceToBookedSlot_resolvesSessionAndBuildsAllocatedBookedSlot() {
+        final UUID bookingReference = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withBookingReference(bookingReference)
+                .withEstimatedMinutes(120)
+                .withListedStartDateTime(ZonedDateTime.parse("2026-03-16T10:00:00Z"))
+                .build();
+
+        final CourtSchedule cs = new CourtSchedule();
+        cs.setCourtScheduleId(bookingReference.toString());
+        cs.setCourtHouseId(courtHouseId.toString());
+        cs.setCourtRoomId(courtRoomId.toString());
+        cs.setSessionDate(LocalDate.parse("2026-03-16"));
+        cs.setHearingStartTime("2026-03-16T10:00:00Z");
+        cs.setOuCode("OU1");
+        cs.setDraft(false);
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", bookingReference.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
+
+        assertThat(result.getBookedSlots().size(), is(1));
+        final RotaSlot slot = result.getBookedSlots().get(0);
+        assertThat(slot.getCourtScheduleId(), is(bookingReference.toString()));
+        assertThat(slot.getCourtCentreId(), is(courtHouseId.toString()));
+        assertThat(slot.getRoomId(), is(courtRoomId.toString()));
+        assertThat(slot.getDuration(), is(120));
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+    }
+
+    @Test
+    void promoteCrownBookingReferenceToBookedSlot_draftSessionOmitsRoom() {
+        final UUID bookingReference = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withBookingReference(bookingReference)
+                .withEstimatedMinutes(60)
+                .build();
+
+        final CourtSchedule cs = new CourtSchedule();
+        cs.setCourtScheduleId(bookingReference.toString());
+        cs.setCourtHouseId(courtHouseId.toString());
+        cs.setCourtRoomId(UUID.randomUUID().toString());
+        cs.setHearingStartTime("2026-03-16T10:00:00Z");
+        cs.setDraft(true);
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", bookingReference.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
+
+        final RotaSlot slot = result.getBookedSlots().get(0);
+        assertThat(slot.getCourtScheduleId(), is(bookingReference.toString()));
+        assertThat(slot.getCourtCentreId(), is(courtHouseId.toString()));
+        assertNull(slot.getRoomId());
+    }
+
+    @Test
+    void promoteCrownBookingReferenceToBookedSlot_skipsWhenNoStartTimeResolvable() {
+        final UUID bookingReference = UUID.randomUUID();
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withBookingReference(bookingReference)
+                .withEstimatedMinutes(60)
+                .build();
+
+        final CourtSchedule cs = new CourtSchedule();
+        cs.setCourtScheduleId(bookingReference.toString());
+        cs.setDraft(true);
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder().add("courtScheduleId", bookingReference.toString())))
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(cs);
+
+        // No hearingStartTime on the session and no listedStartDateTime on the hearing:
+        // the promotion must be skipped rather than emitting a bookedSlot without startTime,
+        // which fails rotaSlot schema validation on the enriched command.
+        final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
+
+        assertNull(result.getBookedSlots());
+    }
+
+    @Test
+    void promoteCrownBookingReferenceToBookedSlot_throwsWhenBookingReferenceDoesNotResolve() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withBookingReference(UUID.randomUUID())
+                .withEstimatedMinutes(60)
+                .build();
+
+        final JsonObject emptyJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder())
+                .build();
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(emptyJson);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackInvalidRequestException.class,
+                () -> courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing));
+    }
+
+    @Test
+    void promoteCrownBookingReferenceToBookedSlot_noOpWhenNoBookingReference() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withEstimatedMinutes(60)
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
+
+        assertThat(result, is(hearing));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+    }
+
+    @Test
+    void promoteCrownBookingReferenceToBookedSlot_noOpWhenBookedSlotAlreadyHasCourtScheduleId() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(UUID.randomUUID())
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withBookingReference(UUID.randomUUID())
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot().withCourtScheduleId(UUID.randomUUID().toString()).build()))
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.promoteCrownBookingReferenceToBookedSlot(hearing);
+
+        assertThat(result, is(hearing));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+    }
+
+    // ─── enrichCrownUpdateHearing / applyCrownFallback guard-path tests ──────
+
+    @Test
+    void shouldReturnUnchangedWhenCrownUpdateHasNoCourtScheduleIdOnMergedDaysAndNotAllocationCandidate() {
+        // nonDefaultDay has a courtScheduleId (so hasCourtScheduleId=true → enrichCrownUpdateHearing),
+        // but the date doesn't match the hearingDay → no merge → anyHearingDayHasCourtScheduleId=false.
+        // With no startDate / courtRoomId, isCandidateForAllocation is false → return unchanged.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID nonDefaultCsId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 5, 10);
+        final LocalDate nonDefaultDate = LocalDate.of(2026, 6, 1);
+
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withHearingDate(hearingDate)
+                .withDurationMinutes(120)
+                .build();
+
+        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(nonDefaultCsId.toString())
+                .withStartTime(nonDefaultDate.atStartOfDay(ZoneOffset.UTC))
+                .withDuration(120)
+                .build();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .withNonDefaultDays(Collections.singletonList(nonDefaultDay))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+    }
+
+    @Test
+    void shouldReturnUnchangedFromCrownFallbackWhenCourtCentreIdIsMissing() {
+        // hasCourtScheduleId=false (no courtScheduleId anywhere) → applyCrownFallback.
+        // courtCentreId is null → log warning and return unchanged without calling the adapter.
+        final UUID hearingId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 5, 10);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(hearingDate)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(120)
+                                .build()))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+    }
+
+    @Test
+    void shouldReturnUnchangedFromCrownFallbackWhenHearingDateIsNotDerivable() {
+        // hasCourtScheduleId=false → applyCrownFallback.
+        // courtCentreId present but no startDate and no hearingDays → hearingDate=null → return unchanged.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldReturnUnchangedForCrownUpdateSingleDayWhenFetchCourtSchedulesByIdsReturnsEmpty() {
+        // enrichCrownUpdateHearing single-day path: fetchCourtSchedulesByIds returns a non-200
+        // response → sessions is empty → log warning and return hearing unchanged.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(hearingDate)
+                .withCourtRoomId(courtRoomId)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).listHearingInCourtSessions(any());
+    }
+
+    @Test
+    void shouldReturnOriginalHearingDayUnchangedWhenSanityCheckCannotFindMatchingSession() {
+        // sanityCheckAndEnrichCrown: the session returned by fetchCourtSchedulesByIds has a different
+        // courtScheduleId → session == null for the requested ID → original hearingDay returned as-is.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID unrelatedSessionId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.now().plusDays(5);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(hearingDate)
+                .withCourtRoomId(courtRoomId)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Session returned has a different courtScheduleId — will not match the hearingDay
+        final CourtSchedule unrelatedSession = new CourtSchedule();
+        unrelatedSession.setCourtScheduleId(unrelatedSessionId.toString());
+        unrelatedSession.setCourtRoomId(courtRoomId.toString());
+        unrelatedSession.setCourtHouseId(courtHouseId.toString());
+        unrelatedSession.setSessionDate(hearingDate);
+        unrelatedSession.setDraft(false);
+        unrelatedSession.setHearingStartTime(hearingDate + "T10:00:00Z");
+        unrelatedSession.setSessionStartTime(Date.from(hearingDate.atTime(10, 0).toInstant(ZoneOffset.UTC)));
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", unrelatedSessionId.toString())
+                                .add("isDraft", false)))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(unrelatedSession);
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        // List response maps the original courtScheduleId so combineSearchAndBook succeeds
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", hearingDate + "T10:00:00Z")
+                                .add("duration", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        // The original courtScheduleId is preserved — sanityCheck returned the original hearingDay
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(courtScheduleId));
+        verify(hearingSlotsService).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService).listHearingInCourtSessions(any(JsonObject.class));
+    }
+
+    // ─── Coverage push >80%: seeding / merging / fallback date-derivation paths ─
+
+    @Test
+    void shouldSkipSeedingHearingDaysWhenWeekCommencingStartDateIsPresent() {
+        // seedHearingDaysFromNonDefaultDaysIfEmpty returns the hearing unchanged when
+        // weekCommencingStartDate is set (line 357 guard). Despite nonDefaultDays being present,
+        // no seeding occurs and the result has no hearingDays.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID csId = UUID.randomUUID();
+        final LocalDate nonDefaultDate = LocalDate.of(2026, 5, 10);
+
+        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(csId.toString())
+                .withStartTime(nonDefaultDate.atStartOfDay(ZoneOffset.UTC))
+                .withDuration(60)
+                .build();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withWeekCommencingStartDate(LocalDate.of(2026, 5, 6))
+                .withNonDefaultDays(Collections.singletonList(nonDefaultDay))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        assertThat(result.getHearingDays(), is(nullValue()));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+    }
+
+    @Test
+    void shouldSeedHearingDayWithoutCourtScheduleIdWhenNonDefaultDayHasBlankCourtScheduleId() {
+        // seedHearingDaysFromNonDefaultDaysIfEmpty skips setting courtScheduleId on seeded
+        // hearingDays when the nonDefaultDay's courtScheduleId is blank (line 377 guard).
+        // The seeded hearingDay carries the correct date/duration but a null courtScheduleId.
+        final UUID hearingId = UUID.randomUUID();
+        final LocalDate nonDefaultDate = LocalDate.of(2026, 6, 10);
+
+        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId("")
+                .withStartTime(nonDefaultDate.atStartOfDay(ZoneOffset.UTC))
+                .withDuration(60)
+                .build();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withNonDefaultDays(Collections.singletonList(nonDefaultDay))
+                .build();
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        assertThat(result.getHearingDays().size(), is(1));
+        assertThat(result.getHearingDays().get(0).getHearingDate(), is(nonDefaultDate));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(nullValue()));
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+    }
+
+    @Test
+    void shouldReturnUnchangedWhenSearchAndBookReturnsNullForAllHearingDays() {
+        // handleCrownUpdateSearchAndBook (SPRDT-1539): the single-day no-id update books through the
+        // Crown single-day search-and-book; when no session is bookable the hearing is returned
+        // unchanged (fail open) and the MAGS search-and-book is never called.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID csId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 5, 11);
+        final LocalDate nonDefaultDate = LocalDate.of(2026, 6, 1);
+
+        final HearingDay hearingDay = HearingDay.hearingDay()
+                .withHearingDate(hearingDate)
+                .withDurationMinutes(120)
+                .build();
+
+        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(csId.toString())
+                .withStartTime(nonDefaultDate.atStartOfDay(ZoneOffset.UTC))
+                .withDuration(120)
+                .build();
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withStartDate(hearingDate)
+                .withCourtCentreId(courtCentreId)
+                .withCourtRoomId(courtRoomId)
+                .withHearingDays(Collections.singletonList(hearingDay))
+                .withNonDefaultDays(Collections.singletonList(nonDefaultDay))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any()))
+                .thenThrow(new CrownFallbackNoSessionException("no session"));
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingId(), is(hearingId));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(nullValue()));
+        verify(hearingSlotsService, never()).searchBookSlots(anyMap());
+        verify(hearingSlotsService, never()).getCourtSchedulesById(anyMap());
+    }
+
+    @Test
+    void shouldNotAdjustCourtCentreWhenCrownFallbackResultIsDraft() {
+        // applyCrownFallback(HearingListingNeeds): when isDraft=true the condition
+        // Boolean.FALSE.equals(result.isDraft()) is false (line 1580), so the court
+        // centre is NOT updated — the original roomId is preserved.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID originalRoomId = UUID.randomUUID();
+        final UUID bookedScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 5, 10);
+        final ZonedDateTime listedStart = hearingDate.atStartOfDay(ZoneOffset.UTC).plusHours(9);
+
+        final CourtCentre courtCentre = CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withRoomId(originalRoomId)
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withListedStartDateTime(listedStart)
+                .withEstimatedMinutes(60)
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate),
+                anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING), any(), any(), any()))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedScheduleId, UUID.fromString("731816c1-5ee4-373a-9bda-840e13a5bcb0"), hearingDate,
+                        listedStart, listedStart.plusHours(8),
+                        60, true, "CR", "CROWN_FB_LIST", false));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getCourtCentre().getRoomId(), is(originalRoomId));
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
+        assertThat(result.getHearingDays().get(0).getIsDraft(), is(true));
+    }
+
+    @Test
+    void shouldReturnUnchangedWhenFallbackHearingDateNullForHearingListingNeedsWithCourtCentre() {
+        // applyCrownFallback(HearingListingNeeds): courtCentre is present but
+        // extractFirstHearingDate returns null because there is no listedStartDateTime
+        // and no hearingDays. The hearing is returned unchanged (line 1552 guard).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+
+        final CourtCentre courtCentre = CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withEstimatedMinutes(60)
+                .build();
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result, is(hearing));
+        verify(courtSchedulerServiceAdapter, never()).crownFallbackSearchAndBook(
+                any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldDeriveHearingDateFromHearingDayForHearingListingNeedsFallback() {
+        // extractFirstHearingDate(HearingListingNeeds): when listedStartDateTime is null but a
+        // hearingDay carries hearingDate, the fallback derives the booking date from it (line 1693).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID bookedScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 6, 15);
+
+        final CourtCentre courtCentre = CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withEstimatedMinutes(60)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(60)
+                                .build()))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate),
+                anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING), any(), any(), any()))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedScheduleId, null, hearingDate,
+                        hearingDate.atStartOfDay(ZoneOffset.UTC),
+                        hearingDate.atStartOfDay(ZoneOffset.UTC).plusHours(8),
+                        60, false, null, "CROWN_FB_LIST", false));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate), anyInt(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldPassCentreMetadataToCrownFallbackForNeverSeededCentreAutoCreate() {
+        // SPRDT-1283: the payload's ouCode/name/roomName ride the fallback call so courtscheduler
+        // can auto-create a session at a centre that has no session to copy metadata from.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 6, 15);
+
+        final CourtCentre courtCentre = CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withCode("C99XX00")
+                .withName("Never Seeded Crown Court")
+                .withRoomName("Courtroom 7")
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withEstimatedMinutes(60)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(60)
+                                .build()))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate),
+                anyInt(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, UUID.randomUUID(), null, hearingDate,
+                        hearingDate.atStartOfDay(ZoneOffset.UTC),
+                        hearingDate.atStartOfDay(ZoneOffset.UTC).plusHours(8),
+                        60, true, null, "CROWN_FB_LIST", false));
+
+        courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate), anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING),
+                eq(Optional.of("C99XX00")),
+                eq(Optional.of("Never Seeded Crown Court")),
+                eq(Optional.of("Courtroom 7")));
+    }
+
+    @Test
+    void shouldDeriveHearingDateFromHearingDayStartTimeForHearingListingNeedsFallback() {
+        // extractFirstHearingDate(HearingListingNeeds): when listedStartDateTime is null and
+        // hearingDay has no hearingDate but has startTime, the fallback uses
+        // startTime.toLocalDate() as the booking date (line 1697).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID bookedScheduleId = UUID.randomUUID();
+        final LocalDate expectedDate = LocalDate.of(2026, 6, 20);
+        final ZonedDateTime startTime = expectedDate.atTime(9, 0).atZone(ZoneOffset.UTC);
+
+        final CourtCentre courtCentre = CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .build();
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentre(courtCentre)
+                .withEstimatedMinutes(60)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withStartTime(startTime)
+                                .withDurationMinutes(60)
+                                .build()))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(expectedDate),
+                anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.LIST_COURT_HEARING), any(), any(), any()))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedScheduleId, null, expectedDate,
+                        startTime, startTime.plusHours(8),
+                        60, false, null, "CROWN_FB_LIST", false));
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(expectedDate), anyInt(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldDeriveHearingDateFromHearingDayWhenNoStartDateInUpdateFallback() {
+        // extractFirstHearingDate(UpdateHearingForListing): when startDate is null but a
+        // hearingDay carries hearingDate, the fallback uses it as the booking date (line 1662).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID bookedScheduleId = UUID.randomUUID();
+        final LocalDate hearingDate = LocalDate.of(2026, 7, 10);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withHearingDate(hearingDate)
+                                .withDurationMinutes(60)
+                                .build()))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate),
+                anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING), any(), any(), any()))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedScheduleId, null, hearingDate,
+                        hearingDate.atStartOfDay(ZoneOffset.UTC),
+                        hearingDate.atStartOfDay(ZoneOffset.UTC).plusHours(8),
+                        60, false, null, "CROWN_FB_UPDATE", false));
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(hearingDate), anyInt(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldDeriveHearingDateFromHearingDayStartTimeForUpdateFallback() {
+        // extractFirstHearingDate(UpdateHearingForListing): when startDate is null and
+        // hearingDay has no hearingDate but has startTime, the fallback uses
+        // startTime.toLocalDate() as the booking date (line 1665).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID bookedScheduleId = UUID.randomUUID();
+        final LocalDate expectedDate = LocalDate.of(2026, 7, 15);
+        final ZonedDateTime startTime = expectedDate.atTime(10, 0).atZone(ZoneOffset.UTC);
+
+        final UpdateHearingForListing hearing = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withCourtCentreId(courtCentreId)
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withStartTime(startTime)
+                                .withDurationMinutes(60)
+                                .build()))
+                .build();
+
+        when(courtSchedulerServiceAdapter.crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(expectedDate),
+                anyInt(), any(), any(),
+                eq(uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackSource.UPDATE_HEARING_FOR_LISTING), any(), any(), any()))
+                .thenReturn(new uk.gov.moj.cpp.listing.common.crownfallback.CrownFallbackResult(
+                        hearingId, bookedScheduleId, null, expectedDate,
+                        startTime, startTime.plusHours(8),
+                        60, false, null, "CROWN_FB_UPDATE", false));
+
+        final UpdateHearingForListing result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        assertThat(result.getHearingDays().get(0).getCourtScheduleId(), is(bookedScheduleId));
+        verify(courtSchedulerServiceAdapter).crownFallbackSearchAndBook(
+                eq(hearingId), eq(courtCentreId), eq(expectedDate), anyInt(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldNotAdjustCourtCentreWhenFirstEnrichedHearingDayHasNullCourtRoomId() {
+        // enrichCrownCourtScheduleFirst(HearingListingNeeds): the session returned has a null
+        // courtRoomId; the hearingDay also has no courtRoomId. The guard at line 199 is false
+        // (enrichedHearingDays.get(0).getCourtRoomId() == null) so the court centre is NOT updated.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID existingRoomId = UUID.randomUUID();
+        final LocalDate sessionDate = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withId(hearingId)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withEstimatedMinutes(240)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(existingRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId)
+                                .withHearingDate(sessionDate)
+                                .withDurationMinutes(240)
+                                .build()))
+                .build();
+
+        // Session is non-draft but has no courtRoomId — sanityCheck will not call withCourtRoomId
+        final CourtSchedule sessionWithNoRoom = new CourtSchedule();
+        sessionWithNoRoom.setCourtScheduleId(courtScheduleId.toString());
+        sessionWithNoRoom.setCourtRoomId(null);
+        sessionWithNoRoom.setCourtHouseId(courtHouseId.toString());
+        sessionWithNoRoom.setSessionDate(sessionDate);
+        sessionWithNoRoom.setDraft(false);
+        sessionWithNoRoom.setHearingStartTime(sessionDate + "T10:00:00Z");
+        sessionWithNoRoom.setSessionStartTime(Date.from(sessionDate.atTime(10, 0).toInstant(ZoneOffset.UTC)));
+
+        final JsonObject csResponseJson = JsonObjects.createObjectBuilder()
+                .add("courtSchedules", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("isDraft", false)))
+                .build();
+
+        final Response csResponse = mock(Response.class);
+        when(csResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.getCourtSchedulesById(anyMap())).thenReturn(csResponse);
+        when(objectToJsonObjectConverter.convert(csResponse.getEntity())).thenReturn(csResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class))).thenReturn(sessionWithNoRoom);
+
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build());
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", sessionDate + "T10:00:00Z")
+                                .add("duration", 240)))
+                .build();
+
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final HearingListingNeeds result = courtScheduleEnrichmentService.enrichCrownCourtScheduleFirst(hearing);
+
+        // Court centre should NOT have been updated — the enriched day has no courtRoomId
+        assertThat(result.getCourtCentre().getRoomId(), is(existingRoomId));
+    }
+
+    // ─── searchAndBookSlots coverage tests ──────────────────────────────
+
+    @Test
+    void searchAndBookShouldReturnNullWhenSessionsArrayIsEmpty() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = LocalDate.now().toString();
+        final Integer durationInMinutes = 20;
+
+        // sessions[] is empty — should return null
+        final javax.json.JsonObject emptySessionsResponse = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("sessions", javax.json.Json.createArrayBuilder())
+                .build();
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(emptySessionsResponse);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(emptySessionsResponse);
+
+        final uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse result = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, true);
+
+        assertNull(result);
+    }
+
+    @Test
+    void searchAndBookShouldReturnNullWhenResponseIsNotOk() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = LocalDate.now().toString();
+        final Integer durationInMinutes = 20;
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_NOT_FOUND);
+
+        final uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse result = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, true);
+
+        assertNull(result);
+    }
+
+    @Test
+    void searchAndBookShouldReadDraftFieldFromSessionsArray() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = "2020-05-26T09:00:00Z";
+        final Integer durationInMinutes = 20;
+
+        // "draft" field (Jackson strips "is" prefix) should be used when present
+        final javax.json.JsonObject responseWithDraftField = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("sessions", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "23681024-8eac-4890-8c44-4651ad48cb24")
+                                .add("courtRoomId", courtRoomId)
+                                .add("sessionStartTime", sessionStartTime)
+                                .add("draft", true)))
+                .build();
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(responseWithDraftField);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(responseWithDraftField);
+
+        final uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse result = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, true);
+
+        assertThat(result, not(nullValue()));
+        assertTrue(result.isDraft());
+    }
+
+    @Test
+    void searchAndBookShouldReadIsDraftFieldWhenDraftFieldAbsent() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = "2020-05-26T09:00:00Z";
+        final Integer durationInMinutes = 20;
+
+        // "isDraft" field used as fallback when "draft" is absent
+        final javax.json.JsonObject responseWithIsDraftField = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("sessions", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "23681024-8eac-4890-8c44-4651ad48cb24")
+                                .add("courtRoomId", courtRoomId)
+                                .add("sessionStartTime", sessionStartTime)
+                                .add("isDraft", false)))
+                .build();
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(responseWithIsDraftField);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(responseWithIsDraftField);
+
+        final uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse result = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, false);
+
+        assertThat(result, not(nullValue()));
+        assertThat(result.isDraft(), is(false));
+    }
+
+    @Test
+    void searchAndBookShouldExtractJudiciariesFromSession() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = "2020-05-26T09:00:00Z";
+        final Integer durationInMinutes = 20;
+
+        final String judicialId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+        final javax.json.JsonObject responseWithJudiciary = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("sessions", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "23681024-8eac-4890-8c44-4651ad48cb24")
+                                .add("courtRoomId", courtRoomId)
+                                .add("sessionStartTime", sessionStartTime)
+                                .add("draft", false)
+                                .add("judiciaries", javax.json.Json.createArrayBuilder()
+                                        .add(javax.json.Json.createObjectBuilder()
+                                                .add("judiciaryId", judicialId)
+                                                .add("judiciaryType", "DISTRICT_JUDGE")
+                                                .add("deputy", false)
+                                                .add("benchChairman", true)))))
+                .build();
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(responseWithJudiciary);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(responseWithJudiciary);
+
+        final uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse result = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, true);
+
+        assertThat(result, not(nullValue()));
+        assertThat(result.judiciaries().size(), is(1));
+        assertThat(result.judiciaries().get(0).getJudicialId().toString(), is(judicialId));
+    }
+
+    @Test
+    void searchAndBookShouldReturnEmptyJudiciariesWhenAbsent() {
+        final String hearingId = "5416c10a-0cf1-49d5-a7c9-5761ff3bdf2c";
+        final String ouCode = "OU12345";
+        final String hearingSessionDate = LocalDate.now().toString();
+        final String courtRoomId = UUID.randomUUID().toString();
+        final String hearingSessionDateSearchCutOff = LocalDate.now().plusDays(7).toString();
+        final String sessionStartTime = "2020-05-26T09:00:00Z";
+        final Integer durationInMinutes = 20;
+
+        // No judiciaries key in session
+        final javax.json.JsonObject responseNoJudiciaries = javax.json.Json.createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("sessions", javax.json.Json.createArrayBuilder()
+                        .add(javax.json.Json.createObjectBuilder()
+                                .add("courtScheduleId", "23681024-8eac-4890-8c44-4651ad48cb24")
+                                .add("courtRoomId", courtRoomId)
+                                .add("sessionStartTime", sessionStartTime)
+                                .add("draft", false)))
+                .build();
+
+        when(hearingSlotsService.searchBookSlots(anyMap())).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(responseNoJudiciaries);
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(responseNoJudiciaries);
+
+        final uk.gov.moj.cpp.listing.domain.HearingSlotSearchResponse result = courtScheduleEnrichmentService
+                .searchAndBookSlots(hearingId, ouCode, hearingSessionDate, courtRoomId, hearingSessionDateSearchCutOff, sessionStartTime, durationInMinutes, false);
+
+        assertThat(result, not(nullValue()));
+        assertThat(result.judiciaries().size(), is(0));
+    }
+
+    // ─── getUpdateSlotsPayload key regression guard ─────────────────────────
+
+    @Test
+    void getUpdateSlotsPayloadShouldUseCourtScheduleIdsKeyNotIds() {
+        // Verify that the body sent to list.hearings-in-sessions uses "courtScheduleIds"
+        // (not the old "ids" key that caused real-env 400s).
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId = UUID.randomUUID();
+
+        final HearingDay hd = HearingDay.hearingDay()
+                .withCourtScheduleId(courtScheduleId)
+                .withHearingDate(LocalDate.now())
+                .withDurationMinutes(30)
+                .build();
+
+        final UpdateHearingForListing update = UpdateHearingForListing.updateHearingForListing()
+                .withHearingId(hearingId)
+                .withJurisdictionType(JurisdictionType.MAGISTRATES)
+                .withSelectedCourtCentre(SelectedCourtCentre.selectedCourtCentre().withOuCode("OU1").build())
+                .withHearingDays(Collections.singletonList(hd))
+                .build();
+
+        final javax.json.JsonArray courtScheduleIdsArray =
+                JsonObjects.createArrayBuilder().add(courtScheduleId.toString()).build();
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(courtScheduleIdsArray);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(JsonObjects.createObjectBuilder()
+                                .add("courtScheduleId", courtScheduleId.toString())
+                                .add("hearingStartTime", "2026-01-01T09:00:00Z")
+                                .add("duration", 30)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+
+        final org.mockito.ArgumentCaptor<JsonObject> payloadCaptor =
+                org.mockito.ArgumentCaptor.forClass(JsonObject.class);
+
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(update, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).listHearingInCourtSessions(payloadCaptor.capture());
+        final JsonObject captured = payloadCaptor.getValue();
+        final javax.json.JsonArray hearingSlots = captured.getJsonArray("hearingSlots");
+        assertThat("hearingSlots array must be present in payload", hearingSlots != null, is(true));
+        assertThat("hearingSlots must be non-empty", hearingSlots.isEmpty(), is(false));
+        final JsonObject slot0 = hearingSlots.getJsonObject(0);
+        assertTrue(slot0.containsKey("courtScheduleIds"),
+                "hearingSlots[0] must use key 'courtScheduleIds' not 'ids'");
+    }
+
+    // ─── multiDaySearchAndBook courtCentreId + hearingDate guard ────────────
+
+    @Test
+    void multiDaySearchAndBookShouldIncludeCourtCentreIdAndHearingDateInParams() {
+        // Guard against crown.search.and.book schema violations: courtCentreId and hearingDate
+        // are required by the schema (additionalProperties:false) and must be present in the body.
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtScheduleId1 = UUID.randomUUID();
+        final UUID courtScheduleId2 = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final LocalDate day1 = LocalDate.now().plusDays(5);
+
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withId(hearingId)
+                .withEstimatedMinutes(720)
+                .withCourtCentre(CourtCentre.courtCentre().withId(courtHouseId).withRoomId(courtRoomId).build())
+                .withHearingDays(Collections.singletonList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(courtScheduleId1)
+                                .withHearingDate(day1)
+                                .withDurationMinutes(720)
+                                .build()))
+                .withBookedSlots(Collections.singletonList(
+                        RotaSlot.rotaSlot()
+                                .withCourtScheduleId(courtScheduleId1.toString())
+                                .withCourtCentreId(courtHouseId.toString())
+                                .withStartTime(day1.atStartOfDay(ZoneOffset.UTC))
+                                .build()))
+                .build();
+
+        final CourtSchedule cs1 = buildCourtSchedule(courtScheduleId1, courtRoomId, courtHouseId, day1, false);
+        final CourtSchedule cs2 = buildCourtSchedule(courtScheduleId2, courtRoomId, courtHouseId, day1.plusDays(1), false);
+
+        final JsonObject multiDayResponseJson = JsonObjects.createObjectBuilder()
+                .add("sessions", JsonObjects.createArrayBuilder()
+                        .add(buildCsJson(cs1))
+                        .add(buildCsJson(cs2)))
+                .build();
+
+        final Response multiDayResponse = mock(Response.class);
+        when(multiDayResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(hearingSlotsService.multiDaySearchAndBook(anyMap())).thenReturn(multiDayResponse);
+        when(objectToJsonObjectConverter.convert(multiDayResponse.getEntity())).thenReturn(multiDayResponseJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(CourtSchedule.class)))
+                .thenReturn(cs1, cs2);
+
+        final JsonObject listJson = JsonObjects.createObjectBuilder()
+                .add("hearings", JsonObjects.createArrayBuilder()
+                        .add(buildListHearingJson(courtScheduleId1, "2026-03-16T10:00:00Z", 360))
+                        .add(buildListHearingJson(courtScheduleId2, "2026-03-17T10:00:00Z", 360)))
+                .build();
+        final Response listResponse = mock(Response.class);
+        when(listResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(listResponse.getEntity()).thenReturn(listJson);
+        when(hearingSlotsService.listHearingInCourtSessions(any(JsonObject.class))).thenReturn(listResponse);
+        when(objectToJsonObjectConverter.convert(listJson)).thenReturn(listJson);
+        when(jsonObjectConverter.convert(any(JsonObject.class), eq(ListUpdateHearing.class)))
+                .thenAnswer(inv -> {
+                    JsonObject jo = inv.getArgument(0);
+                    ListUpdateHearing luh = new ListUpdateHearing();
+                    luh.setCourtScheduleId(jo.getString("courtScheduleId"));
+                    luh.setHearingStartTime(jo.getString("hearingStartTime"));
+                    luh.setDuration(jo.getInt("duration"));
+                    return luh;
+                });
+        when(slotsToJsonStringConverter.convertHearingDaysToCourtScheduleIdsJson(anyList()))
+                .thenReturn(JsonObjects.createArrayBuilder()
+                        .add(courtScheduleId1.toString())
+                        .add(courtScheduleId2.toString())
+                        .build());
+
+        @SuppressWarnings("unchecked")
+        final org.mockito.ArgumentCaptor<java.util.Map<String, String>> mapCaptor =
+                org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+
+        courtScheduleEnrichmentService.enrichWithCourtSchedules(hearing, mock(JsonEnvelope.class));
+
+        verify(hearingSlotsService).multiDaySearchAndBook(mapCaptor.capture());
+        final java.util.Map<String, String> params = mapCaptor.getValue();
+        assertTrue(params.containsKey("courtCentreId"),
+                "multiDaySearchAndBook params must contain 'courtCentreId' (required by crown.search.and.book schema)");
+        assertTrue(params.containsKey("hearingDate"),
+                "multiDaySearchAndBook params must contain 'hearingDate' (required by crown.search.and.book schema)");
+        assertThat("courtCentreId must be non-null", params.get("courtCentreId") != null, is(true));
+        assertThat("hearingDate must be non-null", params.get("hearingDate") != null, is(true));
+        assertThat("courtCentreId should be the court house UUID", params.get("courtCentreId"), is(courtHouseId.toString()));
+        assertThat("hearingDate should be the anchor day's date", params.get("hearingDate"), is(day1.toString()));
     }
 }

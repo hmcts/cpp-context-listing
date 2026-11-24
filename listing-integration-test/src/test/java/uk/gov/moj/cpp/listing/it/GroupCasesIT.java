@@ -213,7 +213,7 @@ class GroupCasesIT extends AbstractIT {
     }
 
     private void updateHearingForListingWithCourtRoom() {
-        CourtSchedulerServiceStub.stubSearchBookHearingSlotsForCrown(hearingId.toString(), courtCentreId.toString(), COURT_ROOM_ID);
+        CourtSchedulerServiceStub.stubCrownMultiDaySearchAndBookSuccess(hearingId.toString(), courtCentreId.toString(), COURT_ROOM_ID);
         final String updateHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.command.update-hearing-for-listing"), hearingId.toString()));
         final JsonObject updateHearing = createObjectBuilder()

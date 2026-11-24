@@ -6,6 +6,7 @@ import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.anything;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
@@ -19,6 +20,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMat
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.assertNoMessage;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessageString;
@@ -577,6 +579,15 @@ public class UpdateDefendantOffencesSteps extends AbstractIT {
                         "}\n";
 
         assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
+    }
+
+    /**
+     * The aggregate must stay silent: no listing.events.offence-added after the add-offence public
+     * event. Barrier first, then a short absence window (see QueueUtil.assertNoMessage).
+     */
+    public void verifyNoEventOffenceAddedInActiveMQ() {
+        awaitAsyncProcessingComplete();
+        assertNoMessage(privateEventsMessageOffenceAdded, anything());
     }
 
     public void verifyEventOffenceAddedInActiveMQ() {

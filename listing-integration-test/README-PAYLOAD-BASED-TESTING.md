@@ -21,28 +21,70 @@ The new approach provides several benefits:
 
 ### Test Data Structure
 
+Test data is split into two sections by court type: **MAGS** (Magistrates) and **CROWN**.
+
 ```
 test-data/
-├── list-court-hearing/
-│   ├── adhoc_hearing_creation.json
-│   ├── spi_allocated.json
-│   ├── spi_unallocated.json
-│   ├── mcc_without_courtschedule_allocated.json
-│   ├── sjp_without_courthscheduleid.json
-│   └── spi_two_defendants_unallocated.json
-├── list-next-hearings-v2/
-│   ├── adjorunment_crown_fixed_date.json
-│   ├── adjournment_crown_week_commencing.json
-│   └── adjournment_mags.json
-├── list-unscheduled-next-hearings/
-│   ├── adjournment_crown-unscheduled.json
-│   └── adjournment_crown-unscheduled_2.json
-└── update-hearing-for-listing/
-    ├── update-hearing-for-listing-allocated-room-update.json
-    ├── update-hearing-for-listing-assign-judiciary.json
-    ├── update-hearing-for-listing-change-to-multiday-with-nondefault-and-nonsitting.json
-    ├── update-hearing-for-listing-from-weekcommencing-to-multiday.json
-    └── update-hearing-for-listing-unallocated-to-allocated.json
+├── MAGS/
+│   ├── list-court-hearing/
+│   │   ├── adhoc_hearing_creation.json
+│   │   ├── spi_allocated.json
+│   │   ├── spi_unallocated.json
+│   │   ├── mcc_without_courtschedule_allocated.json
+│   │   ├── sjp_without_courthscheduleid.json
+│   │   └── spi_two_defendants_unallocated.json
+│   ├── list-next-hearings-v2/
+│   │   ├── adjorunment_crown_fixed_date.json
+│   │   ├── adjournment_crown_week_commencing.json
+│   │   └── adjournment_mags.json
+│   ├── list-unscheduled-next-hearings/
+│   │   ├── adjournment_crown-unscheduled.json
+│   │   └── adjournment_crown-unscheduled_2.json
+│   └── update-hearing-for-listing/
+│       ├── update-hearing-for-listing-allocated-room-update.json
+│       ├── update-hearing-for-listing-assign-judiciary.json
+│       ├── update-hearing-for-listing-change-to-multiday-with-nondefault-and-nonsitting.json
+│       ├── update-hearing-for-listing-from-weekcommencing-to-multiday.json
+│       └── update-hearing-for-listing-unallocated-to-allocated.json
+├── CROWN/
+│   ├── list-court-hearing/
+│   │   ├── adhoc_hearing_creation.json
+│   │   ├── adhoc_week_commencing.json
+│   │   ├── mcc_crown_unscheduled.json
+│   │   ├── mcc_crown_week_commencing.json
+│   │   ├── mcc_without_courtschedule_allocated.json
+│   │   ├── spi_two_defendants_unallocated.json
+│   │   └── spi_unallocated.json
+│   ├── list-next-hearings-v2/
+│   │   ├── adjorunment_crown_fixed_date.json
+│   │   └── adjournment_crown_week_commencing.json
+│   ├── list-unscheduled-next-hearings/
+│   │   └── adjournment_crown-unscheduled.json
+│   ├── split/
+│   │   ├── unallocated-split-allocate-list-court-hearing.json
+│   │   └── unallocated-split-allocate-update-hearing-for-listing.json
+│   └── update-hearing-for-listing/
+│       ├── update-hearing-for-listing-allocated-room-update.json
+│       ├── update-hearing-for-listing-assign-judiciary.json
+│       ├── update-hearing-for-listing-change-to-multiday-with-nondefault-and-nonsitting.json
+│       └── update-hearing-for-listing-from-weekcommencing-to-multiday.json
+```
+
+## Court Type Selection
+
+The `PayloadGenerator` supports loading test data for different court types via the `courtType` parameter. Two constants are provided:
+
+- `PayloadGenerator.MAGS` — Magistrates court data (default)
+- `PayloadGenerator.CROWN` — Crown court data
+
+When no court type is specified, `MAGS` is used by default, preserving backward compatibility.
+
+```java
+// Loads from test-data/MAGS/list-court-hearing/spi_allocated.json (default)
+PayloadGenerator.loadPayloadWithDynamicValues("list-court-hearing", "spi_allocated");
+
+// Loads from test-data/CROWN/list-court-hearing/adhoc_hearing_creation.json
+PayloadGenerator.loadPayloadWithDynamicValues(PayloadGenerator.CROWN, "list-court-hearing", "adhoc_hearing_creation");
 ```
 
 ## Placeholder System
@@ -76,6 +118,14 @@ PayloadGenerator.PayloadValues values = steps.whenListCourtHearingSubmittedWithS
     "list-court-hearing", 
     "spi_allocated", 
     customValues
+);
+```
+
+You can also load payloads with custom values for a specific court type:
+
+```java
+PayloadGenerator.loadPayloadWithCustomValues(
+    PayloadGenerator.CROWN, "list-court-hearing", "adhoc_hearing_creation", customValues
 );
 ```
 
