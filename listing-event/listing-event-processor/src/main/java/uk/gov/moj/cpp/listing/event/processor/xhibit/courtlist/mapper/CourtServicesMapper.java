@@ -12,6 +12,7 @@ import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorit
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils.convertDate;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.PublicListNoteFormatter.getFormattedPublicListNote;
 
+import uk.gov.moj.cpp.listing.common.offence.OffenceOrdering;
 import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.common.xhibit.ThreadLocalCommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.common.xhibit.XhibitReferenceDataValidator;
@@ -685,7 +686,12 @@ public class CourtServicesMapper {
 
         final DefendantStructure.Charges charges = objectFactory.createDefendantStructureCharges();
 
-        for (final JsonObject offence : offences.getValuesAs(JsonObject.class)) {
+        // XHIBIT sittings carry no jurisdiction; the jurisdiction-unknown rule (LPT-2677)
+        final List<JsonObject> orderedOffences = offences.getValuesAs(JsonObject.class).stream()
+                .sorted(OffenceOrdering.forJurisdiction(null))
+                .collect(Collectors.toList());
+
+        for (final JsonObject offence : orderedOffences) {
             if (offence.getBoolean(RESTRICT_FROM_COURT_LIST)) {
                 charges.getCharge().add(generateRestrictedChargeStructure());
             } else {
