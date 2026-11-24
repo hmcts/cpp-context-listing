@@ -274,4 +274,10 @@ public class HearingData {
     public void setName(final String name) {
         this.name = name;
     }
+
+    public void setWeekCommencing(final LocalDate weekCommencingStartDate, final int weekCommencingDuration) {
+        this.weekCommencingStartDate = weekCommencingStartDate;
+        this.weekCommencingEndDate = weekCommencingStartDate.plusWeeks(weekCommencingDuration).minusDays(1);
+        this.weekCommencingDuration = weekCommencingDuration;
+    }
 }
