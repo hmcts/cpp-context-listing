@@ -305,7 +305,10 @@ public class HearingsDataFactory {
     }
 
     public static List<HearingData> hearingsDataForSingleExParteCase(final UUID courtCentreId, final UUID courtRoomId) {
-        return singletonList(randomHearingWithSingleExParteCase(courtCentreId, ItClock.today(), courtRoomId, null));
+        // A working day, as UpdatedHearingData allocates on: at a weekend today() put the ex-parte case on a
+        // different day from the hearing it is listed against, so it fell outside that court list.
+        final LocalDate workingDay = ItClock.nextWorkingDay();
+        return singletonList(randomHearingWithSingleExParteCase(courtCentreId, workingDay, workingDay, courtRoomId, null));
     }
 
     public static List<HearingData> hearingsDataForSingleExParteCaseWithApplicationLinkedToDifferentCase(final UUID linkedCaseId) {
@@ -1202,10 +1205,15 @@ public class HearingsDataFactory {
     }
 
     private static HearingData randomHearingWithSingleExParteCase(final UUID courtCentreId, final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
+        return randomHearingWithSingleExParteCase(courtCentreId, ItClock.today(), hearingEndDate, courtRoomId, judicialRoles);
+    }
+
+    private static HearingData randomHearingWithSingleExParteCase(final UUID courtCentreId, final LocalDate hearingStartDate, final LocalDate hearingEndDate,
+                                                                  final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
         final List<ListedCaseData> listedCaseData = singletonList(randomListedCaseWithExParteOffenceListedCase());
-        return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, ItClock.today(),
+        return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, hearingStartDate,
                 hearingEndDate, HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
-                courtRoomId, ItClock.nowUtc(), listedCaseData,
+                courtRoomId, ItClock.nowUtc().with(hearingStartDate), listedCaseData,
                 judicialRoles, CROWN_JURISDICTION,
                 STRING.next(),
                 singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
