@@ -26,14 +26,13 @@ import javax.ws.rs.core.Response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +71,8 @@ public class HearingSlotsService {
     @Value(key = "courtscheduler.base.url", defaultValue = "http://localhost:8080/listingcourtscheduler-api/rest/courtscheduler")
     protected String baseUri;
     @Inject
+    CourtSchedulerHttpClient courtSchedulerHttpClient;
+    @Inject
     ObjectMapper objectMapper;
     @Inject
     SystemUserProvider systemUserProvider;
@@ -95,7 +96,7 @@ public class HearingSlotsService {
             LOGGER.info("HearingSlots slots list update in CourtScheduler S & L with slot details '{}'", payload);
         }
 
-        try {
+        try (CloseableHttpClient client = courtSchedulerHttpClient.create()) {
             final HttpPost httpPost = new HttpPost(new URIBuilder(baseUri + COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS_RESOURCE).build());
             httpPost.addHeader(CONTENT_TYPE, COURTSCHEDULER_LIST_HEARING_IN_COURT_SESSIONS);
             httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
@@ -103,7 +104,7 @@ public class HearingSlotsService {
             final StringEntity requestEntity = new StringEntity(this.objectMapper.writeValueAsString(payload));
             httpPost.setEntity(requestEntity);
 
-            final HttpResponse httpResponse = execute(httpPost);
+            final HttpResponse httpResponse = client.execute(httpPost);
 
             if (isOk(httpResponse)) {
                 if (LOGGER.isInfoEnabled()) {
@@ -148,7 +149,7 @@ public class HearingSlotsService {
             LOGGER.info("move-hearing-to-past-date for hearing id '{}'", hearingId);
         }
 
-        try {
+        try (CloseableHttpClient client = courtSchedulerHttpClient.create()) {
             final HttpPost httpPost = new HttpPost(new URL(baseUri + HEARINGS_RESOURCE + "/" + hearingId).toString());
             httpPost.addHeader(CONTENT_TYPE, COURTSCHEDULER_MOVE_TO_PAST_DATE);
             httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
@@ -156,7 +157,7 @@ public class HearingSlotsService {
             final StringEntity requestEntity = new StringEntity(payload.toString());
             httpPost.setEntity(requestEntity);
 
-            final HttpResponse httpResponse = execute(httpPost);
+            final HttpResponse httpResponse = client.execute(httpPost);
             final int statusCode = httpResponse.getStatusLine().getStatusCode();
             final String entityBodyAsString = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
 
@@ -182,7 +183,7 @@ public class HearingSlotsService {
             LOGGER.info("change-court-room-for-multiday-hearing for hearing id '{}'", hearingId);
         }
 
-        try {
+        try (CloseableHttpClient client = courtSchedulerHttpClient.create()) {
             final HttpPost httpPost = new HttpPost(new URL(baseUri + HEARINGS_RESOURCE + "/" + hearingId).toString());
             httpPost.addHeader(CONTENT_TYPE, COURTSCHEDULER_CHANGE_COURT_ROOM_MULTIDAY);
             httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
@@ -190,7 +191,7 @@ public class HearingSlotsService {
             final StringEntity requestEntity = new StringEntity(payload.toString());
             httpPost.setEntity(requestEntity);
 
-            final HttpResponse httpResponse = execute(httpPost);
+            final HttpResponse httpResponse = client.execute(httpPost);
             final int statusCode = httpResponse.getStatusLine().getStatusCode();
             final String entityBodyAsString = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
 
@@ -216,12 +217,12 @@ public class HearingSlotsService {
             LOGGER.info("Delete HearingSlots in CourtScheduler S & L with hearing id '{}'", hearingId);
         }
 
-        try {
+        try (CloseableHttpClient client = courtSchedulerHttpClient.create()) {
             final HttpDelete httpDelete = new HttpDelete(new URIBuilder(baseUri + SESSIONS_RESOURCE + "/" + hearingId).build());
             httpDelete.addHeader(CONTENT_TYPE, COURTSCHEDULER_DELETE_HEARING_SLOTS_TYPE);
             httpDelete.addHeader(CJS_CPP_UID, getUserId().toString());
 
-            final HttpResponse httpResponse = execute(httpDelete);
+            final HttpResponse httpResponse = client.execute(httpDelete);
 
             if (isAccepted(httpResponse)) {
                 if (LOGGER.isInfoEnabled()) {
@@ -253,13 +254,6 @@ public class HearingSlotsService {
         return httpResponse.getStatusLine().getStatusCode() == Response.Status.ACCEPTED.getStatusCode();
     }
 
-    private static CloseableHttpResponse execute(final HttpRequestBase httpRequest) throws IOException {
-        return HttpClientBuilder
-                .create()
-                .build()
-                .execute(httpRequest);
-    }
-
     private Response query(final String urlPath, final String acceptHeader, final Map<String, String> params) {
         if (LOGGER.isInfoEnabled() && Objects.nonNull(params)) {
             params.forEach((key, value) -> LOGGER.info("{} in CourtScheduler S & L with params '{}-{}'", acceptHeader, key, value));
@@ -269,7 +263,7 @@ public class HearingSlotsService {
             throw new DataValidationException("Params for search %s is null ....".formatted(acceptHeader));
         }
 
-        try {
+        try (CloseableHttpClient client = courtSchedulerHttpClient.create()) {
             final HttpGet httpGet = new HttpGet(new URL(baseUri + urlPath).toString());
             httpGet.addHeader(ACCEPT, acceptHeader);
             httpGet.addHeader(CJS_CPP_UID, getUserId().toString());
@@ -279,7 +273,7 @@ public class HearingSlotsService {
             params.forEach(uriBuilder::addParameter);
             httpGet.setURI(uriBuilder.build());
 
-            final HttpResponse httpResponse = execute(httpGet);
+            final HttpResponse httpResponse = client.execute(httpGet);
 
             if (isOk(httpResponse)) {
                 if (LOGGER.isInfoEnabled()) {
@@ -317,7 +311,7 @@ public class HearingSlotsService {
         if (payload == null || payload.isEmpty()) {
             throw new DataValidationException("Payload for %s is null or empty ....".formatted(contentTypeHeader));
         }
-        try {
+        try (CloseableHttpClient client = courtSchedulerHttpClient.create()) {
             final HttpPost httpPost = new HttpPost(new URIBuilder(baseUri + urlPath).build());
             httpPost.addHeader(CONTENT_TYPE, contentTypeHeader);
             if (addAcceptJson) {
@@ -325,7 +319,7 @@ public class HearingSlotsService {
             }
             httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
             httpPost.setEntity(new StringEntity(payload.toString()));
-            return executeAndBuildResponse(httpPost, contentTypeHeader, "POST");
+            return executeAndBuildResponse(client, httpPost, contentTypeHeader, "POST");
         } catch (URISyntaxException | IOException ex) {
             LOGGER.error("Exception thrown on trying to Retrieving %s".formatted(contentTypeHeader), ex);
             return Response
@@ -364,12 +358,12 @@ public class HearingSlotsService {
             LOGGER.info("{} POST /hearings/{} in CourtScheduler S & L with payload '{}'", contentTypeHeader, hearingId, payload);
         }
 
-        try {
+        try (CloseableHttpClient client = courtSchedulerHttpClient.create()) {
             final HttpPost httpPost = new HttpPost(new URIBuilder(baseUri + HEARINGS_RESOURCE + "/" + hearingId).build());
             httpPost.addHeader(CONTENT_TYPE, contentTypeHeader);
             httpPost.addHeader(CJS_CPP_UID, getUserId().toString());
             httpPost.setEntity(new StringEntity(payload.toString()));
-            return executeAndBuildResponse(httpPost, contentTypeHeader, "POST");
+            return executeAndBuildResponse(client, httpPost, contentTypeHeader, "POST");
         } catch (URISyntaxException | IOException ex) {
             LOGGER.error("Exception thrown on trying to POST %s".formatted(contentTypeHeader), ex);
             return Response
@@ -411,9 +405,9 @@ public class HearingSlotsService {
      * the caller's catch block handles the 500 — this method only handles the execute + response
      * building path (no try/catch here).
      */
-    private Response executeAndBuildResponse(final HttpRequestBase request, final String contentTypeHeader, final String method)
+    private Response executeAndBuildResponse(final CloseableHttpClient client, final HttpRequestBase request, final String contentTypeHeader, final String method)
             throws IOException {
-        final HttpResponse httpResponse = execute(request);
+        final HttpResponse httpResponse = client.execute(request);
         final String responseBody = httpResponse.getEntity() == null ? "" : EntityUtils.toString(httpResponse.getEntity());
         final Object entity = responseBody == null || responseBody.isBlank()
                 ? Json.createObjectBuilder().build()

@@ -7,6 +7,7 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.core.dispatcher.SystemUserProvider;
+import uk.gov.moj.cpp.listing.common.service.CourtSchedulerHttpClient;
 import uk.gov.moj.cpp.listing.common.service.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.exception.DataValidationException;
@@ -29,11 +30,9 @@ import javax.ws.rs.core.Response;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +49,8 @@ public class CourtSchedulerService {
     @Inject
     @Value(key = "courtscheduler.base.url", defaultValue = "http://localhost:8080/listingcourtscheduler-api/rest/courtscheduler")
     protected String baseUri;
+    @Inject
+    CourtSchedulerHttpClient courtSchedulerHttpClient;
     @Inject
     SystemUserProvider systemUserProvider;
     @Inject
@@ -72,7 +73,7 @@ public class CourtSchedulerService {
             throw new DataValidationException("Params for CourtSchedules by id are null ....");
         }
 
-        try {
+        try (CloseableHttpClient client = courtSchedulerHttpClient.create()) {
             final HttpGet httpGet = new HttpGet(new URL(baseUri + COURTSCHEDULES_RESOURCE).toString());
             httpGet.addHeader(ACCEPT, COURTSCHEDULER_SEARCH_COURTSCHEDULES_BY_ID);
             httpGet.addHeader(CJS_CPP_UID, getUserId().toString());
@@ -81,7 +82,7 @@ public class CourtSchedulerService {
             params.forEach(uriBuilder::addParameter);
             httpGet.setURI(uriBuilder.build());
 
-            final HttpResponse httpResponse = execute(httpGet);
+            final HttpResponse httpResponse = client.execute(httpGet);
 
             if (isOk(httpResponse)) {
                 if (LOGGER.isInfoEnabled()) {
@@ -114,13 +115,6 @@ public class CourtSchedulerService {
 
     private boolean isOk(HttpResponse httpResponse) {
         return httpResponse.getStatusLine().getStatusCode() == Response.Status.OK.getStatusCode();
-    }
-
-    private static CloseableHttpResponse execute(final HttpRequestBase httpRequest) throws IOException {
-        return HttpClientBuilder
-                .create()
-                .build()
-                .execute(httpRequest);
     }
 
     /**
