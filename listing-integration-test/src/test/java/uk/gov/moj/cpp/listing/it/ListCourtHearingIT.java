@@ -50,7 +50,7 @@ public class ListCourtHearingIT extends AbstractIT {
 
     @Test
     public void shouldListHearingWithUnallocatedData() {
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsData());
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(HearingsData.hearingsData()));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
     }
@@ -113,7 +113,7 @@ public class ListCourtHearingIT extends AbstractIT {
 
     @Test
     public void shouldListHearingWithPossibleDisqualification() {
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithPossibleDisqualification());
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(HearingsData.hearingsDataWithPossibleDisqualification()));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingWithPossibleDisqualificationFromAPI();
     }
@@ -283,21 +283,21 @@ public class ListCourtHearingIT extends AbstractIT {
 
     @Test
     public void shouldListHearingByIdWhenItExists() {
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData());
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(HearingsData.singleHearingData()));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyExistingHearingById();
     }
 
     @Test
     public void shouldListHearingByIdWhenItDoesntExist() {
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData());
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(HearingsData.singleHearingData()));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyNonExistentHearingById();
     }
 
     @Test
     public void shouldListHearingByIdWhenIdIsInvalid() {
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData());
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(HearingsData.singleHearingData()));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingByIdWithInvalidId();
     }
@@ -413,5 +413,19 @@ public class ListCourtHearingIT extends AbstractIT {
                 });
 
         pollForHearingById(getLoggedInUser(), hearingsData.getHearingData().get(0).getId(), allOf(matchers.toArray(new Matcher[0])));
+    }
+
+    /**
+     * These hearings are listed at a Crown centre with no courtroom and no courtScheduleId, so listing
+     * books through courtscheduler's crown.search.and.book. Real courtscheduler auto-creates a DRAFT
+     * session for the hearing's date; stub that answer per hearing so listing books it (hearing stays
+     * unallocated, as the tests expect) instead of failing open with the "[CROWN-FB] No bookable
+     * session" ERROR on the shared empty catch-all.
+     */
+    private static HearingsData withDraftCrownSession(final HearingsData hearingsData) {
+        hearingsData.getHearingData().forEach(hearing ->
+                stubCrownFallbackDraftSessionForHearing(hearing.getId().toString(), hearing.getHearingStartDate(),
+                        hearing.getCourtRoomId()));
+        return hearingsData;
     }
 }

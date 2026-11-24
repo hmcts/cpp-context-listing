@@ -405,7 +405,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
                     userStartTimeIso);
 
             if (isEmpty(bookedSessions)) {
-                LOGGER.warn("CROWN multi-day update: no sessions found for hearingId {} — marking days draft so allocation stays closed.", hearing.getHearingId());
+                LOGGER.info("CROWN multi-day update: no sessions found for hearingId {} — marking days draft so allocation stays closed.", hearing.getHearingId());
                 return markDaysDraftWhenSessionsUnresolved(hearing);
             }
 
@@ -1665,7 +1665,7 @@ public class CourtScheduleEnrichmentService implements EnrichmentService {
         final List<CourtSchedule> sessions = fetchCourtSchedulesByIds(courtScheduleIds);
 
         if (isEmpty(sessions)) {
-            LOGGER.warn("CROWN single-day: failed to fetch court schedules for hearingId {}. Returning unchanged.", hearing.getId());
+            LOGGER.info("CROWN single-day: failed to fetch court schedules for hearingId {}. Returning unchanged.", hearing.getId());
             return new EnrichmentResult(hearing.getHearingDays(), new ArrayList<>());
         }
 

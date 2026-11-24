@@ -160,7 +160,9 @@ public class ServerLogTestMarkerExtension implements BeforeAllCallback, AfterAll
     private static final java.util.regex.Pattern FLOOR_NOISE = java.util.regex.Pattern.compile(
             "No stream not found"                 // EVENT_LISTENER stream_status select-for-update race
                     + "|Failed to find Event with id"     // AsynchronousPrePublisher vs event-store truncate
-                    + "|AMQ212009: resetting session");   // Artemis companion WARN of any rolled-back delivery
+                    + "|Failed to find LinkedEvent in event_log|EventPublishingTimerBean"   // publish_queue vs event_log truncate (WFLYEJB0020/0022 timer retry)
+                    + "|AMQ212009: resetting session"     // Artemis companion WARN of any rolled-back delivery
+                    + "|\\[CROWN-FB\\] No bookable session for hearingId=");   // Crown list fail-open on the shared empty search-and-book stub; hearing proceeds unallocated by design
 
     private void rememberWindowStartOffset(final ExtensionContext context) {
         long offset = -1;

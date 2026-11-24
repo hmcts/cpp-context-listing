@@ -5,6 +5,7 @@ import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData.partialDefendantUpdateWithoutIsYouth;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData.updatedDefendantData;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData.updatedDefendantDataWithIsYouth;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCrownFallbackDraftSessionForHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.getRandomCourtCenterId;
@@ -29,7 +30,7 @@ class DefendantsChangedIT extends AbstractIT {
     @Test
     void shouldUpdateDefendantsFollowingPublicDefendantsChangedEventFromProgression() {
         HearingsData hearingsData = HearingsData.hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(UNALLOCATED);
 
@@ -83,7 +84,7 @@ class DefendantsChangedIT extends AbstractIT {
     @Test
     void shouldSetDefendantAsYouthAfterUpdateDefendantsForHearingWhenInitiallyAdult() {
         final HearingsData hearingsData = HearingsData.hearingsDataWithAdultDefendants();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(UNALLOCATED);
         listCourtHearingSteps.verifyFirstListedDefendantYouthStatusWithJmsDelay(UNALLOCATED, false);
@@ -105,7 +106,7 @@ class DefendantsChangedIT extends AbstractIT {
     @Test
     void shouldRetainIsYouthWhenSecondCaseDefendantChangedEventOmitsIsYouthFlag() {
         final HearingsData hearingsData = HearingsData.hearingsDataWithAdultDefendants();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(UNALLOCATED);
         listCourtHearingSteps.verifyFirstListedDefendantYouthStatusWithJmsDelay(UNALLOCATED, false);
@@ -133,7 +134,7 @@ class DefendantsChangedIT extends AbstractIT {
     @Test
     void shouldSetIsYouthWhenYouthFlagArrivesInSecondCaseDefendantChangedEvent() {
         final HearingsData hearingsData = HearingsData.hearingsDataWithAdultDefendants();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(UNALLOCATED);
         listCourtHearingSteps.verifyFirstListedDefendantYouthStatusWithJmsDelay(UNALLOCATED, false);
@@ -161,7 +162,7 @@ class DefendantsChangedIT extends AbstractIT {
     @Test
     void shouldRetainIsYouthWhenSecondCaseDefendantChangedEventExplicitlySetsAdult() {
         final HearingsData hearingsData = HearingsData.hearingsDataWithAdultDefendants();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(UNALLOCATED);
 
@@ -186,7 +187,7 @@ class DefendantsChangedIT extends AbstractIT {
     @Test
     void shouldRetainIsYouthWhenListedAsYouthAndSubsequentEventOmitsIsYouthFlag() {
         final HearingsData hearingsData = HearingsData.singleHearingDataForYoungDefendants();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(UNALLOCATED);
         listCourtHearingSteps.verifyFirstListedDefendantYouthStatusWithJmsDelay(UNALLOCATED, true);
@@ -201,5 +202,20 @@ class DefendantsChangedIT extends AbstractIT {
         partialUpdateSteps.whenPublicEventProgressionCaseDefendantChangedIsPublished(partialUpdate);
         partialUpdateSteps.verifyDefendantDetailsUpdatedWithJmsDelay(UNALLOCATED);
         partialUpdateSteps.verifyListedDefendantIsYouthWithJmsDelay(UNALLOCATED, true);
+    }
+
+    /**
+     * These hearings are listed at a Crown centre with no courtroom and no courtScheduleId, so listing
+     * books through courtscheduler's crown.search.and.book. Stub the DRAFT session real courtscheduler
+     * returns (with a courtroom) per hearing, so listing books it (hearing stays unallocated, as the
+     * tests assert) instead of failing open with the "[CROWN-FB] No bookable session" ERROR on the
+     * shared empty catch-all. These tests never allocate the hearing afterwards, so the draft session
+     * has no further effect.
+     */
+    private static HearingsData withDraftCrownSession(final HearingsData hearingsData) {
+        hearingsData.getHearingData().forEach(hearing ->
+                stubCrownFallbackDraftSessionForHearing(hearing.getId().toString(), hearing.getHearingStartDate(),
+                        hearing.getCourtRoomId()));
+        return hearingsData;
     }
 }

@@ -270,6 +270,7 @@ class MoveHearingToPastDateIT extends AbstractIT {
     }
 
     @Test
+    @ExpectedServerErrors("courtscheduler is stubbed to 422 NO_SESSION_FOUND -> CourtSchedulerServiceAdapter logs ERROR 'moveHearingToPastDate from courtscheduler returned status 422'; listing returns the 422 to the caller")
     void shouldRejectMagistratesMoveWith422WhenNoCourtScheduleSessionExists() {
         final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
 
@@ -288,6 +289,7 @@ class MoveHearingToPastDateIT extends AbstractIT {
     /** Older courtscheduler releases signalled no-session as a bare 404 - the listing adapter
      * normalises that to the 422 NO_SESSION_FOUND contract, with the fixed user-facing message. */
     @Test
+    @ExpectedServerErrors("courtscheduler is stubbed to the legacy 404 -> CourtSchedulerServiceAdapter logs ERROR 'moveHearingToPastDate from courtscheduler returned status 404'; listing normalises it to 422 NO_SESSION_FOUND")
     void shouldNormaliseLegacyCourtscheduler404ToA422NoSessionFound() {
         final MoveHearingToPastDateSteps moveSteps = givenAListedHearing(MAGISTRATES_JURISDICTION);
 
