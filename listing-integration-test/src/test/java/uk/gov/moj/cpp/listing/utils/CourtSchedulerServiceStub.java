@@ -355,6 +355,34 @@ public class CourtSchedulerServiceStub {
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
     }
 
+    /**
+     * The single-day crown.search.and.book answer real courtscheduler gives for ONE hearing listed
+     * at a Crown centre WITHOUT a courtScheduleId: a DRAFT session (SPRDT-1159/1283) on the hearing's
+     * own date. Courtscheduler draft sessions can carry a courtroom, so the reply always has one: the
+     * given room, or a generated one when the hearing has none. Listing ignores the room of a draft
+     * booking and keeps the hearing unallocated (Hearing.canAllocateForCrown() needs non-draft days),
+     * so tests asserting an unallocated listing keep their intent, and listing logs the normal
+     * "[CROWN-FB] ... booked" INFO instead of the fail-open "No bookable session" ERROR.
+     * Path-scoped to the hearingId so it cannot leak into other ITs.
+     */
+    public static void stubCrownFallbackDraftSessionForHearing(final String hearingId,
+                                                               final LocalDate sessionDate,
+                                                               final UUID courtRoomId) {
+        final UUID sessionCourtRoomId = courtRoomId != null ? courtRoomId : UUID.randomUUID();
+        final String body = format(
+                "{\"hearingId\":\"%s\",\"courtScheduleId\":\"%s\",\"courtRoomId\":\"%s\"," +
+                        "\"sessionDate\":\"%s\",\"sessionStartTime\":\"%sT10:00:00Z\",\"sessionEndTime\":\"%sT16:30:00Z\"," +
+                        "\"durationInMinutes\":360,\"isDraft\":true,\"businessType\":\"CR\"," +
+                        "\"source\":\"CROWN_FB_LIST\",\"overbooked\":false,\"sessions\":[]}",
+                hearingId, UUID.randomUUID(), sessionCourtRoomId, sessionDate, sessionDate, sessionDate);
+        stubFor(post(urlPathMatching(COURT_SCHEDULER_ENDPOINT + HEARINGS_PATH + "/" + hearingId))
+                .withHeader(CONTENT_TYPE, containing(CROWN_SEARCH_AND_BOOK_TYPE))
+                .atPriority(1)
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(body)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
     /** Stub 404 "no session found" on POST /hearings/{id} (crown.search.and.book, single-day)
      * — listing-side translates to CrownFallbackNoSessionException. */
     public static void stubCrownFallbackSearchAndBookNotFound() {
@@ -1856,6 +1884,30 @@ public class CourtSchedulerServiceStub {
      * shift the later days).
      */
     public static void stubGetCourtSchedulesByIdWithSessions(final List<CourtScheduleStubSession> sessions) {
+        stubCourtSchedulesByIdResponse(courtSchedulesBody(sessions));
+    }
+
+    /**
+     * Scoped variant of {@link #stubGetCourtSchedulesByIdWithSessions}: answers GET /sessions only when the
+     * {@code ids} query param carries EVERY given courtScheduleId, so it serves just this test's update and
+     * cannot leak into other ITs (WireMock stubs persist across IT classes in a suite). Use it for a CROWN
+     * update whose seeded hearing days must resolve to real sessions, instead of the empty catch-all that
+     * sends the enrichment down its "failed to fetch court schedules" fail-safe.
+     */
+    public static void stubGetCourtSchedulesByIdForSessions(final List<CourtScheduleStubSession> sessions) {
+        final String allIdsPresent = sessions.stream()
+                .map(session -> "(?=.*" + java.util.regex.Pattern.quote(session.courtScheduleId()) + ")")
+                .collect(java.util.stream.Collectors.joining("", "", ".*"));
+        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + SESSIONS_PATH)))
+                .atPriority(2)
+                .withQueryParam("ids", matching(allIdsPresent))
+                .withHeader("Accept", containing("application/vnd.courtscheduler.search.court-schedules-by-id+json"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(courtSchedulesBody(sessions))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)));
+    }
+
+    private static String courtSchedulesBody(final List<CourtScheduleStubSession> sessions) {
         final StringBuilder schedulesJson = new StringBuilder();
         for (int i = 0; i < sessions.size(); i++) {
             final CourtScheduleStubSession session = sessions.get(i);
@@ -1871,7 +1923,7 @@ public class CourtSchedulerServiceStub {
                     .append(",\"hearingStartTime\":\"").append(session.hearingStartTime()).append("\"")
                     .append(draftFields(session.isDraft())).append("}");
         }
-        stubCourtSchedulesByIdResponse("{\"courtSchedules\":[" + schedulesJson + "]}");
+        return "{\"courtSchedules\":[" + schedulesJson + "]}";
     }
 
     /**

@@ -33,6 +33,7 @@ import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearin
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithoutVideoLink;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCrownFallbackDraftSessionForHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.verifyHearingSlotsSearchCalledWithJurisdiction;
@@ -94,7 +95,7 @@ class HearingIT extends AbstractIT {
     @Test
     void updateHearingResultsInAllocatedListingAndRaisesPublicHearingConfirmedPublicEvent() throws IOException {
         final HearingsData hearingsData = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -114,7 +115,7 @@ class HearingIT extends AbstractIT {
     @Test
     void shouldPassJurisdictionQueryParamWhenSearchingAvailableHearingSlots() throws IOException {
         final HearingsData hearingsData = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -132,7 +133,7 @@ class HearingIT extends AbstractIT {
     void assignPublicListNoteInAllocatedListing() throws IOException {
         stubGetAvailableHearingSlots();
         final HearingsData hearingsData = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -161,7 +162,7 @@ class HearingIT extends AbstractIT {
     void shouldUpdateHearingResultsInPartialAllocatedListing() throws IOException {
         stubGetAvailableHearingSlots();
         HearingsData hearingsData = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -244,7 +245,7 @@ class HearingIT extends AbstractIT {
     @Test
     void updateHearingResultsInAllocatedListingAndRaisesPublicHearingConfirmedPublicEventWithNoJudiciary() throws IOException {
         final HearingsData hearingsData = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -503,7 +504,7 @@ class HearingIT extends AbstractIT {
     @Test
     void updateHearingResultsWhenCourtRoomNotSelected() {
         final HearingsData hearingsData = singleHearingDataForHMI();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         listCourtHearingSteps.verifyPublicEventHearingListed();
@@ -765,7 +766,7 @@ class HearingIT extends AbstractIT {
         final UpdatedHearingData updatedHearingDataForAllocation = updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
         final SequenceHearingData sequenceHearingData = new SequenceHearingData(updatedHearingDataForAllocation);
 
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -796,7 +797,7 @@ class HearingIT extends AbstractIT {
     @Test
     void shouldHideUnallocatedHearingOnceVacatedFromUnallocatedLists() {
         final HearingsData hearingsData = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -810,7 +811,7 @@ class HearingIT extends AbstractIT {
     @Test
     void shouldFindUnallocatedHearingWithCaseUrn() {
         final HearingsData hearingsData = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedWithAnyAllocationFromAPI(UNALLOCATED);
     }
@@ -822,7 +823,7 @@ class HearingIT extends AbstractIT {
         final String startDate = nonNull(hearingsData.getHearingData().get(0).getHearingStartDate()) ? hearingsData.getHearingData().get(0).getHearingStartDate().toString() : null;
         final String endDate = nonNull(hearingsData.getHearingData().get(0).getHearingStartDate()) ? hearingsData.getHearingData().get(0).getHearingStartDate().toString() : null;
 
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedForCotr(courtCentreId, startDate, endDate);
     }
@@ -831,7 +832,7 @@ class HearingIT extends AbstractIT {
     void shouldDeleteCourtApplicationHearing() {
         final HearingsData hearingsData = hearingsData();
 
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(hearingsData));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -969,4 +970,17 @@ class HearingIT extends AbstractIT {
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
     }
 
+    /**
+     * These hearings are listed at a Crown centre with no courtroom and no courtScheduleId, so listing
+     * books through courtscheduler's crown.search.and.book. Stub the DRAFT session real courtscheduler
+     * returns (with a courtroom) per hearing, so listing books it (hearing stays unallocated, as the
+     * tests assert) instead of failing open with the "[CROWN-FB] No bookable session" ERROR on the
+     * shared empty catch-all.
+     */
+    private static HearingsData withDraftCrownSession(final HearingsData hearingsData) {
+        hearingsData.getHearingData().forEach(hearing ->
+                stubCrownFallbackDraftSessionForHearing(hearing.getId().toString(), hearing.getHearingStartDate(),
+                        hearing.getCourtRoomId()));
+        return hearingsData;
+    }
 }

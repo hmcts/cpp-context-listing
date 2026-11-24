@@ -8,6 +8,7 @@ import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.pollForHearing;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.notHmiEnabledHearingsData;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCrownFallbackDraftSessionForHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.HmiAllocationStubHelper.stubForAllocatedListing;
@@ -42,7 +43,7 @@ public class ListNextHearingIT extends AbstractIT {
     void shouldListNextHearings() {
         final HearingsData firstHearings = hearingsData();
         final HearingsData nextHearings = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(firstHearings));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -59,7 +60,7 @@ public class ListNextHearingIT extends AbstractIT {
         final HearingsData nextHearings = hearingsData();
 
         final HearingsData firstHearings = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(firstHearings));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -83,7 +84,7 @@ public class ListNextHearingIT extends AbstractIT {
         final HearingsData nextHearings = HearingsData.hearingsData();
 
         final HearingsData firstHearings = HearingsData.hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(firstHearings));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -109,7 +110,7 @@ public class ListNextHearingIT extends AbstractIT {
         final HearingsData nextHearings = notHmiEnabledHearingsData();
         final HearingsData firstHearings = notHmiEnabledHearingsData();
 
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(firstHearings));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -137,11 +138,11 @@ public class ListNextHearingIT extends AbstractIT {
         final HearingsData firstHearings = hearingsData();
         final HearingsData existedHearings = hearingsData();
 
-        final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(firstHearings);
+        final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(withDraftCrownSession(firstHearings));
         listCourtHearingSteps1.whenCaseIsSubmittedForListing();
         listCourtHearingSteps1.verifyHearingListedFromAPI(UNALLOCATED);
 
-        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(existedHearings);
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(withDraftCrownSession(existedHearings));
         listCourtHearingSteps2.whenCaseIsSubmittedForListing();
         listCourtHearingSteps2.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -162,7 +163,7 @@ public class ListNextHearingIT extends AbstractIT {
     @Test
     void shouldAddCasetoExistingHearingforAdHocHearing() {
         final HearingsData existedHearings = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(existedHearings);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(existedHearings));
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
@@ -356,7 +357,7 @@ public class ListNextHearingIT extends AbstractIT {
 
         // GIVEN unallocated Hearing
         final HearingsData unallocatedHearing = hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(unallocatedHearing);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(unallocatedHearing));
 
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
@@ -393,5 +394,17 @@ public class ListNextHearingIT extends AbstractIT {
         listNextHearingSteps2.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(nextHearingId,firstHearings );
     }
 
-
+    /**
+     * These hearings are listed at a Crown centre with no courtroom and no courtScheduleId, so listing
+     * books through courtscheduler's crown.search.and.book. Real courtscheduler auto-creates a DRAFT
+     * session for the hearing's date; stub that answer per hearing so listing books it (hearing stays
+     * unallocated, as asserted) instead of failing open with the "[CROWN-FB] No bookable session" ERROR
+     * on the shared empty catch-all.
+     */
+    private static HearingsData withDraftCrownSession(final HearingsData hearingsData) {
+        hearingsData.getHearingData().forEach(hearing ->
+                stubCrownFallbackDraftSessionForHearing(hearing.getId().toString(), hearing.getHearingStartDate(),
+                        hearing.getCourtRoomId()));
+        return hearingsData;
+    }
 }

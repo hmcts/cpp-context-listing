@@ -9,6 +9,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForAllocation;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCrownFallbackDraftSessionForHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCrownFallbackSearchAndBookForHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
@@ -73,7 +74,7 @@ public class CourtListIT extends AbstractIT {
     @BeforeEach
     public void setupStepsForCourtList() {
         firstHearing = HearingsData.hearingsData();
-        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearing);
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(firstHearing));
         firstHearingListCourtHearingSteps = listCourtHearingSteps;
         listCourtHearingSteps.whenCaseIsSubmittedForListing();
         listCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(UNALLOCATED);
@@ -289,7 +290,7 @@ public class CourtListIT extends AbstractIT {
 
 
         final HearingsData unrelatedHearingsData = HearingsData.hearingsData();
-        final ListCourtHearingSteps unrelatedListCourtHearingSteps = new ListCourtHearingSteps(unrelatedHearingsData);
+        final ListCourtHearingSteps unrelatedListCourtHearingSteps = new ListCourtHearingSteps(withDraftCrownSession(unrelatedHearingsData));
         unrelatedListCourtHearingSteps.whenCaseIsSubmittedForListing();
         unrelatedListCourtHearingSteps.verifyHearingListedFromAPIWithJmsDelay(UNALLOCATED);
 
@@ -432,4 +433,18 @@ public class CourtListIT extends AbstractIT {
         courtListSteps.verifyCourtListRequestedAndIsCorrectJsonWithJmsDelay(BENCH, "BenchAndStandardCourtList", new Matcher[0]);
     }
 
+    /**
+     * These hearings are listed at a Crown centre with no courtroom and no courtScheduleId, so listing
+     * books through courtscheduler's crown.search.and.book. Real courtscheduler auto-creates a DRAFT
+     * session for the hearing's date; stub that answer per hearing so listing books it (hearing stays
+     * unallocated, as asserted) instead of failing open with the "[CROWN-FB] No bookable session" ERROR
+     * on the shared empty catch-all. The later MAGISTRATES update rebuilds the hearing days from its
+     * nonDefaultDays, so the draft session does not reach allocation or the court lists.
+     */
+    private static HearingsData withDraftCrownSession(final HearingsData hearingsData) {
+        hearingsData.getHearingData().forEach(hearing ->
+                stubCrownFallbackDraftSessionForHearing(hearing.getId().toString(), hearing.getHearingStartDate(),
+                        hearing.getCourtRoomId()));
+        return hearingsData;
+    }
 }

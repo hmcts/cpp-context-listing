@@ -4,6 +4,7 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataForCrownAllocation;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCrownFallbackSearchAndBookForHearing;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetCourtSchedulesByIdForSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessions;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubListHearingInCourtSessionsWithMultipleSchedules;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubProvisionalBookingWithCustomParams;
@@ -20,13 +21,16 @@ import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
+import uk.gov.moj.cpp.listing.steps.data.NonDefaultDayData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.CourtScheduleStubSession;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -65,6 +69,14 @@ public class CrownDailyListExParteCivilCaseIT extends AbstractIT {
                 allocation.getNonDefaultDays().get(1).getCourtScheduleId().map(UUID::fromString).orElse(null).toString(),
                 ZonedDateTime.parse(allocation.getNonDefaultDays().get(0).getStartTime()),
                 allocation.getNonDefaultDays().get(0).getDuration().orElse(20));
+
+        // The update seeds one hearing day per nonDefaultDay and verifies each courtScheduleId with
+        // courtscheduler (GET /sessions?ids=...). Answer with both sessions as FINAL in the update's room,
+        // as the real courtscheduler would, so the update takes the normal path instead of the
+        // "failed to fetch court schedules" fail-safe that marks the days draft.
+        stubGetCourtSchedulesByIdForSessions(allocation.getNonDefaultDays().stream()
+                .map(this::finalSessionFor)
+                .toList());
 
         final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(civilCasesHearingsData, allocation);
         updateHearingSteps.whenHearingIsUpdatedForListing();
@@ -108,6 +120,12 @@ public class CrownDailyListExParteCivilCaseIT extends AbstractIT {
 
         steps.verifyDailyListShowsApplicationButNotHiddenApplication(CROWN_COURT_CENTRE_ID, hearingDate, publishCourtListType,
                 subjectFirstName(shownApplication), subjectFirstName(hiddenApplication));
+    }
+
+    private CourtScheduleStubSession finalSessionFor(final NonDefaultDayData day) {
+        final ZonedDateTime startTime = ZonedDateTime.parse(day.getStartTime());
+        return new CourtScheduleStubSession(day.getCourtScheduleId().orElseThrow(), startTime.toLocalDate(),
+                allocation.getCourtCentreId(), allocation.getCourtRoomId(), startTime, false);
     }
 
     private ListedCaseData exParteCase() {
