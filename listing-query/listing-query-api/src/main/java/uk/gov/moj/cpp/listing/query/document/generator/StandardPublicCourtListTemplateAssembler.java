@@ -37,6 +37,7 @@ import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.offence.OffenceOrdering;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.WelshMonth;
@@ -123,6 +124,9 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String TITLE = "title";
     private static final String STATEMENT_OF_OFFENCE = "statementOfOffence";
     private static final String OFFENCES = "offences";
+    private static final String JURISDICTION_TYPE = "jurisdictionType";
+    private static final String ORDER_INDEX = "orderIndex";
+    private static final String COUNT = "count";
     private static final String LISTED_CASES = "listedCases";
     private static final String SEQUENCE = "sequence";
     private static final String ORGANISATION_NAME = "organisationName";
@@ -540,7 +544,8 @@ public class StandardPublicCourtListTemplateAssembler {
             setDefendantDetails(hearingJson, defendant, dateOfBirth, isGroupMaster, builder);
         }
         final List<Offence> offenceList = new ArrayList<>();
-        defendant.getJsonArray(OFFENCES).getValuesAs(JsonObject.class)
+        defendant.getJsonArray(OFFENCES).getValuesAs(JsonObject.class).stream()
+                .sorted(OffenceOrdering.forJurisdiction(hearingJson.getString(JURISDICTION_TYPE, null)))
                 .forEach(offences -> {
                     reportingRestrictions.addAll(getReportingRestriction(offences)
                             .stream()
@@ -619,9 +624,15 @@ public class StandardPublicCourtListTemplateAssembler {
             builder.withWelshOffenceTitle(offence.getJsonObject(STATEMENT_OF_OFFENCE).getString(WELSH_TITLE, BLANK_STRING));
             builder.withOffenceWording(offence.getString(OFFENCE_WORDING, BLANK_STRING));
             builder.withId(fromString(offence.getString(ID)));
+            builder.withOrderIndex(integerOrNull(offence, ORDER_INDEX));
+            builder.withCount(integerOrNull(offence, COUNT));
         }
 
         return builder.build();
+    }
+
+    private static Integer integerOrNull(final JsonObject jsonObject, final String key) {
+        return jsonObject.containsKey(key) && !jsonObject.isNull(key) ? jsonObject.getInt(key) : null;
     }
 
     private List<ReportingRestriction> getReportingRestriction(final JsonObject offences) {

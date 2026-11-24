@@ -24,7 +24,6 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollForUnscheduledHearings;
 import static uk.gov.moj.cpp.listing.helper.SearchHearingHelper.getHearingFilter;
@@ -976,13 +975,13 @@ public class ListNextHearingSteps extends AbstractIT {
                                                 .build()))
                                         .withOffences(d.getOffences().stream()
                                                 .map(o -> Offence.offence()
-                                                        .withCount(INTEGER.next())
+                                                        .withCount(o.getCount())
                                                         .withId(o.getOffenceId())
                                                         .withOffenceCode(STRING.next())
                                                         .withOffenceDefinitionId(randomUUID())
                                                         .withWording(STRING.next())
                                                         .withStartDate(ItClock.today().toString())
-                                                        .withOrderIndex(INTEGER.next())
+                                                        .withOrderIndex(o.getOrderIndex())
                                                         .withOffenceTitle(o.getStatementOfOffenceTitle())
                                                         .withLaaApplnReference(
                                                                 LaaReference.laaReference()
