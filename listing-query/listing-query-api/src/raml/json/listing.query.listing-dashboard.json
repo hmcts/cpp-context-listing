@@ -1,0 +1,34 @@
+{
+  "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+  "startDate": "2026-11-23",
+  "endDate": "2026-11-29",
+  "hearings": [
+    {
+      "hearingId": "3b81321f-c98b-473a-a3c0-ff5b55654138",
+      "hearingDate": "2026-11-23",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "courtRoomName": "Courtroom 4",
+      "startTime": "2026-11-23T10:00:00Z",
+      "durationMinutes": 330,
+      "hearingTypeId": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+      "hearingType": "Trial",
+      "hearingDayNumber": 13,
+      "totalHearingDays": 16,
+      "caseUrns": ["TFL00000001"],
+      "applicationReferences": [],
+      "allocated": true
+    },
+    {
+      "hearingId": "7c1d2e4a-5b6f-4a8b-9c0d-1e2f3a4b5c6d",
+      "weekCommencingStartDate": "2026-11-23",
+      "weekCommencingEndDate": "2026-11-27",
+      "durationMinutes": 60,
+      "hearingTypeId": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+      "hearingType": "Plea and Trial Preparation",
+      "totalHearingDays": 0,
+      "caseUrns": ["TFL00000002"],
+      "applicationReferences": [],
+      "allocated": false
+    }
+  ]
+}

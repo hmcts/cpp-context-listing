@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/query/listing.query.listing-dashboard.json",
+  "description": "Crown hearings at a court centre for one week (Monday to Sunday), one row per hearing day",
+  "type": "object",
+  "properties": {
+    "courtCentreId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "startDate": {
+      "description": "Monday of the week",
+      "type": "string",
+      "format": "date"
+    },
+    "endDate": {
+      "description": "Sunday of the week",
+      "type": "string",
+      "format": "date"
+    },
+    "hearings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "hearingId": { "type": "string", "format": "uuid" },
+          "hearingDate": { "type": "string", "format": "date" },
+          "weekCommencingStartDate": { "type": "string", "format": "date" },
+          "weekCommencingEndDate": { "type": "string", "format": "date" },
+          "courtRoomId": { "type": "string", "format": "uuid" },
+          "courtRoomName": { "type": "string" },
+          "startTime": { "type": "string", "format": "date-time" },
+          "durationMinutes": { "type": "integer" },
+          "hearingTypeId": { "type": "string", "format": "uuid" },
+          "hearingType": { "type": "string" },
+          "hearingDayNumber": { "type": "integer" },
+          "totalHearingDays": { "type": "integer" },
+          "caseUrns": { "type": "array", "items": { "type": "string" } },
+          "applicationReferences": { "type": "array", "items": { "type": "string" } },
+          "allocated": { "type": "boolean" }
+        },
+        "required": ["hearingId", "caseUrns", "applicationReferences"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["courtCentreId", "startDate", "endDate", "hearings"],
+  "additionalProperties": false
+}
