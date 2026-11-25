@@ -293,6 +293,11 @@ public class ExtendHearingForHearingListener {
      * offence has listing number greater than or equal to the db version or add the passed in offence
      * if there is no version of the offence in db then
      *
+     * <p>LPT-2677: the incoming array order carries no meaning (it is progression's drifted order),
+     * so an offence already on the hearing is replaced where it is, keeping its stored
+     * orderIndex/count when the incoming copy has none; a new offence goes in at its orderIndex
+     * position.
+     *
      * @param dbListedCases
      * @param listedCase
      * @param defendant
@@ -302,12 +307,69 @@ public class ExtendHearingForHearingListener {
         dbListedCases.stream().filter(dbListedCase -> dbListedCase.getId().equals(listedCase.getId())).forEach(dbListedCase ->
                 dbListedCase.getDefendants().stream().filter(dbListedDefendant -> dbListedDefendant.getId().equals(defendant.getId())).forEach(dbListedDefendant ->
                         defendant.getOffences().forEach(defendantOffence -> {
-                                    final Offence latestVersionOfOffence = offenceComparator.getLatestVersionOfOffence(defendantOffence, dbListedDefendant.getOffences());
-                                    dbListedDefendant.getOffences().removeIf(dbOffence -> dbOffence.getId().equals(defendantOffence.getId()));
-                                    dbListedDefendant.getOffences().add(latestVersionOfOffence);
+                                    final List<Offence> dbOffences = dbListedDefendant.getOffences();
+                                    final Offence latestVersionOfOffence = offenceComparator.getLatestVersionOfOffence(defendantOffence, dbOffences);
+                                    replaceInPlaceOrInsertByOrderIndex(dbOffences, latestVersionOfOffence);
                                 }
                         ))
         );
+    }
+
+    private static void replaceInPlaceOrInsertByOrderIndex(final List<Offence> offences, final Offence offence) {
+        final int existingIndex = indexOf(offences, offence.getId());
+        if (existingIndex >= 0) {
+            offences.set(existingIndex, withStoredOrderingWhenMissing(offence, offences.get(existingIndex)));
+            removeLaterDuplicates(offences, existingIndex);
+            return;
+        }
+        final int insertAt = firstIndexWithGreaterOrderIndex(offences, offence.getOrderIndex());
+        if (insertAt >= 0) {
+            offences.add(insertAt, offence);
+        } else {
+            offences.add(offence);
+        }
+    }
+
+    private static int indexOf(final List<Offence> offences, final UUID offenceId) {
+        for (int i = 0; i < offences.size(); i++) {
+            if (offences.get(i).getId().equals(offenceId)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static void removeLaterDuplicates(final List<Offence> offences, final int keptIndex) {
+        final UUID offenceId = offences.get(keptIndex).getId();
+        for (int i = offences.size() - 1; i > keptIndex; i--) {
+            if (offences.get(i).getId().equals(offenceId)) {
+                offences.remove(i);
+            }
+        }
+    }
+
+    private static int firstIndexWithGreaterOrderIndex(final List<Offence> offences, final Integer orderIndex) {
+        if (isNull(orderIndex)) {
+            return -1;
+        }
+        for (int i = 0; i < offences.size(); i++) {
+            final Integer existing = offences.get(i).getOrderIndex();
+            if (nonNull(existing) && existing > orderIndex) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static Offence withStoredOrderingWhenMissing(final Offence offence, final Offence stored) {
+        if (nonNull(offence.getOrderIndex()) && nonNull(offence.getCount())) {
+            return offence;
+        }
+        return Offence.offence()
+                .withValuesFrom(offence)
+                .withOrderIndex(nonNull(offence.getOrderIndex()) ? offence.getOrderIndex() : stored.getOrderIndex())
+                .withCount(nonNull(offence.getCount()) ? offence.getCount() : stored.getCount())
+                .build();
     }
 
     private void addDefendants(final List<ListedCase> dbListedCases, final ListedCase listedCase, final Defendant defendant) {
