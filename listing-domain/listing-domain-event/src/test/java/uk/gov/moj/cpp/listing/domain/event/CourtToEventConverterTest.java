@@ -183,6 +183,35 @@ public class CourtToEventConverterTest {
 
     }
 
+    /**
+     * This converter builds the offences carried by cases-added-to-hearing (next hearing into an
+     * existing hearing). The court list orders offences by count and orderIndex, so both must
+     * survive the conversion.
+     */
+    @Test
+    public void shouldCarryOrderIndexAndCountOntoTheListedOffence() {
+        final ProsecutionCase sample = getSampleProsecutionCase();
+        final Defendant sampleDefendant = sample.getDefendants().get(0);
+        final Offence offenceWithOrdering = Offence.offence()
+                .withValuesFrom(sampleDefendant.getOffences().get(0))
+                .withOrderIndex(7)
+                .withCount(3)
+                .build();
+        final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase()
+                .withValuesFrom(sample)
+                .withDefendants(List.of(Defendant.defendant()
+                        .withValuesFrom(sampleDefendant)
+                        .withOffences(List.of(offenceWithOrdering))
+                        .build()))
+                .build();
+
+        final ListedCase listedCase = CourtToEventConverter.buildListedCase(prosecutionCase, Collections.emptyList());
+
+        final uk.gov.justice.listing.events.Offence listedOffence = listedCase.getDefendants().get(0).getOffences().get(0);
+        assertThat(listedOffence.getOrderIndex(), is(7));
+        assertThat(listedOffence.getCount(), is(3));
+    }
+
     @Test
     public void shouldSetShadowListedFlag() {
         final ListedCase listedCase = CourtToEventConverter.buildListedCase(getSampleProsecutionCase(), Arrays.asList(OFFENCE_ID));

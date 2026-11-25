@@ -10,6 +10,8 @@ public class Offence {
     private String welshOffenceTitle;
     private String offenceWording;
     private Integer listingNumber;
+    private Integer orderIndex;
+    private Integer count;
 
     public String getOffenceTitle() {
         return offenceTitle;
@@ -31,6 +33,16 @@ public class Offence {
         return listingNumber;
     }
 
+    /** The offence number shown in Case at a glance and Manage hearing (LPT-2677). */
+    public Integer getOrderIndex() {
+        return orderIndex;
+    }
+
+    /** The indictment count, shown for Crown offences when greater than 0. */
+    public Integer getCount() {
+        return count;
+    }
+
     public static Offence.Builder offence() {
         return new Offence.Builder();
     }
@@ -42,6 +54,8 @@ public class Offence {
         private String welshOffenceTitle;
         private String offenceWording;
         private Integer listingNumber;
+        private Integer orderIndex;
+        private Integer count;
 
         private Builder() {
         }
@@ -70,6 +84,14 @@ public class Offence {
             this.listingNumber = listingNumber;
             return this;
         }
+        public Builder withOrderIndex(Integer orderIndex) {
+            this.orderIndex = orderIndex;
+            return this;
+        }
+        public Builder withCount(Integer count) {
+            this.count = count;
+            return this;
+        }
         public Offence build() {
             final Offence offence = new Offence();
             offence.offenceTitle = this.offenceTitle;
@@ -77,6 +99,8 @@ public class Offence {
             offence.offenceWording = this.offenceWording;
             offence.id = this.id;
             offence.listingNumber = this.listingNumber;
+            offence.orderIndex = this.orderIndex;
+            offence.count = this.count;
             return offence;
         }
     }
@@ -89,6 +113,8 @@ public class Offence {
                 ", offenceWording='" + offenceWording + '\'' +
                 ", id='" + id + '\'' +
                 ", listingNumber='" + listingNumber + '\'' +
+                ", orderIndex='" + orderIndex + '\'' +
+                ", count='" + count + '\'' +
                 '}';
     }
 
