@@ -46,6 +46,7 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_ALLOCATED_AND_UNALLOCATED_HEARINGS = "listing.allocated.and.unallocated.hearings";
     private static final String ACTION_SEARCH_CASE_BY_PERSON_DEFENDANT_AND_HEARING_DATE = "listing.get.cases-by-person-defendant";
     private static final String ACTION_SEARCH_CASE_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE = "listing.get.cases-by-organisation-defendant";
+    private static final String ACTION_LISTING_DASHBOARD = "listing.query.listing-dashboard";
 
     @Mock
     private UserAndGroupProvider userAndGroupProvider;
@@ -159,6 +160,18 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowAuthorisedUserToSearchCasesByOrganisationDefendantAndHearingDate() {
         final Action action = createActionFor(ACTION_SEARCH_CASE_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE);
+        final ExecutionResults results = executeRulesWith(action);
+        assertFailureOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowAuthorisedUserToGetListingDashboard() {
+        assertAccessAsExpected(ACTION_LISTING_DASHBOARD, LISTING_OFFICERS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, YOTS, CPS, NPS, COURT_ASSOCIATE, GROUP_POLICE_ADMIN, GROUP_VICTIMS_WITNESS_CARE_ADMIN, NON_CPS_PROSECUTOR_GROUP);
+    }
+
+    @Test
+    public void shouldNotAllowUnauthorisedUserToGetListingDashboard() {
+        final Action action = createActionFor(ACTION_LISTING_DASHBOARD);
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }

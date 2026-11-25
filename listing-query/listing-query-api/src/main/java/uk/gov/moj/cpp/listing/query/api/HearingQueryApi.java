@@ -33,6 +33,7 @@ import uk.gov.moj.cpp.listing.query.document.generator.JudgeListTemplateAssemble
 import uk.gov.moj.cpp.listing.query.document.generator.JudiciaryNameMapper;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
+import uk.gov.moj.cpp.listing.query.view.ListingDashboardQueryView;
 import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.io.IOException;
@@ -103,6 +104,9 @@ public class HearingQueryApi {
 
     @Inject
     private HearingQueryView hearingQueryView;
+
+    @Inject
+    private ListingDashboardQueryView listingDashboardQueryView;
 
     @Inject
     private Enveloper enveloper;
@@ -188,6 +192,11 @@ public class HearingQueryApi {
     @Handles("listing.cotr.search.hearings")
     public JsonEnvelope searchHearingsForCotr(final JsonEnvelope query) {
         return hearingQueryView.searchHearingsForCotr(query);
+    }
+
+    @Handles("listing.query.listing-dashboard")
+    public JsonEnvelope getListingDashboard(final JsonEnvelope query) {
+        return listingDashboardQueryView.getListingDashboard(query);
     }
 
     @Handles("listing.search.court.list")

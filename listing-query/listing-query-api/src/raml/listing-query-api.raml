@@ -654,6 +654,32 @@ protocols: [ HTTP, HTTPS ]
             schema:  !include json/schema/listing.get.cache-refdata-courtrooms-refresh.json
 
 
+/hearings/listing-dashboard:
+  get:
+    description: |
+      Retrieve every Crown hearing at a court centre for one week (Monday to Sunday), one row per hearing day.
+      ...
+      (mapping):
+          responseType: application/vnd.listing.query.listing-dashboard+json
+          name: listing.query.listing-dashboard
+      ...
+    queryParameters:
+      courtCentreId:
+        description: The court centre UUID
+        type: string
+        required: true
+      startDate:
+        description: Any date in the week, format 'YYYY-MM-DD'. Moved back to the Monday of its week. Defaults to today
+        type: string
+        required: false
+    responses:
+      200:
+        description: OK
+        body:
+          application/vnd.listing.query.listing-dashboard+json:
+            example: !include json/listing.query.listing-dashboard.json
+            schema: !include json/schema/listing.query.listing-dashboard.json
+
 /hearings/download-hearing-csv-report:
   get:
     description: |
