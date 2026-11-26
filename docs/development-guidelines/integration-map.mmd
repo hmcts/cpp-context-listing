@@ -1,0 +1,156 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#2d3748', 'primaryTextColor': '#fff', 'primaryBorderColor': '#4a5568', 'lineColor': '#718096', 'secondaryColor': '#edf2f7', 'tertiaryColor': '#e2e8f0', 'fontSize': '14px'}}}%%
+
+graph TB
+    subgraph LISTING["cpp-context-listing"]
+        direction TB
+
+        subgraph CMD_API["Command API (28 endpoints)"]
+            CMD_CASES["POST /cases<br/>list-court-hearing<br/>list-unscheduled-court-hearing"]
+            CMD_HEARING["POST /hearings/{hearingId}<br/>update-hearing-for-listing<br/>update-defendants-for-hearing<br/>delete-offences-for-hearing<br/>update-offences-for-hearing<br/>add-offences-for-hearing<br/>extend-hearing-for-hearing<br/>vacate-trial<br/>mark-unallocated-hearing-as-duplicate<br/>list-next-hearings-v2<br/>list-unscheduled-next-hearings<br/>update-related-hearing<br/>delete-next-hearings"]
+            CMD_HEARINGS["POST /hearings<br/>change-judiciary-for-hearings<br/>restrict-court-list<br/>delete-prev-hearings-and-create-next"]
+            CMD_HEARINGS_OTHER["POST /hearings/sequence<br/>POST /hearings/update-hearings"]
+            CMD_NOTE["POST /listing-note<br/>POST /listing-notes/{noteId}"]
+            CMD_COURT_LIST["POST /publishCourtList/{courtCentreId}<br/>POST /publishCourtListsForCrownCourts<br/>POST /courtlist/{courtCentreId}/{type}/{startDate}"]
+            CMD_SCHEDULE["POST /correct-hearing-days-without-court-centre<br/>POST /update-hearing-day-court-schedule<br/>POST /delete-hearing/{hearingId}"]
+        end
+
+        subgraph QRY_API["Query API (19 endpoints)"]
+            QRY_SEARCH["GET /hearings — search<br/>GET /hearings/{id}<br/>GET /hearings/range-search<br/>GET /hearings/available-search<br/>GET /hearings/allocated-and-unallocated<br/>GET /hearings/any-allocation<br/>GET /hearings/cotr-search<br/>GET /hearings/unscheduled"]
+            QRY_COURTLIST["GET /courtlist<br/>GET /courtlistpayload<br/>GET /courtListPublishStatus/{id}"]
+            QRY_CASES["GET /cases/by-person-defendant-and-hearingDate<br/>GET /cases/by-organisation-defendant-and-hearingDate"]
+            QRY_SLOTS["GET /hearingSlots<br/>POST /sessionAvailabilityValidation"]
+            QRY_CACHE["GET /cache-refdata-courtrooms/refresh<br/>POST /cache-refdata-courtrooms/add<br/>POST /cache-refdata-courtrooms/close"]
+            QRY_CSV["GET /hearings/download-hearing-csv-report"]
+        end
+
+        AGGREGATE["Hearing Aggregate<br/>(Domain)"]
+        VIEWSTORE[("PostgreSQL<br/>Viewstore")]
+        EVENT_PROC["Event Processors"]
+        EVENT_LIST["Event Listeners<br/>(Viewstore Updates)"]
+    end
+
+    %% =============================================
+    %% UPSTREAM CONTEXTS (events INTO listing)
+    %% =============================================
+    subgraph HEARING_CTX["cpp-context-hearing"]
+        H_PUB["Public Events Published"]
+    end
+
+    subgraph PROGRESSION_CTX["cpp-context-progression"]
+        P_PUB["Public Events Published"]
+        P_CMD["Cross-Context Commands"]
+    end
+
+    subgraph REFDATA_CTX["cpp-context-reference-data"]
+        R_PUB["Public Events Published"]
+    end
+
+    subgraph SJP_CTX["cpp-context-sjp"]
+        SJP_PUB["Public Events Published"]
+    end
+
+    %% =============================================
+    %% DOWNSTREAM CONTEXTS (events FROM listing)
+    %% =============================================
+    subgraph NOTIFICATION_CTX["cpp-context-notification"]
+        N_SUB["Subscribes to Listing Events"]
+    end
+
+    subgraph BUSINESSPROC_CTX["cpp-context-businessprocesses"]
+        BP_SUB["Subscribes to Listing Events"]
+    end
+
+    subgraph MI_CTX["cpp-context-mi-reportdata"]
+        MI_SUB["Event Listeners"]
+    end
+
+    %% =============================================
+    %% OUTBOUND REST SERVICES (listing calls these)
+    %% =============================================
+    subgraph COURTSCHEDULER["cpp-context-listing-courtscheduler"]
+        CS_API["REST API<br/>/hearingslots<br/>/courtschedule/search.court-schedules-by-id<br/>/validate-session-availability<br/>/list/hearingslots<br/>/searchlist/hearingslots<br/>/multidaysearchandbook/hearingslots"]
+    end
+
+    subgraph DOC_GEN["Document Generator Service"]
+        DG_API["PDF Generation API"]
+    end
+
+    subgraph XHIBIT["Xhibit Gateway"]
+        XH_API["WebDAV Endpoint<br/>/xhibit-gateway/send-to-xhibit/"]
+    end
+
+    %% =============================================
+    %% INBOUND PUBLIC EVENTS (other contexts → listing)
+    %% =============================================
+    H_PUB -->|"public.events.hearing.hearing-resulted<br/>public.events.hearing.marked-as-duplicate<br/>public.hearing.trial-vacated<br/>public.hearing.hearing-days-cancelled<br/>public.hearing.defence-counsel-added/updated/removed<br/>public.hearing.prosecution-counsel-added/updated/removed<br/>public.hearing.selected-offences-removed-from-existing-hearing"| EVENT_PROC
+
+    P_PUB -->|"public.progression.defendant-offences-changed<br/>public.progression.case-defendant-changed<br/>public.progression.court-application-changed<br/>public.progression.defendants-added-to-court-proceedings<br/>public.progression.case-markers-updated<br/>public.progression.hearing-resulted-case-updated<br/>public.progression.defendant-legalaid-status-updated<br/>public.progression.case-linked<br/>public.progression.case-removed-from-group-cases<br/>public.progression.application-offences-updated<br/>public.progression.application-laa-reference-updated-for-application<br/>public.progression.events.case-or-application-ejected<br/>public.progression.events.cps-prosecutor-updated<br/>public.progression.events.hearing-extended<br/>public.progression.events.court-application-deleted<br/>public.progression.related-hearing-updated-for-adhoc-hearing"| EVENT_PROC
+
+    R_PUB -->|"public.referencedata.event.courtroom-added<br/>public.referencedata.event.courtroom-closed"| EVENT_PROC
+
+    SJP_PUB -->|"public.events.hearing.hearing-resulted<br/>(co-publishes with hearing)"| EVENT_PROC
+
+    P_CMD -->|"listing.command.list-court-hearing<br/>(cross-context command)"| CMD_API
+
+    %% =============================================
+    %% OUTBOUND PUBLIC EVENTS (listing → other contexts)
+    %% =============================================
+    EVENT_PROC -->|"public.listing.hearing-listed<br/>public.listing.hearing-confirmed"| BP_SUB
+    EVENT_PROC -->|"public.listing.hearing-listed<br/>public.listing.court-application-added-for-hearing<br/>public.listing.hearing-changes-saved<br/>public.listing.hearing-confirmed<br/>public.listing.hearing-updated<br/>public.listing.hearing-partially-updated<br/>public.listing.hearings-update-completed<br/>public.listing.hearing-added-to-case<br/>public.listing.hearing-days-changed-for-hearing<br/>public.listing.hearing-days-sequenced<br/>public.listing.court-list-restricted<br/>public.listing.created-listing-note<br/>public.listing.deleted-listing-note<br/>public.listing.note-edited<br/>public.listing.judiciary-changed-for-hearings-status"| N_SUB
+
+    EVENT_PROC -->|"public.listing.hearing-confirmed<br/>public.listing.hearing-updated<br/>public.listing.hearing-partially-updated<br/>public.listing.hearing-requested-for-listing<br/>public.listing.create-next-hearing-requested<br/>public.listing.cases-added-to-hearing<br/>public.listing.new-defendant-added-for-court-proceedings<br/>public.listing.offences-moved-to-next-hearing<br/>public.listing.vacated-trial-updated<br/>public.listing.hearing-unallocated-courtroom-removed<br/>public.listing.court-list-published<br/>public.events.listing.allocated-hearing-deleted<br/>public.events.listing.unallocated-hearing-deleted<br/>public.events.listing.hearing-deleted<br/>public.events.listing.hearing-days-without-court-centre-corrected<br/>public.events.listing.cases-added-for-updated-related-hearing<br/>public.events.listing.offences-removed-from-allocated-hearing<br/>public.events.listing.offences-removed-from-existing-allocated-hearing<br/>public.events.listing.offences-removed-from-existing-unallocated-hearing<br/>public.events.listing.offences-removed-from-unallocated-hearing<br/>public.events.listing.next-hearing-day-changed"| P_PUB
+
+    EVENT_PROC -->|"public.events.listing.allocated-hearing-deleted<br/>public.events.listing.offences-removed-from-existing-allocated-hearing<br/>public.events.listing.next-hearing-day-changed<br/>public.listing.court-list-restricted<br/>public.listing.hearing-unallocated-courtroom-removed<br/>public.listing.vacated-trial-updated<br/>public.events.listing.hearing-unallocated"| H_PUB
+
+    EVENT_LIST -->|"hearing-listed<br/>hearing-allocated<br/>cases-added<br/>(viewstore updates)"| VIEWSTORE
+
+    EVENT_PROC -->|"(External Listeners)"| MI_SUB
+
+    %% =============================================
+    %% OUTBOUND REST CALLS (listing → external services)
+    %% =============================================
+    CMD_API -->|"GET /courtschedule/search.court-schedules-by-id<br/>GET /hearingslots<br/>GET /searchlist/hearingslots<br/>GET /multidaysearchandbook/hearingslots<br/>PUT /list/hearingslots"| CS_API
+    QRY_SLOTS -->|"GET /hearingslots<br/>POST /validate-session-availability"| CS_API
+
+    QRY_COURTLIST -->|"POST generateDocument()"| DG_API
+    CMD_COURT_LIST -->|"WebDAV PUT (court list XML)"| XH_API
+
+    %% =============================================
+    %% INTER-SERVICE QUERY CALLS (via Requester)
+    %% =============================================
+    QRY_CASES -->|"defence.query.get-case-by-person-defendant<br/>defence.query.get-case-by-organisation-defendant"| DEFENCE_CTX
+    QRY_SEARCH -->|"progression.query.prosecutioncase<br/>progression.query.case-notes<br/>progression.query.application-notes"| PROGRESSION_CTX
+    QRY_SEARCH -->|"referencedata.query.courtroom<br/>referencedata.query.judiciaries<br/>referencedata.query.hearing-types<br/>referencedata.query.courtrooms"| REFDATA_CTX
+    QRY_SEARCH -->|"usersgroups.is-logged-in-user-has-permission-for-action"| UG_CTX
+
+    subgraph DEFENCE_CTX["cpp-context-defence"]
+        DEF_QRY["Query API"]
+    end
+
+    subgraph UG_CTX["cpp-context-users-groups"]
+        UG_QRY["Query API"]
+    end
+
+    %% =============================================
+    %% INTERNAL FLOW
+    %% =============================================
+    CMD_API --> AGGREGATE
+    AGGREGATE --> EVENT_PROC
+    AGGREGATE --> EVENT_LIST
+    QRY_API --> VIEWSTORE
+
+    %% =============================================
+    %% STYLING
+    %% =============================================
+    classDef listing fill:#2d3748,stroke:#4a5568,color:#fff
+    classDef upstream fill:#2b6cb0,stroke:#2c5282,color:#fff
+    classDef downstream fill:#276749,stroke:#22543d,color:#fff
+    classDef external fill:#9b2c2c,stroke:#742a2a,color:#fff
+    classDef query fill:#553c9a,stroke:#44337a,color:#fff
+    classDef internal fill:#4a5568,stroke:#2d3748,color:#fff
+
+    class LISTING listing
+    class HEARING_CTX,PROGRESSION_CTX,REFDATA_CTX,SJP_CTX upstream
+    class NOTIFICATION_CTX,BUSINESSPROC_CTX,MI_CTX downstream
+    class COURTSCHEDULER,DOC_GEN,XHIBIT external
+    class DEFENCE_CTX,UG_CTX query

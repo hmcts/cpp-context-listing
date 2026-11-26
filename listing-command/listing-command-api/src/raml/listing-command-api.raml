@@ -86,6 +86,9 @@ protocols: [ HTTP, HTTPS ]
       requestType: application/vnd.listing.command.update-hearing-for-listing+json
         name: listing.command.update-hearing-for-listing
       (mapping):
+        requestType: application/vnd.listing.command.split-hearing+json
+        name: listing.command.split-hearing
+      (mapping):
         requestType: application/vnd.listing.command.update-defendants-for-hearing+json
         name: listing.command.update-defendants-for-hearing
       (mapping):
@@ -106,6 +109,9 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         requestType: application/vnd.listing.command.move-hearing-to-past-date+json
         name: listing.command.move-hearing-to-past-date
+      (mapping):
+        requestType: application/vnd.listing.command.change-court-room-for-multiday-hearing+json
+        name: listing.command.change-court-room-for-multiday-hearing
       (mapping):
         requestType: application/vnd.listing.duplicate-unallocated-hearing+json
         name: listing.mark-unallocated-hearing-as-duplicate
@@ -132,6 +138,9 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.command.update-hearing-for-listing+json:
         example: !include json/listing.command.update-hearing-for-listing.json
         schema: !include json/schema/listing.command.update-hearing-for-listing.json
+      application/vnd.listing.command.split-hearing+json:
+        example: !include json/listing.command.split-hearing.json
+        schema: !include json/schema/listing.command.split-hearing.json
       application/vnd.listing.command.update-defendants-for-hearing+json:
         example: !include json/listing.command.update-defendants-for-hearing.json
         schema: !include json/schema/listing.command.update-defendants-for-hearing.json
@@ -153,6 +162,9 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.command.move-hearing-to-past-date+json:
         example: !include json/listing.command.move-hearing-to-past-date.json
         schema: !include json/schema/listing.command.move-hearing-to-past-date.json
+      application/vnd.listing.command.change-court-room-for-multiday-hearing+json:
+        example: !include json/listing.command.change-court-room-for-multiday-hearing.json
+        schema: !include json/schema/listing.command.change-court-room-for-multiday-hearing.json
       application/vnd.listing.duplicate-unallocated-hearing+json: !!null
       application/vnd.listing.next-hearings-v2+json:
         example: !include json/listing.list-next-hearings-v2.json

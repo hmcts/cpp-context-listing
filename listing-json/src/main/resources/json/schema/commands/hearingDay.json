@@ -36,6 +36,10 @@
     },
     "hasSharedResults": {
       "type": "boolean"
+    },
+    "isDraft": {
+      "description": "Whether the court schedule session is in draft state",
+      "type": "boolean"
     }
   },
   "required": [

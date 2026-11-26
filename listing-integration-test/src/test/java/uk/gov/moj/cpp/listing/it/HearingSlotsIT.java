@@ -125,6 +125,7 @@ class HearingSlotsIT extends AbstractIT {
 
 
     @Test
+    @ExpectedServerErrors("query without sessionEndDate -> ERROR 'hearingSlotsSearch from rota returned an error : Mandatory Search Criteria sessionEndDate cannot be null with status 400'")
     void shouldReturnErrorWhenSessionEndDateIsEmpty() {
         final Map<String, String> params = getParams();
         params.remove("sessionEndDate");

@@ -10,17 +10,22 @@ import static uk.gov.moj.cpp.listing.it.util.PublishRetryHelper.publishUntilRefl
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 
+import uk.gov.justice.core.courts.CaseMarkersUpdated;
+import uk.gov.justice.core.courts.Marker;
+import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.CaseMarkerData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
-import javax.json.Json;
-import javax.json.JsonArray;
 import javax.json.JsonObject;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +43,10 @@ public class UpdateCaseMarkersSteps extends AbstractIT {
     private final UUID caseId;
     private final UUID userId;
 
+    ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+
+    ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
+
     public UpdateCaseMarkersSteps(final UUID caseId, final HearingData hearingData, final CaseMarkerData caseMarkerData) {
         this.hearingData = hearingData;
         this.caseMarkerData = caseMarkerData;
@@ -50,7 +59,7 @@ public class UpdateCaseMarkersSteps extends AbstractIT {
     }
 
     public void whenCaseMarkerUpdatedPublicEventIsPublished() {
-        final JsonObject caseMarkersUpdated = getCaseMarkerUpdate(caseId, hearingData.getId());
+        final CaseMarkersUpdated caseMarkersUpdated = getCaseMarkerUpdate(caseId, hearingData.getId());
         publishCaseMarkersUpdated(caseMarkersUpdated);
     }
 
@@ -80,31 +89,32 @@ public class UpdateCaseMarkersSteps extends AbstractIT {
     }
 
 
-    public JsonObject getCaseMarkerUpdate(final UUID caseId, final UUID hearingId) {
-        return Json.createObjectBuilder()
-                .add("prosecutionCaseId", caseId.toString())
-                .add("hearingId", hearingId.toString())
-                .add("caseMarkers", buildCaseMarkers())
+    public CaseMarkersUpdated getCaseMarkerUpdate(final UUID caseId, final UUID hearingId) {
+        return CaseMarkersUpdated.caseMarkersUpdated()
+                .withCaseMarkers(buildCaseMarkers())
+                .withProsecutionCaseId(caseId)
+                .withHearingId(hearingId)
                 .build();
     }
 
-    private JsonArray buildCaseMarkers() {
-        return Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
-                        .add("id", caseMarkerData.getId().toString())
-                        .add("markerTypeid", caseMarkerData.getCaseMarkerTypeId().toString())
-                        .add("markerTypeCode", caseMarkerData.getCaseMarkerCode())
-                        .add("markerTypeDescription", caseMarkerData.getCaseMarkerDescription()))
-                .build();
+    private List<Marker> buildCaseMarkers() {
+        return Collections.singletonList(Marker.marker()
+                .withId(caseMarkerData.getId())
+                .withMarkerTypeid(caseMarkerData.getCaseMarkerTypeId())
+                .withMarkerTypeCode(caseMarkerData.getCaseMarkerCode())
+                .withMarkerTypeDescription(caseMarkerData.getCaseMarkerDescription())
+                .build());
     }
 
-    private void publishCaseMarkersUpdated(final JsonObject caseMarkersUpdated) {
+    private void publishCaseMarkersUpdated(final CaseMarkersUpdated caseMarkersUpdated) {
+        final JsonObject updateCaseMarkersObject = (JsonObject) objectToJsonValueConverter.convert(caseMarkersUpdated);
+
         // Fresh event id per publish: the framework dedupes events by metadata id, so re-publishing
         // with the same id would be ignored. A new id guarantees each re-publish is reprocessed.
         sendMessage(
                 publicEventCaseMarkersToBeUpdated,
                 PUBLIC_EVENT_CASE_PUBLIC_PROGRESSION_CASE_MARKERS_UPDATED,
-                caseMarkersUpdated,
+                updateCaseMarkersObject,
                 metadataOf(randomUUID(), PUBLIC_EVENT_CASE_PUBLIC_PROGRESSION_CASE_MARKERS_UPDATED).withUserId(userId.toString()).build());
     }
 

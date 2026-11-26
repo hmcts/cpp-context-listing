@@ -1,9 +1,6 @@
 package uk.gov.justice.api.resource;
 
-import static java.util.UUID.fromString;
-import static java.util.stream.Collectors.toMap;
-import static uk.gov.justice.services.common.converter.LocalDates.from;
-
+import org.apache.http.HttpStatus;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.core.annotation.Adapter;
 import uk.gov.justice.services.core.annotation.Component;
@@ -23,13 +20,21 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import org.apache.http.HttpStatus;
+import static java.util.UUID.fromString;
+import static java.util.stream.Collectors.toMap;
+import static uk.gov.justice.api.resource.SessionAvailabilityValidationQueryParamConstants.*;
+import static uk.gov.justice.services.common.converter.LocalDates.from;
 
 @SuppressWarnings({"squid:S1612"})
 @Adapter(Component.QUERY_API)
 public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlotsResource {
 
+    private static final String SESSION_DATE = "sessionDate";
     @Inject
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
@@ -54,9 +59,11 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                     final Boolean showOverbookedSlots,
                                     final String pageSize,
                                     final String pageNumber,
-                                    final Integer availableDurationMins) {
+                                    final Integer availableDurationMins,
+                                    final String status,
+                                    final String jurisdiction) {
 
-        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, hearingStartTime, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, isSlotBased, showOverbookedSlots, pageSize, pageNumber, availableDurationMins);
+        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, hearingStartTime, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, isSlotBased, showOverbookedSlots, pageSize, pageNumber, availableDurationMins, status, jurisdiction);
         final Response response = courtSchedulerServiceAdapter.hearingSlotsSearch(params);
         if(response.getStatusInfo().getStatusCode() != HttpStatus.SC_OK ){
             return response;
@@ -88,7 +95,9 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                                final Boolean showOverbookedSlots,
                                                final String pageSize,
                                                final String pageNumber,
-                                               final Integer availableDurationMins) {
+                                               final Integer availableDurationMins,
+                                               final String status,
+                                               final String jurisdiction) {
         final Map<String, String> params = new HashMap<>();
         params.put(PANEL, panel);
         params.put(SESSION_START_DATE, sessionStartDate);
@@ -109,7 +118,9 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
         params.put(PAGE_SIZE, pageSize);
         params.put(PAGE_NUMBER, pageNumber);
         if(availableDurationMins != null)
-            params.put(DURATION, String.valueOf(availableDurationMins));
+            params.put(AVAILABLE_DURATION_MINS, String.valueOf(availableDurationMins));
+        params.put(STATUS, status != null ? status : "ALL");
+        params.put(JURISDICTION, jurisdiction);
 
         return params.entrySet().stream().filter(entry -> entry.getValue() != null).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
@@ -122,8 +133,10 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
 
     private  JsonArray convertToNotes(JsonArray hearings){
         final List<NoteUUIDService.ListingNotesCollection> notes = hearings.stream().map(h -> (JsonObject) h).
-                map( h -> new NoteUUIDService.ListingNotesCollection(fromString(h.getString("courtRoomId")), from(h.getString("sessionDate")))).
-                collect(Collectors.toList());
+                filter(h -> h.containsKey(COURT_ROOM_ID) && !h.isNull(COURT_ROOM_ID)
+                        && h.containsKey(SESSION_DATE) && !h.isNull(SESSION_DATE)).
+                map( h -> new NoteUUIDService.ListingNotesCollection(fromString(h.getString(COURT_ROOM_ID)), from(h.getString(SESSION_DATE))))
+                .toList();
         return listToJsonArrayConverter.convert(notesService.findNotes(notes));
     }
 }

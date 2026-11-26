@@ -1,6 +1,6 @@
 {
-  "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
-  "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
-  "startDateTime": "2026-07-20T10:30:00.000Z",
-  "endDateTime": "2026-07-20T10:50:00.000Z"
+  "courtCentreId": "07e45c88-9e5d-3e44-b664-d5345bb13be2",
+  "courtRoomId": "b7a1c2d3-9e5d-3e44-b664-d5345bb13be2",
+  "startDateTime": "2026-05-01T10:30:00.000Z",
+  "endDateTime": "2026-05-01T13:30:00.000Z"
 }

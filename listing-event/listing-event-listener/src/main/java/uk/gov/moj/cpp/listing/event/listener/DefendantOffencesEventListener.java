@@ -220,6 +220,8 @@ public class DefendantOffencesEventListener {
                 .withLaaApplnReference(updatedOffence.getLaaApplnReference())
                 .withShadowListed(originalOffence.map(Offence::getShadowListed).orElse(null))
                 .withListingNumber(originalOffence.map(Offence::getListingNumber).orElse(null))
+                .withOrderIndex(Optional.ofNullable(updatedOffence.getOrderIndex()).or(() -> originalOffence.map(Offence::getOrderIndex)).orElse(null))
+                .withCount(Optional.ofNullable(updatedOffence.getCount()).or(() -> originalOffence.map(Offence::getCount)).orElse(null))
                 .withReportingRestrictions(dedupReportingRestrictions(updatedOffence.getReportingRestrictions()))
                 .withIndictmentParticular(updatedOffence.getIndictmentParticular())
                 .withCivilOffence(updatedOffence.getCivilOffence())

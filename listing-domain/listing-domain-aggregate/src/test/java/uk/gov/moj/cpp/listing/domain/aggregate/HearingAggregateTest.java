@@ -41,6 +41,9 @@ import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtListRestricted;
 import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
 import uk.gov.justice.listing.events.CrownHearingMigratedToCourtschedule;
+import uk.gov.justice.listing.events.HearingDayCourtSchedule;
+import uk.gov.justice.listing.events.HearingDayCourtScheduleUpdated;
+import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2;
 import uk.gov.justice.listing.events.DefendantLegalaidStatusUpdatedForHearing;
@@ -51,6 +54,7 @@ import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingDayCourtSchedule;
 import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
+import uk.gov.justice.listing.events.NonDefaultDaysChangedForHearing;
 import uk.gov.justice.listing.events.HearingDeleted;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingListedCaseUpdated;
@@ -160,14 +164,14 @@ class HearingAggregateTest {
     private static final Logger LOGGER = Logger.getLogger(HearingAggregateTest.class.getName());
 
     @Test
-    public void shouldRaiseCrownHearingMigratedToCourtScheduleEvent() {
+    void shouldRaiseCrownHearingMigratedToCourtScheduleEvent() {
         final UUID courtScheduleId = randomUUID();
         final LocalDate hearingDate = now();
         final List<HearingDayCourtSchedule> schedules =
                 singletonList(new HearingDayCourtSchedule(courtScheduleId, hearingDate));
 
         final List<Object> events = hearing.raiseCrownHearingMigratedToCourtSchedule(hearingId, schedules)
-                .collect(Collectors.toList());
+                .toList();
 
         assertThat(events, hasSize(1));
         assertThat(events.get(0), CoreMatchers.instanceOf(CrownHearingMigratedToCourtschedule.class));
@@ -177,7 +181,6 @@ class HearingAggregateTest {
         assertThat(event.getHearingDayCourtSchedules().get(0).getCourtScheduleId(), is(courtScheduleId));
         assertThat(event.getHearingDayCourtSchedules().get(0).getHearingDate(), is(hearingDate));
     }
-
     @Test
     public void shouldOnlySetCourtScheduleIdOnMatchingDayLeavingAllOtherHearingDayAndNonDefaultDayFieldsUnchanged() {
         final LocalDate migratedDate = LocalDate.of(2027, 8, 17);
@@ -847,7 +850,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    public void shouldCreateAllocatedHearingDeletedWithoutFreeingSlotsOfNonMagistratesJurisdiction() {
+    void shouldCreateAllocatedHearingDeletedAndFreeSlotsForCrownJurisdiction() {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
         final UUID defendant1Id = randomUUID();
@@ -898,13 +901,14 @@ class HearingAggregateTest {
 
         final Stream<Object> events = hearing.deleteHearing(seedingHearingId, hearingId);
         final List<Object> eventsList = events.collect(Collectors.toList());
-        assertThat(eventsList.size(), is(1));
+        assertThat(eventsList.size(), is(2));
 
         final AllocatedHearingDeleted unallocatedHearingDeleted = (AllocatedHearingDeleted) eventsList.get(0);
 
         assertThat(unallocatedHearingDeleted.getHearingId(), is(hearingId));
         assertThat(unallocatedHearingDeleted.getCaseIds().size(), is(2));
         assertThat(unallocatedHearingDeleted.getCaseIds(), hasItems(case1Id, case2Id));
+        assertTrue(eventsList.get(1) instanceof AvailableSlotsForHearingFreed);
     }
 
     @Test
@@ -1071,7 +1075,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final AllocatedHearingDeleted allocatedHearingDeleted = (AllocatedHearingDeleted) deleteHearingEventsList.get(0);
 
@@ -1098,7 +1102,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -1133,7 +1137,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -1596,9 +1600,13 @@ class HearingAggregateTest {
         );
 
 
-        final Stream<Object> listedHearing = hearing.ejectApplication(hearingId, applicationId, removalReason);
+        var listedHearing = hearing.ejectApplication(hearingId, applicationId, removalReason).toList();
 
-        assertThat(listedHearing.count(), is(1L));
+        assertThat(listedHearing, hasSize(2));
+        var availableSlotsForHearingFreed = (AvailableSlotsForHearingFreed) listedHearing.get(0);
+        var applicationEjected = (ApplicationEjected) listedHearing.get(1);
+        assertThat(availableSlotsForHearingFreed.getHearingId(), is(hearingId));
+        assertThat(applicationEjected.getHearingId(), is(hearingId));
 
     }
 
@@ -1686,7 +1694,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldBeAbleToEjectApplicationAndNoSlotsForHearingFreedForCrown() {
+    void shouldBeAbleToEjectApplicationAndAvailableSlotsForHearingFreedForCrown() {
 
         final UUID applicationId = randomUUID();
         final UUID hearingId = randomUUID();
@@ -1700,6 +1708,7 @@ class HearingAggregateTest {
                         .withJurisdictionType(CROWN)
                         .withHearingDays(emptyList())
                         .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
                         .withStartDate(LocalDate.now().plusDays(1))
                         .withEstimatedMinutes(30)
                         .withEstimatedDuration("30 minutes")
@@ -1715,11 +1724,55 @@ class HearingAggregateTest {
 
         var listedHearing = hearing.ejectApplication(hearingId, applicationId, removalReason).toList();
 
-        assertThat(listedHearing, hasSize(1));
+        assertThat(listedHearing, hasSize(2));
 
-        var applicationEjected = (ApplicationEjected)listedHearing.get(0);
+        var availableSlotsForHearingFreed = (AvailableSlotsForHearingFreed)listedHearing.get(0);
+        var applicationEjected = (ApplicationEjected)listedHearing.get(1);
 
+        assertThat(availableSlotsForHearingFreed.getHearingId(), is(hearingId));
         assertThat(applicationEjected.getHearingId(), is(hearingId));
+    }
+
+    @Test
+    void shouldBeAbleToEjectCaseAndAvailableSlotsForHearingFreedForCrown() {
+
+        final UUID caseId = randomUUID();
+        final UUID localHearingId = randomUUID();
+        final String removalReason = "removal reason";
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(localHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(CROWN)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withAllocated(true)
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(
+                                asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(caseId)
+                                        .withDefendants(emptyList())
+                                        .withIsEjected(true)
+                                        .build()
+                                )
+                        ))
+                        .build())
+                .build()
+        );
+
+        var listedHearing = hearing.ejectCase(localHearingId, caseId, removalReason).toList();
+
+        assertThat(listedHearing, hasSize(2));
+
+        var availableSlotsForHearingFreed = (AvailableSlotsForHearingFreed) listedHearing.get(0);
+        var caseEjected = (CaseEjected) listedHearing.get(1);
+
+        assertThat(availableSlotsForHearingFreed.getHearingId(), is(localHearingId));
+        assertThat(caseEjected.getHearingId(), is(localHearingId));
     }
 
     @Test
@@ -1737,7 +1790,7 @@ class HearingAggregateTest {
                         .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
                         .withHearingDays(emptyList())
                         .withCourtRoomId(randomUUID())
-                        .withStartDate(LocalDate.now())
+                        .withStartDate(LocalDate.now().minusDays(1))
                         .withEstimatedMinutes(30)
                         .withEstimatedDuration("30 minutes")
                         .withCourtApplications(new ArrayList<>(asList(uk.gov.justice.listing.events.CourtApplication.courtApplication()
@@ -2180,6 +2233,52 @@ class HearingAggregateTest {
         assertThat(hearing.getCurrentHearingEventState().getListedCases().size(), is(2));
         assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().size(), is(2));
         assertThat(hearing.getCurrentHearingEventState().getListedCases().get(1).getDefendants().size(), is(1));
+    }
+
+    @Test
+    void shouldRecordCasesAddedToHearingWhenHearingListedWithoutListedCases() {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(asList(HearingDay.hearingDay().withCourtScheduleId(randomUUID()).build()))
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEndDate(LocalDate.now().plusDays(2))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .build())
+                .build());
+
+        assertThat(hearing.getProsecutionCaseDefendantOffenceIds(), nullValue());
+
+        hearing.apply(CasesAddedToHearing.casesAddedToHearing()
+                .withHearingId(hearingId)
+                .withUnAllocatedListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                        .withId(caseId)
+                        .withDefendants(asList(Defendant.defendant()
+                                .withId(defendantId)
+                                .withOffences(asList(Offence.offence()
+                                        .withId(offenceId)
+                                        .build()))
+                                .build()))
+                        .build()))
+                .build());
+
+        final List<uk.gov.moj.cpp.listing.domain.ProsecutionCaseDefendantOffenceIds> caseDefendantOffenceIds = hearing.getProsecutionCaseDefendantOffenceIds();
+        assertThat(caseDefendantOffenceIds, notNullValue());
+        assertThat(caseDefendantOffenceIds.size(), is(1));
+        assertThat(caseDefendantOffenceIds.get(0).getId(), is(caseId));
+        assertThat(caseDefendantOffenceIds.get(0).getDefendants().size(), is(1));
+        assertThat(caseDefendantOffenceIds.get(0).getDefendants().get(0).getId(), is(defendantId));
+        assertThat(caseDefendantOffenceIds.get(0).getDefendants().get(0).getOffences().size(), is(1));
+        assertThat(caseDefendantOffenceIds.get(0).getDefendants().get(0).getOffences().get(0).getId(), is(offenceId));
     }
 
     @Test
@@ -2890,96 +2989,6 @@ class HearingAggregateTest {
         uk.gov.justice.listing.events.Defendant defendant1 = listedCase1.getDefendants().stream().filter(def -> def.getId().equals(defendant1Id)).findFirst().get();
         assertThat(defendant1.getOffences().size(), is(1));
         assertTrue(defendant1.getOffences().stream().anyMatch(o -> o.getId().equals(offence1Id)));
-    }
-
-    @Test
-    void shouldCreateEventForSplit() {
-        final List<uk.gov.justice.listing.events.ListedCase> listedCases = singletonList(uk.gov.justice.listing.events.ListedCase
-                .listedCase()
-                .withId(randomUUID())
-                .withDefendants(singletonList(Defendant.defendant()
-                        .withId(randomUUID())
-                        .withOffences(singletonList(Offence.offence()
-                                .withId(randomUUID())
-                                .build()))
-                        .build())).build());
-
-        startDate = ZonedDateTime.now();
-
-        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
-                .withDuration(Optional.of(1))
-                .withStartTime(ZonedDateTime.now())
-                .withCourtCentreId(Optional.of("courtCentreId"))
-                .withCourtRoomId(Optional.of(1))
-                .withCourtScheduleId(Optional.of("courtScheduleId"))
-                .withOucode(Optional.of("oucode"))
-                .withSession(Optional.of("PM"))
-                .withRoomId(Optional.of("roomId"))
-                .build();
-        final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
-        nonDefaultDays.add(nonDefaultDay);
-
-        final Stream<Object> listedHearing = hearing.listForSplit(type, listedCases, courtCentreId, "court name", courtRoomId, jurisdictionType, startDate,
-                null, null, emptyList(), nonDefaultDays);
-
-        final HearingRequestedForListing hearingRequestedForListing = listedHearing.findFirst().map(HearingRequestedForListing.class::cast).get();
-
-        assertThat(hearingRequestedForListing.getListNewHearing().getId(), is(nullValue()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getCourtCentre().getId(), is(courtCentreId));
-        assertThat(hearingRequestedForListing.getListNewHearing().getCourtCentre().getRoomId(), is(courtRoomId));
-        assertThat(hearingRequestedForListing.getListNewHearing().getHearingType().getId(), is(type.getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getJurisdictionType().toString(), is(jurisdictionType.toString()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getEarliestStartDateTime(), is(startDate));
-        assertThat(hearingRequestedForListing.getListNewHearing().getListDefendantRequests().get(0).getDefendantId(), is(listedCases.get(0).getDefendants().get(0).getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getListDefendantRequests().get(0).getProsecutionCaseId(), is(listedCases.get(0).getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getListDefendantRequests().get(0).getDefendantOffences().get(0), is(listedCases.get(0).getDefendants().get(0).getOffences().get(0).getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getWeekCommencingDate(), is(nullValue()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getNonDefaultDays().size(), is(1));
-    }
-
-    @Test
-    void shouldCreateEventForWeekCommencingSplit() {
-        final List<uk.gov.justice.listing.events.ListedCase> listedCases = singletonList(uk.gov.justice.listing.events.ListedCase
-                .listedCase()
-                .withId(randomUUID())
-                .withDefendants(singletonList(Defendant.defendant()
-                        .withId(randomUUID())
-                        .withOffences(singletonList(Offence.offence()
-                                .withId(randomUUID())
-                                .build()))
-                        .build())).build());
-
-        final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
-                .withDuration(Optional.of(1))
-                .withStartTime(ZonedDateTime.now())
-                .withCourtCentreId(Optional.of("courtCentreId"))
-                .withCourtRoomId(Optional.of(1))
-                .withCourtScheduleId(Optional.of("courtScheduleId"))
-                .withOucode(Optional.of("oucode"))
-                .withSession(Optional.of("PM"))
-                .withRoomId(Optional.of("roomId"))
-                .build();
-        final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
-        nonDefaultDays.add(nonDefaultDay);
-
-        final LocalDate weekCommencingStartDate = LocalDate.now();
-        final Stream<Object> listedHearing = hearing.listForSplit(type, listedCases, courtCentreId, "court name", courtRoomId, jurisdictionType, startDate,
-                weekCommencingStartDate, 1, emptyList(), nonDefaultDays);
-
-        final HearingRequestedForListing hearingRequestedForListing = listedHearing.findFirst().map(HearingRequestedForListing.class::cast).get();
-
-        assertThat(hearingRequestedForListing.getListNewHearing().getId(), is(nullValue()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getCourtCentre().getId(), is(courtCentreId));
-        assertThat(hearingRequestedForListing.getListNewHearing().getCourtCentre().getRoomId(), is(courtRoomId));
-        assertThat(hearingRequestedForListing.getListNewHearing().getHearingType().getId(), is(type.getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getJurisdictionType().toString(), is(jurisdictionType.toString()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getEarliestStartDateTime(), is(nullValue()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getListDefendantRequests().get(0).getDefendantId(), is(listedCases.get(0).getDefendants().get(0).getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getListDefendantRequests().get(0).getProsecutionCaseId(), is(listedCases.get(0).getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getListDefendantRequests().get(0).getDefendantOffences().get(0), is(listedCases.get(0).getDefendants().get(0).getOffences().get(0).getId()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getWeekCommencingDate().getStartDate(), is(weekCommencingStartDate.toString()));
-        assertThat(hearingRequestedForListing.getListNewHearing().getWeekCommencingDate().getDuration(), is(1));
-        assertThat(hearingRequestedForListing.getListNewHearing().getNonDefaultDays().size(), is(1));
     }
 
     @Test
@@ -4900,7 +4909,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -4945,7 +4954,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -4995,7 +5004,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -5034,7 +5043,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -5068,7 +5077,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final AllocatedHearingDeleted offencesRemovedFromHearing = (AllocatedHearingDeleted) deleteHearingEventsList.get(0);
 
@@ -5101,7 +5110,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -5142,7 +5151,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -5184,7 +5193,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final AllocatedHearingDeleted offencesRemovedFromHearing = (AllocatedHearingDeleted) deleteHearingEventsList.get(0);
 
@@ -5225,7 +5234,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -5269,7 +5278,7 @@ class HearingAggregateTest {
         final Stream<Object> deleteHearingStream = hearing.deleteHearing(seedingHearingId, hearingId);
 
         final List<Object> deleteHearingEventsList = deleteHearingStream.collect(Collectors.toList());
-        assertThat(deleteHearingEventsList.size(), is(1));
+        assertThat(deleteHearingEventsList.size(), is(2));
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = (OffencesRemovedFromHearing) deleteHearingEventsList.get(0);
 
@@ -5293,7 +5302,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldReturnFalse_WhenJurisdictionTypeIsNotMagistrates() {
+    void shouldReturnTrue_WhenJurisdictionTypeIsCrownAndOtherConditionsMatch() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
 
@@ -5302,7 +5311,7 @@ class HearingAggregateTest {
                         .withId(hearingId)
                         .withType(uk.gov.justice.listing.events.Type.type().build())
                         .withHearingLanguage(HearingLanguage.ENGLISH)
-                        .withJurisdictionType(CROWN) // Not MAGISTRATES
+                        .withJurisdictionType(CROWN)
                         .withHearingDays(emptyList())
                         .withCourtRoomId(randomUUID())
                         .withAllocated(true)
@@ -5315,7 +5324,7 @@ class HearingAggregateTest {
 
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
-        assertThat(result, is(false));
+        assertThat(result, is(true));
     }
 
     @Test
@@ -5371,7 +5380,7 @@ class HearingAggregateTest {
     }
 
     @Test
-    void shouldReturnFalse_WhenHearingIsNotAllocated() {
+    void shouldReturnTrue_WhenHearingIsNotAllocatedButOtherConditionsMet() {
         final UUID ejectedItemId = randomUUID();
         final UUID hearingId = randomUUID();
 
@@ -5383,7 +5392,7 @@ class HearingAggregateTest {
                         .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
                         .withHearingDays(emptyList())
                         .withCourtRoomId(randomUUID())
-                        .withAllocated(false) // Not allocated
+                        .withAllocated(false)
                         .withStartDate(LocalDate.now().plusDays(1))
                         .withEstimatedMinutes(30)
                         .withEstimatedDuration("30 minutes")
@@ -5393,7 +5402,7 @@ class HearingAggregateTest {
 
         boolean result = hearing.magistrateHearingIsInTheFutureAndAllCaseAndApplicationAreEjected(ejectedItemId);
 
-        assertThat(result, is(false));
+        assertThat(result, is(true));
     }
 
     @Test
@@ -8090,6 +8099,1209 @@ class HearingAggregateTest {
         assertThat(event.getCourtApplicationApplicantIds(), hasItem(applicantId));
         assertThat(event.getCourtApplicationRespondentIds(), hasSize(1));
         assertThat(event.getCourtApplicationRespondentIds(), hasItem(respondentId));
+    }
+
+    // ─── CROWN allocation with courtScheduleIds and isDraft tests ────────
+
+    @Test
+    void shouldAllocateCrownHearingWhenAllHearingDaysHaveCourtScheduleIdsAndNoneAreDraft() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .withIsDraft(false)
+                                        .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .withEstimatedDuration("240 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> allocationEvents = allocationStream.toList();
+
+        assertThat(allocationEvents.size(), is(1));
+        assertTrue(allocationEvents.get(0) instanceof HearingAllocatedForListingV2);
+    }
+
+    @Test
+    void shouldEmitHearingAllocatedForListingV2WhenCrownHearingHasSingleDraftSession() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .withIsDraft(true)  // draft session
+                                        .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .withEstimatedDuration("240 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> allocationEvents = allocationStream.toList();
+
+        // Should NOT allocate because isDraft=true
+        assertThat(allocationEvents.size(), is(0));
+    }
+
+    @Test
+    void shouldEmitHearingAllocatedForListingV2WhenCrownMultiDayHearingHasOneDraftSession() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .withIsDraft(false)
+                                        .build(),
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(6))
+                                        .withIsDraft(true)  // one day is draft
+                                        .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(6))
+                        .withEstimatedMinutes(720)
+                        .withEstimatedDuration("720 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> allocationEvents = allocationStream.toList();
+
+        // Should NOT allocate because one hearingDay has isDraft=true
+        assertThat(allocationEvents.size(), is(0));
+    }
+
+    @Test
+    void shouldNotAllocateCrownHearingWhenHearingDaysMissCourtScheduleIds() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .withIsDraft(false)
+                                        .build()))  // no courtScheduleId — must NOT allocate
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .withEstimatedDuration("240 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> allocationEvents = allocationStream.toList();
+
+        // Crown hearings without courtScheduleIds must NOT allocate
+        assertThat(allocationEvents.size(), is(0));
+    }
+
+    @Test
+    void shouldNotAllocateCrownHearingWhenHearingDaysEmpty() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .withEstimatedDuration("240 minutes")
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> allocationStream = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null)).flatMap(i -> i);
+        final List<Object> allocationEvents = allocationStream.toList();
+
+        // Crown hearings with empty hearingDays must NOT allocate — no courtScheduleIds
+        assertThat(allocationEvents.size(), is(0));
+    }
+
+    @Test
+    void shouldEmitHearingAllocatedAndRescheduledWithAllocatedTrueWhenCrownHearingMovesFromDraftToNonDraftSession() {
+        // Regression test for the CROWN reschedule allocation bug:
+        // A hearing originally in a draft session (unallocated) is rescheduled onto a non-draft session.
+        // After enrichment fixes the hearingDay to isDraft=false, the aggregate must:
+        //   1. emit hearing-allocated-for-listing-v2 (allocation gate opens)
+        //   2. emit HearingRescheduled with allocated=true (not the previous allocated=false)
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+        final UUID oldDraftCourtScheduleId = randomUUID();
+        final UUID newNonDraftCourtScheduleId = randomUUID();
+        final LocalDate originalDate = LocalDate.now().plusDays(5);
+        final LocalDate rescheduledDate = LocalDate.now().plusDays(10);
+
+        // Step 1: set up the hearing in its original DRAFT / unallocated state
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(oldDraftCourtScheduleId)
+                                        .withHearingDate(originalDate)
+                                        .withDurationMinutes(240)
+                                        .withIsDraft(true)  // old session is draft → gate closed
+                                        .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(originalDate)
+                        .withEndDate(originalDate)
+                        .withEstimatedMinutes(240)
+                        .withEstimatedDuration("240 minutes")
+                        .withAllocated(false)
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        // Confirm gate is closed in draft state (guard: existing behaviour preserved)
+        final List<Object> preMigrationEvents = Stream.of(
+                hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null))
+                .flatMap(i -> i).toList();
+        assertThat("isDraft=true must prevent allocation", preMigrationEvents.size(), is(0));
+
+        // Step 2: simulate the enrichment layer having promoted the new non-draft id + isDraft=false
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(newNonDraftCourtScheduleId)
+                                .withHearingDate(rescheduledDate)
+                                .withDurationMinutes(240)
+                                .withIsDraft(false)  // new session is non-draft → gate opens
+                                .build()))
+                .build());
+
+        // Step 3: applyAllocationRules must now emit hearing-allocated-for-listing-v2
+        final List<Object> allocationEvents = Stream.of(
+                hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null))
+                .flatMap(i -> i).toList();
+        assertThat("non-draft session must trigger allocation", allocationEvents.size(), is(1));
+        assertTrue(allocationEvents.get(0) instanceof HearingAllocatedForListingV2,
+                "expected HearingAllocatedForListingV2, got: " + allocationEvents.get(0).getClass().getSimpleName());
+
+        // Step 4: apply the allocation event so aggregate knows it is now allocated
+        hearing.apply((HearingAllocatedForListingV2) allocationEvents.get(0));
+
+        // Step 5: applyRescheduledCheck with a StartDateChangedForHearing must emit HearingRescheduled
+        // with allocated=true (not the buggy allocated=false)
+        final StartDateChangedForHearing startDateChanged = StartDateChangedForHearing.startDateChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withStartDate(rescheduledDate.toString())
+                .build();
+        final List<Object> rescheduledEvents = hearing.applyRescheduledCheck(Arrays.asList(startDateChanged)).toList();
+        assertThat("applyRescheduledCheck must emit HearingRescheduled", rescheduledEvents.size(), is(1));
+        assertTrue(rescheduledEvents.get(0) instanceof uk.gov.justice.listing.events.HearingRescheduled,
+                "expected HearingRescheduled");
+        final uk.gov.justice.listing.events.HearingRescheduled rescheduled =
+                (uk.gov.justice.listing.events.HearingRescheduled) rescheduledEvents.get(0);
+        assertThat("HearingRescheduled.allocated must be true after moving to non-draft session",
+                rescheduled.getAllocated(), is(true));
+    }
+
+    // ─── CROWN vacate-trial slot payback tests ───────────────────────────
+
+    @Test
+    void shouldEmitAvailableSlotsForHearingFreedWhenVacatingCrownTrialWithCourtScheduleIds() {
+        final UUID crownHearingId = randomUUID();
+        final UUID vacatingTrialReasonId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .withIsDraft(false)
+                                        .build()))
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .withEstimatedDuration("240 minutes")
+                        .build())
+                .build());
+
+        final Stream<Object> events = hearing.hearingVacateTrial(Optional.of(vacatingTrialReasonId));
+        final List<Object> eventsList = events.toList();
+
+        // Should emit both HearingTrialVacated + AvailableSlotsForHearingFreed
+        assertThat(eventsList.size(), is(2));
+        assertTrue(eventsList.stream().anyMatch(e -> e instanceof uk.gov.justice.listing.events.HearingTrialVacated));
+        assertTrue(eventsList.stream().anyMatch(AvailableSlotsForHearingFreed.class::isInstance));
+    }
+
+    @Test
+    void shouldEmitAvailableSlotsForHearingFreedWhenVacatingCrownTrial() {
+        final UUID crownHearingId = randomUUID();
+        final UUID vacatingTrialReasonId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .build()))  // no courtScheduleId
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .build())
+                .build());
+
+        final Stream<Object> events = hearing.hearingVacateTrial(Optional.of(vacatingTrialReasonId));
+        final List<Object> eventsList = events.toList();
+
+        // Should emit both HearingTrialVacated + AvailableSlotsForHearingFreed for Crown jurisdiction
+        assertThat(eventsList.size(), is(2));
+        assertTrue(eventsList.stream().anyMatch(e -> e instanceof uk.gov.justice.listing.events.HearingTrialVacated));
+        assertTrue(eventsList.stream().anyMatch(AvailableSlotsForHearingFreed.class::isInstance));
+    }
+
+    @Test
+    void shouldNotEmitAvailableSlotsForHearingFreedWhenVacatingCrownTrialWithoutReason() {
+        final UUID crownHearingId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(Arrays.asList(
+                                HearingDay.hearingDay()
+                                        .withCourtScheduleId(randomUUID())
+                                        .withHearingDate(LocalDate.now().plusDays(5))
+                                        .build()))
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(240)
+                        .build())
+                .build());
+
+        final Stream<Object> events = hearing.hearingVacateTrial(Optional.empty());  // no reason
+        final List<Object> eventsList = events.toList();
+
+        // Should only emit HearingTrialVacated (no slot freed because vacatingTrialReasonId is empty)
+        assertThat(eventsList.size(), is(1));
+        assertTrue(eventsList.get(0) instanceof uk.gov.justice.listing.events.HearingTrialVacated);
+    }
+
+    @Test
+    void shouldRecalculateEstimatedMinutesWhenHearingDaysChanged() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+        final UUID crownCourtCentreId = randomUUID();
+        final ZonedDateTime startTime = ZonedDateTime.now().plusDays(5).withHour(9).withMinute(0);
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(singletonList(HearingDay.hearingDay()
+                                .withCourtScheduleId(randomUUID())
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withStartTime(startTime)
+                                .withDurationMinutes(20)
+                                .withCourtRoomId(crownCourtRoomId)
+                                .withCourtCentreId(crownCourtCentreId)
+                                .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withCourtCentreId(crownCourtCentreId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(20)
+                        .build())
+                .build());
+
+        assertThat(hearing.getCurrentHearingEventState().getEstimatedMinutes(), is(20));
+
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withHearingDays(singletonList(HearingDay.hearingDay()
+                        .withCourtScheduleId(randomUUID())
+                        .withHearingDate(LocalDate.now().plusDays(5))
+                        .withStartTime(startTime)
+                        .withDurationMinutes(120)
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withCourtCentreId(crownCourtCentreId)
+                        .build()))
+                .build());
+
+        assertThat(hearing.getCurrentHearingEventState().getEstimatedMinutes(), is(120));
+    }
+
+    @Test
+    void shouldSumEstimatedMinutesAcrossMultipleHearingDays() {
+        final UUID crownHearingId = randomUUID();
+        final UUID crownCourtRoomId = randomUUID();
+        final UUID crownCourtCentreId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(singletonList(HearingDay.hearingDay()
+                                .withCourtScheduleId(randomUUID())
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(20)
+                                .build()))
+                        .withCourtRoomId(crownCourtRoomId)
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEndDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(20)
+                        .build())
+                .build());
+
+        final ZonedDateTime day1Start = ZonedDateTime.now().plusDays(5).withHour(9).withMinute(0);
+        final ZonedDateTime day2Start = ZonedDateTime.now().plusDays(6).withHour(9).withMinute(0);
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withHearingDays(Arrays.asList(
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(randomUUID())
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withStartTime(day1Start)
+                                .withDurationMinutes(360)
+                                .withCourtRoomId(crownCourtRoomId)
+                                .withCourtCentreId(crownCourtCentreId)
+                                .build(),
+                        HearingDay.hearingDay()
+                                .withCourtScheduleId(randomUUID())
+                                .withHearingDate(LocalDate.now().plusDays(6))
+                                .withStartTime(day2Start)
+                                .withDurationMinutes(180)
+                                .withCourtRoomId(crownCourtRoomId)
+                                .withCourtCentreId(crownCourtCentreId)
+                                .build()))
+                .build());
+
+        assertThat(hearing.getCurrentHearingEventState().getEstimatedMinutes(), is(540));
+    }
+
+    @Test
+    void shouldPreserveEstimatedMinutesWhenHearingDaysHaveNoDuration() {
+        final UUID crownHearingId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(crownHearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withHearingDays(singletonList(HearingDay.hearingDay()
+                                .withHearingDate(LocalDate.now().plusDays(5))
+                                .withDurationMinutes(30)
+                                .build()))
+                        .withStartDate(LocalDate.now().plusDays(5))
+                        .withEstimatedMinutes(30)
+                        .build())
+                .build());
+
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(crownHearingId)
+                .withHearingDays(singletonList(HearingDay.hearingDay()
+                        .withHearingDate(LocalDate.now().plusDays(5))
+                        // no durationMinutes - mirrors a sequence-reset / courtScheduleId-only path
+                        .build()))
+                .build());
+
+        // When no day carries a duration the sum is 0 — don't clobber the prior estimate.
+        assertThat(hearing.getCurrentHearingEventState().getEstimatedMinutes(), is(30));
+    }
+
+    // SPRDT-807 defence in depth — onHearingListed must never leave this.estimatedMinutes as null/0/1.
+    @Test
+    void shouldCoerceNullEstimatedMinutesOnHearingListedToDefaultMin() {
+        assertOnHearingListedCoerces(null, 20);
+    }
+
+    @Test
+    void shouldCoerceZeroEstimatedMinutesOnHearingListedToDefaultMin() {
+        assertOnHearingListedCoerces(0, 20);
+    }
+
+    @Test
+    void shouldCoerceOneMinuteEstimatedMinutesOnHearingListedToDefaultMin() {
+        assertOnHearingListedCoerces(1, 20);
+    }
+
+    @Test
+    void shouldPreserveValidEstimatedMinutesOnHearingListed() {
+        assertOnHearingListedCoerces(45, 45);
+    }
+
+    private void assertOnHearingListedCoerces(final Integer input, final int expected) {
+        final UUID crownHearingId = randomUUID();
+        final uk.gov.justice.listing.events.Hearing.Builder listedBuilder = uk.gov.justice.listing.events.Hearing.hearing()
+                .withId(crownHearingId)
+                .withType(uk.gov.justice.listing.events.Type.type().build())
+                .withHearingLanguage(HearingLanguage.ENGLISH)
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                .withHearingDays(emptyList())
+                .withStartDate(LocalDate.now().plusDays(5));
+        if (input != null) {
+            listedBuilder.withEstimatedMinutes(input);
+        }
+        hearing.apply(HearingListed.hearingListed().withHearing(listedBuilder.build()).build());
+
+        assertThat(hearing.getCurrentHearingEventState().getEstimatedMinutes(), is(expected));
+    }
+
+    // ---------- changeCourtRoomForMultidayHearing ----------
+
+    private static final int CHANGE_ROOM_DAY_DURATION = 360;
+
+    @Test
+    void changeCourtRoom_emitsMergedDaySetWithOnlyChangedDaysAltered() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        final List<HearingDay> original = applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d3Date);
+        final HearingDay originalD1 = original.get(0);
+
+        final ZonedDateTime newStart2 = ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC);
+        final ZonedDateTime newStart3 = ZonedDateTime.of(d3Date, LocalTime.parse("11:00"), UTC);
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDay(d2Date, room2, courtCentre1, newStart2),
+                changedDomainDay(d3Date, room2, courtCentre1, newStart3));
+        final List<HearingDayCourtSchedule> schedules = List.of(
+                new HearingDayCourtSchedule(randomUUID(), d2Date),
+                new HearingDayCourtSchedule(randomUUID(), d3Date));
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+                .collect(Collectors.toList());
+
+        final HearingDaysChangedForHearing daysChanged = events.stream()
+                .filter(HearingDaysChangedForHearing.class::isInstance)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(daysChanged.getHearingDays(), hasSize(3));
+
+        final HearingDay emittedD1 = dayFor(daysChanged, d1Date);
+        // Day 1 was not changed: every field must survive the merge byte-for-byte.
+        assertThat(emittedD1.getCourtRoomId(), is(originalD1.getCourtRoomId()));
+        assertThat(emittedD1.getCourtCentreId(), is(originalD1.getCourtCentreId()));
+        assertThat(emittedD1.getCourtScheduleId(), is(originalD1.getCourtScheduleId()));
+        assertThat(emittedD1.getStartTime(), is(originalD1.getStartTime()));
+        assertThat(emittedD1.getEndTime(), is(originalD1.getEndTime()));
+        assertThat(emittedD1.getDurationMinutes(), is(originalD1.getDurationMinutes()));
+        assertThat(emittedD1.getSequence(), is(originalD1.getSequence()));
+        assertThat(emittedD1.getHearingDate(), is(originalD1.getHearingDate()));
+        assertThat(emittedD1.getIsCancelled(), is(originalD1.getIsCancelled()));
+        assertThat(emittedD1.getIsDraft(), is(originalD1.getIsDraft()));
+        assertThat(emittedD1, is(originalD1));
+
+        final HearingDay emittedD2 = dayFor(daysChanged, d2Date);
+        assertThat(emittedD2.getCourtRoomId(), is(room2));
+        assertThat(emittedD2.getStartTime(), is(newStart2));
+        final HearingDay emittedD3 = dayFor(daysChanged, d3Date);
+        assertThat(emittedD3.getCourtRoomId(), is(room2));
+        assertThat(emittedD3.getStartTime(), is(newStart3));
+    }
+
+    @Test
+    void changeCourtRoom_magistratesHearing_emitsMergedDaysScheduleUpdatesAndAllocation() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        final List<HearingDay> original = applyThreeDayAllocatedHearing(
+                uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES, room1, courtCentre1, d1Date, d2Date, d3Date);
+
+        final ZonedDateTime newStart2 = ZonedDateTime.of(d2Date, LocalTime.parse("10:00"), UTC);
+        final UUID newScheduleD2 = randomUUID();
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDay(d2Date, room2, courtCentre1, newStart2));
+        final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(newScheduleD2, d2Date));
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+                .collect(Collectors.toList());
+
+        final HearingDaysChangedForHearing daysChanged = events.stream()
+                .filter(HearingDaysChangedForHearing.class::isInstance)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(daysChanged.getHearingDays(), hasSize(3));
+        assertThat(dayFor(daysChanged, d1Date), is(original.get(0)));
+        assertThat(dayFor(daysChanged, d2Date).getCourtRoomId(), is(room2));
+        assertThat(dayFor(daysChanged, d2Date).getStartTime(), is(newStart2));
+        assertThat(dayFor(daysChanged, d3Date), is(original.get(2)));
+
+        final HearingDayCourtScheduleUpdated scheduleUpdated = events.stream()
+                .filter(HearingDayCourtScheduleUpdated.class::isInstance)
+                .map(HearingDayCourtScheduleUpdated.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules(), hasSize(1));
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules().get(0).getHearingDate(), is(d2Date));
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules().get(0).getCourtScheduleId(), is(newScheduleD2));
+        assertThat(events.stream().anyMatch(AllocatedHearingUpdatedForListingV2.class::isInstance), is(true));
+    }
+
+    @Test
+    void changeCourtRoom_emitsAllocationEventsUsingAggregateCases() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d3Date);
+
+        final ZonedDateTime newStart2 = ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC);
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDay(d2Date, room2, courtCentre1, newStart2));
+        final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(randomUUID(), d2Date));
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+                .collect(Collectors.toList());
+
+        final AllocatedHearingUpdatedForListingV2 allocation = events.stream()
+                .filter(AllocatedHearingUpdatedForListingV2.class::isInstance)
+                .map(AllocatedHearingUpdatedForListingV2.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(allocation.getProsecutionCaseDefendantsOffenceIds(), is(notNullValue()));
+        assertThat(allocation.getProsecutionCaseDefendantsOffenceIds().isEmpty(), is(false));
+        assertThat(allocation.getProsecutionCaseDefendantsOffenceIds().get(0).getId(), is(changeRoomCaseId));
+    }
+
+    @Test
+    void changeCourtRoom_emitsHearingDayCourtScheduleUpdatedForChangedDaysOnly() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d3Date);
+
+        final UUID sched2 = randomUUID();
+        final UUID sched3 = randomUUID();
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDay(d2Date, room2, courtCentre1, ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC)),
+                changedDomainDay(d3Date, room2, courtCentre1, ZonedDateTime.of(d3Date, LocalTime.parse("11:00"), UTC)));
+        final List<HearingDayCourtSchedule> schedules = List.of(
+                new HearingDayCourtSchedule(sched2, d2Date),
+                new HearingDayCourtSchedule(sched3, d3Date));
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+                .collect(Collectors.toList());
+
+        final HearingDayCourtScheduleUpdated scheduleUpdated = events.stream()
+                .filter(HearingDayCourtScheduleUpdated.class::isInstance)
+                .map(HearingDayCourtScheduleUpdated.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules(), hasSize(2));
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules().stream().map(HearingDayCourtSchedule::getHearingDate).toList(),
+                hasItems(d2Date, d3Date));
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules().stream().map(HearingDayCourtSchedule::getCourtScheduleId).toList(),
+                hasItems(sched2, sched3));
+    }
+
+    @Test
+    void changeCourtRoom_returnsEmptyWhenDuplicateOrDeleted() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d3Date);
+        hearing.apply(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate().withHearingId(hearingId).build());
+
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDay(d2Date, room2, courtCentre1, ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC)));
+        final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(randomUUID(), d2Date));
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+    }
+
+    @Test
+    void changeCourtRoom_returnsEmptyWhenDeleted() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d3Date);
+        hearing.apply(HearingDeleted.hearingDeleted().withHearingIdToBeDeleted(hearingId).build());
+
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDay(d2Date, room2, courtCentre1, ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC)));
+        final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(randomUUID(), d2Date));
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+                .collect(Collectors.toList());
+
+        assertThat(events, hasSize(0));
+    }
+
+    @Test
+    void changeCourtRoom_duplicateDateInAggregateState_replacesOnlyTheNonCancelledDay() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final List<HearingDay> original = applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d2Date.plusDays(1));
+        final HearingDay originalD1 = original.get(0);
+
+        // Simulate aggregate state holding TWO days on d2Date: the active day (originalD2, startTime 09:30)
+        // plus a cancelled sibling at a different startTime (e.g. a cancelled day + its re-listed replacement --
+        // the aggregate keys by startTime, not date, precisely to tolerate this).
+        final HearingDay activeD2 = HearingDay.hearingDay()
+                .withHearingDate(d2Date)
+                .withStartTime(ZonedDateTime.of(d2Date, LocalTime.parse("09:30"), UTC))
+                .withEndTime(ZonedDateTime.of(d2Date, LocalTime.parse("15:30"), UTC))
+                .withDurationMinutes(CHANGE_ROOM_DAY_DURATION)
+                .withSequence(2)
+                .withCourtScheduleId(randomUUID())
+                .withCourtCentreId(courtCentre1)
+                .withCourtRoomId(room1)
+                .withIsCancelled(false)
+                .withIsDraft(false)
+                .build();
+        final HearingDay cancelledD2Sibling = HearingDay.hearingDay()
+                .withHearingDate(d2Date)
+                .withStartTime(ZonedDateTime.of(d2Date, LocalTime.parse("13:00"), UTC))
+                .withEndTime(ZonedDateTime.of(d2Date, LocalTime.parse("19:00"), UTC))
+                .withDurationMinutes(CHANGE_ROOM_DAY_DURATION)
+                .withSequence(99)
+                .withCourtScheduleId(randomUUID())
+                .withCourtCentreId(courtCentre1)
+                .withCourtRoomId(room1)
+                .withIsCancelled(true)
+                .withIsDraft(false)
+                .build();
+        hearing.apply(HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingId(hearingId)
+                .withHearingDays(List.of(original.get(0), activeD2, cancelledD2Sibling))
+                .build());
+
+        final ZonedDateTime newStart2 = ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC);
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDay(d2Date, room2, courtCentre1, newStart2));
+        final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(randomUUID(), d2Date));
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(hearingId, changedDays, schedules, true)
+                .collect(Collectors.toList());
+
+        final HearingDaysChangedForHearing daysChanged = events.stream()
+                .filter(HearingDaysChangedForHearing.class::isInstance)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+        // Exactly 3 rows: d1 verbatim, the ACTIVE d2 replaced by the changed day, the CANCELLED d2 sibling
+        // passed through verbatim. No duplication of the changed row, no dropped sibling.
+        assertThat(daysChanged.getHearingDays(), hasSize(3));
+
+        final HearingDay emittedD1 = dayFor(daysChanged, d1Date);
+        assertThat(emittedD1, is(originalD1));
+
+        final long changedRoomRows = daysChanged.getHearingDays().stream()
+                .filter(day -> d2Date.equals(day.getHearingDate()) && room2.equals(day.getCourtRoomId()))
+                .count();
+        assertThat(changedRoomRows, is(1L));
+
+        final HearingDay emittedCancelledSibling = daysChanged.getHearingDays().stream()
+                .filter(day -> d2Date.equals(day.getHearingDate()) && !room2.equals(day.getCourtRoomId()))
+                .findFirst().orElseThrow();
+        assertThat(emittedCancelledSibling.getStartTime(), is(cancelledD2Sibling.getStartTime()));
+        assertThat(emittedCancelledSibling.getEndTime(), is(cancelledD2Sibling.getEndTime()));
+        assertThat(emittedCancelledSibling.getCourtRoomId(), is(cancelledD2Sibling.getCourtRoomId()));
+        assertThat(emittedCancelledSibling.getCourtCentreId(), is(cancelledD2Sibling.getCourtCentreId()));
+        assertThat(emittedCancelledSibling.getCourtScheduleId(), is(cancelledD2Sibling.getCourtScheduleId()));
+        assertThat(emittedCancelledSibling.getDurationMinutes(), is(cancelledD2Sibling.getDurationMinutes()));
+        assertThat(emittedCancelledSibling.getSequence(), is(cancelledD2Sibling.getSequence()));
+        assertThat(emittedCancelledSibling.getIsCancelled(), is(cancelledD2Sibling.getIsCancelled()));
+        assertThat(emittedCancelledSibling.getIsDraft(), is(cancelledD2Sibling.getIsDraft()));
+    }
+
+    @Test
+    void changeCourtRoom_realDay_updatesHearingDayWithoutBookingAndPersistsNonDefaultDay() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        final List<HearingDay> original = applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d3Date);
+        final HearingDay originalD2 = original.get(1);
+
+        // A real day (virtual false) carried only in the nonDefaultDays list, with no virtual days at all.
+        final ZonedDateTime realStart = ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC);
+        final List<NonDefaultDay> realDays = List.of(NonDefaultDay.nonDefaultDay()
+                .withStartTime(realStart)
+                .withDuration(of(CHANGE_ROOM_DAY_DURATION))
+                .withCourtCentreId(of(courtCentre1.toString()))
+                .withRoomId(of(room2.toString()))
+                .withCourtScheduleId(of(originalD2.getCourtScheduleId().toString()))
+                .withVirtual(of(false))
+                .build());
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(
+                hearingId, List.of(), List.of(), realDays, true)
+                .collect(Collectors.toList());
+
+        // Persisted as a nonDefaultDay ...
+        final uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing assigned = events.stream()
+                .filter(uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing.class::isInstance)
+                .map(uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(assigned.getNonDefaultDays(), hasSize(1));
+        assertThat(assigned.getNonDefaultDays().get(0).getRoomId(), is(room2.toString()));
+        assertThat(assigned.getNonDefaultDays().get(0).getStartTime(), is(realStart));
+
+        // ... AND the hearing day for that date moves to the new room WITHOUT a booking:
+        // courtScheduleId is preserved (no courtscheduler interaction), isDraft is preserved.
+        final HearingDaysChangedForHearing daysChanged = events.stream()
+                .filter(HearingDaysChangedForHearing.class::isInstance)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+        final HearingDay emittedD2 = dayFor(daysChanged, d2Date);
+        assertThat(emittedD2.getCourtRoomId(), is(room2));
+        assertThat(emittedD2.getStartTime(), is(realStart));
+        assertThat(emittedD2.getCourtScheduleId(), is(originalD2.getCourtScheduleId()));
+        assertThat(emittedD2.getIsDraft(), is(originalD2.getIsDraft()));
+        assertThat(emittedD2.getIsCancelled(), is(originalD2.getIsCancelled()));
+        // Untouched days are verbatim.
+        assertThat(dayFor(daysChanged, d1Date), is(original.get(0)));
+        assertThat(dayFor(daysChanged, d3Date), is(original.get(2)));
+
+        // No schedules changed -> no HearingDayCourtScheduleUpdated event.
+        assertThat(events.stream().anyMatch(HearingDayCourtScheduleUpdated.class::isInstance), is(false));
+    }
+
+    @Test
+    void changeCourtRoom_mixed_virtualAndRealDaysBothMoveRoom_realKeepsSchedule() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID room3 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        final List<HearingDay> original = applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d3Date);
+        final HearingDay originalD2 = original.get(1);
+        final HearingDay originalD3 = original.get(2);
+
+        // d2 is a VIRTUAL day (already booked by COMMAND_API) -> moves to room2 with the NEW schedule id.
+        final UUID newScheduleD2 = randomUUID();
+        final ZonedDateTime virtualStart = ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC);
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                changedDomainDayWithSchedule(d2Date, room2, courtCentre1, virtualStart, newScheduleD2));
+        final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(newScheduleD2, d2Date));
+
+        // d3 is a REAL day -> moves to room3, keeps its existing schedule id, and persists as a nonDefaultDay.
+        final ZonedDateTime realStart = ZonedDateTime.of(d3Date, LocalTime.parse("11:00"), UTC);
+        final List<NonDefaultDay> realDays = List.of(NonDefaultDay.nonDefaultDay()
+                .withStartTime(realStart)
+                .withDuration(of(CHANGE_ROOM_DAY_DURATION))
+                .withCourtCentreId(of(courtCentre1.toString()))
+                .withRoomId(of(room3.toString()))
+                .withCourtScheduleId(of(originalD3.getCourtScheduleId().toString()))
+                .withVirtual(of(false))
+                .build());
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(
+                hearingId, changedDays, schedules, realDays, true)
+                .collect(Collectors.toList());
+
+        final HearingDaysChangedForHearing daysChanged = events.stream()
+                .filter(HearingDaysChangedForHearing.class::isInstance)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+        // BOTH submitted days moved room; d1 untouched.
+        final HearingDay emittedD2 = dayFor(daysChanged, d2Date);
+        assertThat(emittedD2.getCourtRoomId(), is(room2));
+        assertThat(emittedD2.getCourtScheduleId(), is(newScheduleD2));
+        assertThat(emittedD2.getIsDraft(), is(originalD2.getIsDraft()));
+        final HearingDay emittedD3 = dayFor(daysChanged, d3Date);
+        assertThat(emittedD3.getCourtRoomId(), is(room3));
+        assertThat(emittedD3.getCourtScheduleId(), is(originalD3.getCourtScheduleId()));
+        assertThat(emittedD3.getIsDraft(), is(originalD3.getIsDraft()));
+        assertThat(dayFor(daysChanged, d1Date), is(original.get(0)));
+
+        // The real day also lands in the nonDefaultDays projection.
+        final uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing assigned = events.stream()
+                .filter(uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing.class::isInstance)
+                .map(uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(assigned.getNonDefaultDays(), hasSize(1));
+        assertThat(assigned.getNonDefaultDays().get(0).getRoomId(), is(room3.toString()));
+
+        // Only the VIRTUAL day's schedule changed.
+        final HearingDayCourtScheduleUpdated scheduleUpdated = events.stream()
+                .filter(HearingDayCourtScheduleUpdated.class::isInstance)
+                .map(HearingDayCourtScheduleUpdated.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules(), hasSize(1));
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules().get(0).getCourtScheduleId(), is(newScheduleD2));
+    }
+
+    /**
+     * SPRDT-1225: a REAL day whose courtScheduleId changed is rebooked by COMMAND_API and arrives in
+     * BOTH lists - pre-booked in changedDays (new schedule + session isDraft) and in
+     * changedNonDefaultDays (nonDefaultDay persistence). The aggregate must apply the hearing-day
+     * change exactly ONCE, preferring the pre-booked entry, and raise the schedule update.
+     */
+    @Test
+    void changeCourtRoom_rebookedRealDay_inBothLists_appliedOnceWithNewSchedule() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        final List<HearingDay> original = applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d3Date);
+
+        // d2 is a REAL day moving to room2 on a DIFFERENT session: COMMAND_API rebooked it, so the
+        // pre-booked changedDays entry carries the NEW courtScheduleId + the booked session's isDraft,
+        // while the same day also travels as a nonDefaultDay for persistence.
+        final UUID newScheduleD2 = randomUUID();
+        final ZonedDateTime realStart = ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC);
+        final List<uk.gov.moj.cpp.listing.domain.HearingDay> changedDays = List.of(
+                uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
+                        .withHearingDate(d2Date)
+                        .withStartTime(realStart)
+                        .withEndTime(realStart.plusMinutes(CHANGE_ROOM_DAY_DURATION))
+                        .withDurationMinutes(CHANGE_ROOM_DAY_DURATION)
+                        .withCourtCentreId(of(courtCentre1))
+                        .withCourtRoomId(of(room2))
+                        .withCourtScheduleId(of(newScheduleD2))
+                        .withIsDraft(of(false))
+                        .build());
+        final List<HearingDayCourtSchedule> schedules = List.of(new HearingDayCourtSchedule(newScheduleD2, d2Date));
+        final List<NonDefaultDay> realDays = List.of(NonDefaultDay.nonDefaultDay()
+                .withStartTime(realStart)
+                .withDuration(of(CHANGE_ROOM_DAY_DURATION))
+                .withCourtCentreId(of(courtCentre1.toString()))
+                .withRoomId(of(room2.toString()))
+                .withCourtScheduleId(of(newScheduleD2.toString()))
+                .withVirtual(of(false))
+                .build());
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(
+                hearingId, changedDays, schedules, realDays, true)
+                .collect(Collectors.toList());
+
+        // The hearing-day change is applied exactly once (no duplicate day for d2's date) and carries
+        // the NEW schedule, the new room, and the real day's custom start time.
+        final HearingDaysChangedForHearing daysChanged = events.stream()
+                .filter(HearingDaysChangedForHearing.class::isInstance)
+                .map(HearingDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(daysChanged.getHearingDays(), hasSize(3));
+        final HearingDay emittedD2 = dayFor(daysChanged, d2Date);
+        assertThat(emittedD2.getCourtRoomId(), is(room2));
+        assertThat(emittedD2.getCourtScheduleId(), is(newScheduleD2));
+        assertThat(emittedD2.getStartTime(), is(realStart));
+        assertThat(dayFor(daysChanged, d1Date), is(original.get(0)));
+        assertThat(dayFor(daysChanged, d3Date), is(original.get(2)));
+
+        // The day still persists as a nonDefaultDay carrying the new room and NEW schedule.
+        final uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing assigned = events.stream()
+                .filter(uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing.class::isInstance)
+                .map(uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(assigned.getNonDefaultDays(), hasSize(1));
+        assertThat(assigned.getNonDefaultDays().get(0).getRoomId(), is(room2.toString()));
+        assertThat(assigned.getNonDefaultDays().get(0).getCourtScheduleId(), is(newScheduleD2.toString()));
+
+        // The rebooked real day's schedule update fires downstream.
+        final HearingDayCourtScheduleUpdated scheduleUpdated = events.stream()
+                .filter(HearingDayCourtScheduleUpdated.class::isInstance)
+                .map(HearingDayCourtScheduleUpdated.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules(), hasSize(1));
+        assertThat(scheduleUpdated.getHearingDayCourtSchedules().get(0).getCourtScheduleId(), is(newScheduleD2));
+    }
+
+    @Test
+    void changeCourtRoom_mergePreservesExistingNonDefaultDayFields() {
+        final UUID room1 = randomUUID();
+        final UUID room2 = randomUUID();
+        final UUID courtCentre1 = randomUUID();
+        final LocalDate d1Date = now().plusDays(7);
+        final LocalDate d2Date = now().plusDays(8);
+        final LocalDate d3Date = now().plusDays(9);
+        applyThreeDayCrownAllocatedHearing(room1, courtCentre1, d1Date, d2Date, d3Date);
+
+        // The aggregate already holds a nonDefaultDay on d2 carrying legacy/extra fields.
+        final ZonedDateTime existingStart = ZonedDateTime.of(d2Date, LocalTime.parse("09:30"), UTC);
+        hearing.apply(uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing.nonDefaultDaysAssignedToHearing()
+                .withHearingId(hearingId)
+                .withIsPublicEvent(false)
+                .withNonDefaultDays(List.of(uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay()
+                        .withStartTime(existingStart)
+                        .withDuration(CHANGE_ROOM_DAY_DURATION)
+                        .withOucode("B01LY00")
+                        .withSession("AM")
+                        .withCourtRoomId(772)
+                        .withCourtCentreId(courtCentre1.toString())
+                        .withRoomId(room1.toString())
+                        .withCourtScheduleId(randomUUID().toString())
+                        .build()))
+                .build());
+
+        // The change moves d2 to room2 (real day).
+        final ZonedDateTime realStart = ZonedDateTime.of(d2Date, LocalTime.parse("11:00"), UTC);
+        final UUID keptSchedule = randomUUID();
+        final List<NonDefaultDay> realDays = List.of(NonDefaultDay.nonDefaultDay()
+                .withStartTime(realStart)
+                .withDuration(of(CHANGE_ROOM_DAY_DURATION))
+                .withCourtCentreId(of(courtCentre1.toString()))
+                .withRoomId(of(room2.toString()))
+                .withCourtScheduleId(of(keptSchedule.toString()))
+                .withVirtual(of(false))
+                .build());
+
+        final List<Object> events = hearing.changeCourtRoomForMultidayHearing(
+                hearingId, List.of(), List.of(), realDays, true)
+                .collect(Collectors.toList());
+
+        final NonDefaultDaysChangedForHearing changed = events.stream()
+                .filter(NonDefaultDaysChangedForHearing.class::isInstance)
+                .map(NonDefaultDaysChangedForHearing.class::cast)
+                .findFirst().orElseThrow();
+        assertThat(changed.getNonDefaultDays(), hasSize(1));
+        final uk.gov.justice.listing.events.NonDefaultDay merged = changed.getNonDefaultDays().get(0);
+        // Changed fields take the new values...
+        assertThat(merged.getRoomId(), is(room2.toString()));
+        assertThat(merged.getStartTime(), is(realStart));
+        assertThat(merged.getCourtScheduleId(), is(keptSchedule.toString()));
+        // ...while fields the change does not own are PRESERVED from the existing record...
+        assertThat(merged.getOucode(), is("B01LY00"));
+        assertThat(merged.getSession(), is("AM"));
+        // ...EXCEPT the legacy integer courtRoomId: it identifies the OLD room, so a room change
+        // must drop it rather than persist a stale reference.
+        assertThat(merged.getCourtRoomId(), is(nullValue()));
+    }
+
+    private UUID changeRoomCaseId;
+
+    private List<HearingDay> applyThreeDayCrownAllocatedHearing(final UUID room1, final UUID courtCentre1,
+            final LocalDate d1Date, final LocalDate d2Date, final LocalDate d3Date) {
+        return applyThreeDayAllocatedHearing(CROWN, room1, courtCentre1, d1Date, d2Date, d3Date);
+    }
+
+    private List<HearingDay> applyThreeDayAllocatedHearing(final uk.gov.justice.core.courts.JurisdictionType jurisdictionType,
+            final UUID room1, final UUID courtCentre1,
+            final LocalDate d1Date, final LocalDate d2Date, final LocalDate d3Date) {
+        final HearingDay d1 = crownHearingDay(d1Date, room1, courtCentre1, randomUUID(), 1);
+        final HearingDay d2 = crownHearingDay(d2Date, room1, courtCentre1, randomUUID(), 2);
+        final HearingDay d3 = crownHearingDay(d3Date, room1, courtCentre1, randomUUID(), 3);
+
+        changeRoomCaseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(jurisdictionType)
+                        .withCourtRoomId(room1)
+                        .withCourtCentreId(courtCentre1)
+                        .withStartDate(d1Date)
+                        .withEndDate(d3Date)
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withHearingDays(List.of(d1, d2, d3))
+                        .withListedCases(List.of(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(changeRoomCaseId)
+                                .withDefendants(List.of(Defendant.defendant()
+                                        .withId(defendantId)
+                                        .withOffences(List.of(Offence.offence().withId(offenceId).build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        // A courtroom change targets an already-allocated hearing, so allocate it (isAllocated() -> true)
+        // which makes the subsequent allocation emit the AllocatedHearingUpdatedForListingV2 variant.
+        hearing.apply(HearingAllocatedForListingV2.hearingAllocatedForListingV2()
+                .withHearingId(hearingId)
+                .withCourtRoomId(room1)
+                .withProsecutionCaseDefendantsOffenceIds(List.of(
+                        ProsecutionCaseDefendantOffenceIdsV2.prosecutionCaseDefendantOffenceIdsV2()
+                                .withId(changeRoomCaseId)
+                                .withDefendants(List.of(DefendantOffenceIdsV2.defendantOffenceIdsV2()
+                                        .withId(defendantId)
+                                        .withOffenceIds(List.of(OffenceIds.offenceIds().withId(offenceId).build()))
+                                        .build()))
+                                .build()))
+                .build());
+
+        return List.of(d1, d2, d3);
+    }
+
+    private HearingDay crownHearingDay(final LocalDate date, final UUID room, final UUID courtCentre,
+            final UUID courtScheduleId, final int sequence) {
+        final ZonedDateTime start = ZonedDateTime.of(date, LocalTime.parse("09:30"), UTC);
+        return HearingDay.hearingDay()
+                .withHearingDate(date)
+                .withStartTime(start)
+                .withEndTime(start.plusMinutes(CHANGE_ROOM_DAY_DURATION))
+                .withDurationMinutes(CHANGE_ROOM_DAY_DURATION)
+                .withSequence(sequence)
+                .withCourtScheduleId(courtScheduleId)
+                .withCourtCentreId(courtCentre)
+                .withCourtRoomId(room)
+                .withIsCancelled(false)
+                .withIsDraft(false)
+                .build();
+    }
+
+    private uk.gov.moj.cpp.listing.domain.HearingDay changedDomainDay(final LocalDate date, final UUID room2,
+            final UUID courtCentre, final ZonedDateTime start) {
+        return uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
+                .withHearingDate(date)
+                .withStartTime(start)
+                .withEndTime(start.plusMinutes(CHANGE_ROOM_DAY_DURATION))
+                .withDurationMinutes(CHANGE_ROOM_DAY_DURATION)
+                .withCourtCentreId(of(courtCentre))
+                .withCourtRoomId(of(room2))
+                .build();
+    }
+
+    /** A virtual changed day as the enriched handler now builds it - carrying the NEW courtScheduleId. */
+    private uk.gov.moj.cpp.listing.domain.HearingDay changedDomainDayWithSchedule(final LocalDate date, final UUID room2,
+            final UUID courtCentre, final ZonedDateTime start, final UUID newCourtScheduleId) {
+        return uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
+                .withHearingDate(date)
+                .withStartTime(start)
+                .withEndTime(start.plusMinutes(CHANGE_ROOM_DAY_DURATION))
+                .withDurationMinutes(CHANGE_ROOM_DAY_DURATION)
+                .withCourtCentreId(of(courtCentre))
+                .withCourtRoomId(of(room2))
+                .withCourtScheduleId(of(newCourtScheduleId))
+                .build();
+    }
+
+    private static HearingDay dayFor(final HearingDaysChangedForHearing event, final LocalDate date) {
+        return event.getHearingDays().stream()
+                .filter(day -> date.equals(day.getHearingDate()))
+                .findFirst().orElseThrow();
     }
 
     @Test
