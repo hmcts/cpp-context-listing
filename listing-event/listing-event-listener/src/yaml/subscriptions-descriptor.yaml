@@ -218,6 +218,9 @@ subscriptions_descriptor:
         - name: listing.events.hearing-days-without-court-centre-corrected
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-without-court-centre-corrected.json
 
+        - name: listing.events.offence-ordering-restored
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offence-ordering-restored.json
+
         - name: listing.events.hearing-day-court-schedule-updated
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-day-court-schedule-updated.json
 

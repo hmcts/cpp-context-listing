@@ -4697,6 +4697,39 @@ class ListingCommandHandlerTest {
         verify(hearing, times(1)).addCasesForHearing(any(List.class), any(List.class));
     }
 
+    /**
+     * LPT-2698 BDF: the command's offences reach the aggregate unchanged.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldRestoreOffenceOrderingBdf() throws EventStreamException {
+        final UUID hearingId = randomUUID();
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+        final JsonObject payload = createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("restoredOffences", createArrayBuilder().add(createObjectBuilder()
+                        .add("caseId", caseId.toString())
+                        .add("defendantId", defendantId.toString())
+                        .add("offenceId", offenceId.toString())
+                        .add("orderIndex", 4)
+                        .add("count", 2)))
+                .build();
+
+        listingCommandHandler.restoreOffenceOrderingBdf(createEnvelope("listing.command.restore-offence-ordering-bdf", payload));
+
+        final org.mockito.ArgumentCaptor<List> restoredOffences = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(hearing, times(1)).restoreOffenceOrdering(org.mockito.ArgumentMatchers.eq(hearingId), restoredOffences.capture());
+        final uk.gov.justice.listing.events.RestoredOffences restored = (uk.gov.justice.listing.events.RestoredOffences) restoredOffences.getValue().get(0);
+        assertThat(restored.getCaseId(), is(caseId));
+        assertThat(restored.getDefendantId(), is(defendantId));
+        assertThat(restored.getOffenceId(), is(offenceId));
+        assertThat(restored.getOrderIndex(), is(4));
+        assertThat(restored.getCount(), is(2));
+    }
+
     @Test
     public void shouldParseStringToXML() {
         final String authContextInfoValue = "<Sw:AuthContextInfo xmlns:Sw=\"urn:swift:saml:Sw.01\"><Network>abcdef</Network><SubjectDN>cn=%1,cn=uk2345678,ou=operators,o=scblgb21,o=swift</SubjectDN><PolicyOID>SWIFT_OID</PolicyOID></Sw:AuthContextInfo>";

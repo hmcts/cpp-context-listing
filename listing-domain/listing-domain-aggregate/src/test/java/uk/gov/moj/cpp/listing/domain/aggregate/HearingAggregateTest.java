@@ -9899,4 +9899,82 @@ class HearingAggregateTest {
                         .build())
                 .build();
     }
+
+    /**
+     * LPT-2698 BDF: restore orderIndex/count wiped by the LPT-2677 bug.
+     */
+    @Test
+    void shouldRaiseOffenceOrderingRestoredAndFillTheAggregateStateWhereMissing() {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+        applyHearingListedWithOneOffence(caseId, defendantId, offenceId);
+
+        final List<Object> events = hearing.restoreOffenceOrdering(hearingId, java.util.List.of(restoredOffence(caseId, defendantId, offenceId, 4, 2)))
+                .collect(Collectors.toList());
+
+        assertThat(events.size(), is(1));
+        final uk.gov.justice.listing.events.OffenceOrderingRestored restored = (uk.gov.justice.listing.events.OffenceOrderingRestored) events.get(0);
+        assertThat(restored.getHearingId(), is(hearingId));
+        assertThat(restored.getRestoredOffences().get(0).getOffenceId(), is(offenceId));
+        assertThat(restored.getRestoredOffences().get(0).getOrderIndex(), is(4));
+        final uk.gov.justice.listing.events.Offence stateOffence = hearing.getCurrentHearingEventState().getListedCases().get(0)
+                .getDefendants().get(0).getOffences().get(0);
+        assertThat(stateOffence.getOrderIndex(), is(4));
+        assertThat(stateOffence.getCount(), is(2));
+    }
+
+    @Test
+    void shouldNotRaiseOffenceOrderingRestoredForADuplicateHearing() {
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+        applyHearingListedWithOneOffence(caseId, defendantId, offenceId);
+        hearing.apply(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate().withHearingId(hearingId).build());
+
+        final List<Object> events = hearing.restoreOffenceOrdering(hearingId, java.util.List.of(restoredOffence(caseId, defendantId, offenceId, 4, 2)))
+                .collect(Collectors.toList());
+
+        assertThat(events.size(), is(0));
+    }
+
+    @Test
+    void shouldNotRaiseOffenceOrderingRestoredWhenNothingIsToBeRestored() {
+        applyHearingListedWithOneOffence(randomUUID(), randomUUID(), randomUUID());
+
+        assertThat(hearing.restoreOffenceOrdering(hearingId, emptyList()).collect(Collectors.toList()).size(), is(0));
+    }
+
+    private void applyHearingListedWithOneOffence(final UUID caseId, final UUID defendantId, final UUID offenceId) {
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withListedCases(new ArrayList<>(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(caseId)
+                                .withCaseIdentifier(CaseIdentifier.caseIdentifier().withCaseReference("caseReference").build())
+                                .withDefendants(new ArrayList<>(asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                        .withId(defendantId)
+                                        .withOffences(new ArrayList<>(asList(uk.gov.justice.listing.events.Offence.offence()
+                                                .withId(offenceId)
+                                                .build())))
+                                        .build())))
+                                .build())))
+                        .build())
+                .build());
+    }
+
+    private static uk.gov.justice.listing.events.RestoredOffences restoredOffence(final UUID caseId, final UUID defendantId, final UUID offenceId,
+                                                                                   final int orderIndex, final int count) {
+        return uk.gov.justice.listing.events.RestoredOffences.restoredOffences()
+                .withCaseId(caseId)
+                .withDefendantId(defendantId)
+                .withOffenceId(offenceId)
+                .withOrderIndex(orderIndex)
+                .withCount(count)
+                .build();
+    }
 }

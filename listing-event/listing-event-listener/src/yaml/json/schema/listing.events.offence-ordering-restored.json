@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.offence-ordering-restored.json",
+  "description": "LPT-2698 BDF: orderIndex/count restored (from progression) on offences of a hearing that lost them. Applied only where missing.",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "restoredOffences": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "caseId": {
+            "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+          },
+          "defendantId": {
+            "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+          },
+          "offenceId": {
+            "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+          },
+          "orderIndex": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "caseId",
+          "defendantId",
+          "offenceId",
+          "orderIndex"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "hearingId",
+    "restoredOffences"
+  ],
+  "additionalProperties": false
+}

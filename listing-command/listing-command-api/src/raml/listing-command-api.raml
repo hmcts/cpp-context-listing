@@ -130,6 +130,9 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         requestType: application/vnd.listing.update-hearing-add-case-bdf+json
         name: listing.update-hearing-add-case-bdf
+      (mapping):
+        requestType: application/vnd.listing.restore-offence-ordering-bdf+json
+        name: listing.restore-offence-ordering-bdf
       ...
     body:
       application/vnd.listing.command.update-hearing-for-listing+json:
@@ -178,6 +181,9 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.update-hearing-add-case-bdf+json:
         example: !include json/listing.update-hearing-add-case-bdf.json
         schema: !include json/schema/listing.update-hearing-add-case-bdf.json
+      application/vnd.listing.restore-offence-ordering-bdf+json:
+        example: !include json/listing.restore-offence-ordering-bdf.json
+        schema: !include json/schema/listing.restore-offence-ordering-bdf.json
     responses:
       202:
         description: Request accepted
