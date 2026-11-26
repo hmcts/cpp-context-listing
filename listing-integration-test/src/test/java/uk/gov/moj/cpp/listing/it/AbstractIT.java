@@ -13,6 +13,9 @@ import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubCourtSc
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubDeleteAvailableHearingSlotsServiceForAnyHearing;
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitCatchAll;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataOrganisationUnitListCatchAll;
+import uk.gov.moj.cpp.listing.it.util.ArtemisQueuePurger;
+import uk.gov.moj.cpp.listing.it.util.PipelineIdleBarrier;
 import static uk.gov.moj.cpp.listing.utils.WebDavStub.acceptCourtListXmlFile;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProgressionNotesStubs;
@@ -39,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @SuppressWarnings("WeakerAccess")
+@ExtendWith(ServerLogTestMarkerExtension.class) // first: markers must bracket the other extensions + setUp()
 @ExtendWith(JmsResourceManagementExtension.class)
 @ExtendWith(TestDurationExtension.class)
 public class AbstractIT {
@@ -56,19 +60,38 @@ public class AbstractIT {
 
     static final String CONTEXT_NAME = "listing";
 
+    /** Publish-relay drain budget: generous because vld nodes lag under weekday load. */
+    private static final long PUBLISH_DRAIN_MAX_WAIT_MILLIS = 30_000;
 
     @BeforeEach
     void setUp() {
+        // (1) Publish-side quiesce: wait (bounded) for the relay to finish publishing whatever
+        // the previous test appended, while no test consumers exist to observe it (Steps
+        // consumers are created after setUp). A relay thread that latched a publish_queue row
+        // pre-truncate otherwise publishes it post-purge, planting a stale processed_event row
+        // (eventNumber=1) that this test's first event collides with — rollback → redelivery →
+        // DLQ → 90s poll timeout (vld builds 765431/765486/765702).
+        databaseCleaner.awaitPublishQueuesEmpty(CONTEXT_NAME, PUBLISH_DRAIN_MAX_WAIT_MILLIS);
+        // (2) Consume-side quiesce: let any projection still in flight (including events the
+        // drain above just released) finish against intact tables, so the truncation below
+        // cannot race it (B2).
+        ArtemisQueuePurger.quiesceListingEventProcessing();
+        // (3) Purge everything the drain released onto subscriber queues before any of this
+        // test's consumers subscribe.
+        ArtemisQueuePurger.purgeAllListingQueues();
         reset();
-        // ASYNC-VULNERABLE stubs are re-armed FIRST after reset(): in-flight EVENT_PROCESSOR
-        // work from the previous test (court-list export PUTs, org-unit lookups for allocations)
-        // can land in the reset()->arm gap and fail with 404/NULL-payload errors misattributed
-        // to this test (court-list export then marks publish status failed and the payload
-        // query 500s). Mirrors the team/ccsph2n hardening.
+        // ASYNC-VULNERABLE stubs are re-armed FIRST after reset(): in-flight EVENT_PROCESSOR work
+        // from the previous test (court-list export PUTs, org-unit lookups for allocations) can
+        // land in the reset()->arm gap and fail with 404/NULL-payload errors misattributed to this
+        // test. The gap cannot be fully closed (WireMock state is wiped atomically), only kept
+        // minimal. Tests that re-arm later still win — most recent stub wins at equal priority.
         acceptCourtListXmlFile(OK);
         stubGetReferenceDataOrganisationUnitCatchAll();
+        stubGetReferenceDataOrganisationUnitListCatchAll();
+        stubCourtSchedulerCatchAll();
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
+        stubDeleteAvailableHearingSlotsServiceForAnyHearing();
         setupProsecutionCaseByCaseUrn();
         setupProgressionNotesStubs();
         setupUsersGroupPermissionsForApplicationTypeStub();
@@ -122,11 +145,29 @@ public class AbstractIT {
         params.put("sessionEndDate", "2020-10-11");
         params.put("pageSize", "20");
         params.put("pageNumber", "1");
+        params.put("jurisdiction", "MAGISTRATES");
 
         return params;
     }
 
     protected static String getStringFromResource(final String path) throws IOException {
         return Resources.toString(getResource(path), defaultCharset());
+    }
+
+    /**
+     * Full happens-after barrier for a command whose expected effect is that NOTHING happens.
+     *
+     * Waits until the listing command queues, the service's own topic subscriptions and the
+     * publish relay tables have all been observed empty several times in a row (see
+     * {@link PipelineIdleBarrier}). The earlier relay-drain + DeliveringCount pair could return
+     * while the work sat on a command queue or was routed but not yet dispatched.
+     *
+     * Needed whenever a test asserts state is UNCHANGED, or that an event was NOT emitted: that
+     * condition is already true the instant the command is accepted, so checking it without this
+     * barrier races the async work instead of observing its absence. After the barrier a short
+     * absence window is enough — see {@code QueueUtil.assertNoMessage}.
+     */
+    protected void awaitAsyncProcessingComplete() {
+        PipelineIdleBarrier.awaitPipelineIdle(databaseCleaner, CONTEXT_NAME);
     }
 }

@@ -25,6 +25,7 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
+import uk.gov.moj.cpp.listing.common.duration.HearingDurationDefaults;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.PtphDetail;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
@@ -159,6 +160,8 @@ public class UnscheduledListingCommandHandler {
         final Optional<Integer> weekCommencingDurationInWeeks = commandToDomainConverter.getWeekCommencingDurationInWeeks(commandHearing);
         final Optional<LocalDate> weekCommencingEndDate = commandToDomainConverter.getWeekCommencingEndDate(weekCommencingStartDate, weekCommencingDurationInWeeks);
 
+        final Integer hearingDuration = resolveHearingDuration(commandHearing, hearingTypesIdDurationMap);
+
         updateHearingEventStream(command, commandHearing.getId(), (Hearing hearing) -> hearing.listUnscheduled(
                 commandHearing.getId(),
                 commandToDomainConverter.buildHearingType(commandHearing.getType()),
@@ -175,12 +178,32 @@ public class UnscheduledListingCommandHandler {
                 commandToDomainConverter.getCourtCentreDefaults(courtCentres, commandHearing),
                 commandToDomainConverter.getCourtApplications(commandHearing),
                 commandToDomainConverter.getCourtApplicationPartyListingNeeds(commandHearing),
-                hearingTypesIdDurationMap.get(commandHearing.getType().getId().toString()),
+                hearingDuration,
                 weekCommencingStartDate,
                 weekCommencingEndDate,
                 weekCommencingDurationInWeeks,
                 commandToDomainConverter.convertTypeOfList(commandHearing.getTypeOfList()),
                 ptphDetail));
+    }
+
+    /**
+     * Honour the user-entered estimatedMinutes from Manage Hearing on the unscheduled path.
+     * The frontend posts {@code estimatedMinutes} on {@link HearingUnscheduledListingNeeds};
+     * previously it was discarded and the hearing-type default always won. We now keep the
+     * user value when it is meaningful (&gt; 1) and only fall back to
+     * {@link HearingDurationDefaults#resolveHearingTypeDuration} when the user did not supply
+     * a usable value, so the existing SPRDT-806/807 "never 0 / never null" guarantee still holds.
+     */
+    private static Integer resolveHearingDuration(final HearingUnscheduledListingNeeds commandHearing,
+                                                  final Map<String, Integer> hearingTypesIdDurationMap) {
+        final Integer userEntered = commandHearing.getEstimatedMinutes();
+        if (userEntered != null && userEntered > 1) {
+            return HearingDurationDefaults.coerceToValidDuration(userEntered);
+        }
+        return HearingDurationDefaults.resolveHearingTypeDuration(
+                commandHearing.getType() != null && commandHearing.getType().getId() != null
+                        ? commandHearing.getType().getId().toString() : null,
+                hearingTypesIdDurationMap);
     }
 
     private void updateHearingEventStream(final JsonEnvelope command, final UUID hearingId,

@@ -449,7 +449,91 @@ mvn verify -pl listing-integration-test -P listing-integration-test
 
 ---
 
-## 13. Deterministic Time: `ItClock` and the Wall-Clock Ban
+## 13. Server.log Markers and Unexpected-Error Enforcement
+
+The Wildfly `server.log` must stay CLEAN during a healthy IT run: **all ERROR/WARN lines must come
+from deliberate negative scenarios**. Three pieces of test infrastructure enforce this.
+
+### 13.1 Test Lifecycle Markers
+
+`ServerLogTestMarkerExtension` (registered on `AbstractIT`, so every IT gets it) appends marker
+lines directly into `server.log` — the test JVM and Wildfly share the bind-mounted log file:
+
+```
+==== [IT-CLASS-START] CrownUpdateHearingMultidayIT ====
+---- [TEST-START] CrownUpdateHearingMultidayIT.shouldExtendHearing ----
+---- [TEST-END][SUCCESS] CrownUpdateHearingMultidayIT.shouldExtendHearing ----
+==== [IT-CLASS-END] CrownUpdateHearingMultidayIT ====
+```
+
+Triage rules when reading server.log:
+
+| Where the ERROR/WARN appears | Meaning |
+|---|---|
+| Inside a `[TEST-START]` window **without** `[EXPECTED-ERRORS]` | Genuine problem — investigate |
+| Inside an `[EXPECTED-ERRORS]` window | Deliberate negative scenario — ignore (reason is on the marker) |
+| Between `[TEST-END]` and the next `[TEST-START]` | Async straggler — missing await/drain in the test that just ended |
+
+The `[TEST-START]` marker is written *before* `AbstractIT.setUp()`, so Artemis purge / WireMock
+reset / DB clean errors are attributed to the right test.
+
+### 13.2 Negative Scenarios: `@ExpectedServerErrors`
+
+Tests that DELIBERATELY provoke server-side ERROR/WARN lines (e.g. stubbing courtscheduler to
+return 422/500 and asserting fail-safe behaviour) must be annotated:
+
+```java
+@Test
+@ExpectedServerErrors("courtscheduler stub returns 500 -> ERROR 'Retrieve ... failed with status code:500' + WARN 'failing-safe by returning anyDraft=true'")
+void shouldFailClosedToAnyDraftTrueWhenCourtschedulerReturnsServerError() {
+```
+
+The annotation stamps the test's markers with `[EXPECTED-ERRORS]` plus the reason, and exempts the
+window from unexpected-error detection. Describe the EXACT lines expected so a log reader can match
+them without opening the test source.
+
+### 13.3 Unexpected-Error Detection and the End-of-Run Summary
+
+After each test, the extension reads back that test's server.log window and flags any ERROR/WARN
+line that is neither sanctioned by `@ExpectedServerErrors` nor a known framework-race floor
+signature. Findings are printed at the end of the run (and written to
+`target/unexpected-server-errors.txt`):
+
+```
+=================== SERVER.LOG UNEXPECTED ERROR SUMMARY ===================
+1 test window(s) contained unexpected server.log ERROR/WARN lines ...
+  SomeIT.someTest
+    07/Jun/2026:11:36:19 UTC  ERROR [uk.gov...] ...
+============================================================================
+```
+
+Strict mode makes the owning test FAIL instead of just being summarised:
+
+```bash
+./runIntegrationTests.sh errorlog                      # full suite, strict (also disables reruns)
+mvn verify ... -Dserver.log.failOnUnexpectedErrors=true  # targeted runs
+```
+
+Allowlisted floor signatures (framework races that self-heal on redelivery, also present on main;
+NOT fixable from test code): `No stream not found` (EVENT_LISTENER stream_status race),
+`Failed to find Event with id` (AsynchronousPrePublisher vs event-store truncate),
+`AMQ212009: resetting session` (companion WARN). Project-specific additions:
+`-Dserver.log.error.allowlist=<regex>`.
+
+### 13.4 Keeping Windows Clean: Drain Your Own Aftermath
+
+A test is responsible for the async work it triggers. Before a test ends:
+
+- Await the viewstore projection the next command/assertion depends on (`verifyHearingIsCreated`,
+  poll-based assertions).
+- Drain EVENT_PROCESSOR output where the test caused public events (e.g.
+  `verifyPublicEVentHearingChangesSaved`, `WebDavStub.awaitCourtListXmlFilesSent(n)` for
+  court-list exports) — otherwise the in-flight work crosses the next test's WireMock `reset()` /
+  DB truncate and produces errors misattributed to the next test's window.
+
+---
+
+## 14. Deterministic Time: `ItClock` and the Wall-Clock Ban
 
 The suite used to fail in a one-hour band at **00:00–01:00 BST**. British Summer Time is UTC+1, so in
 that hour a "today" computed in `Europe/London` and a "today" computed in UTC land on **different calendar
@@ -457,7 +541,7 @@ days**. With many files independently calling `LocalDate.now()` / `ZonedDateTime
 a hearing date in one zone and assert against another — flaky only during that hour, and "green local /
 red CI" because a UK laptop runs `Europe/London` while CI runs UTC.
 
-### 13.1 The rule: one anchor, one zone, derive everything
+### 14.1 The rule: one anchor, one zone, derive everything
 
 All test time goes through **`ItClock`** (`listing-integration-test/.../it/util/ItClock.java`):
 
@@ -478,7 +562,7 @@ unchanged: `ItClock.today().plusDays(7)`, `ItClock.nowUtc().truncatedTo(ChronoUn
 Elapsed-time measurement is **not** a date and stays as-is: `System.currentTimeMillis()` in `QueueUtil`
 timing loops and `Instant.now()` inside duration/log-marker infra.
 
-### 13.2 The guard rail
+### 14.2 The guard rail
 
 A `forbidden-apis` check (in the IT module's default `build` profile, so it runs on `mvn install`) fails
 the build if any IT class calls a no-arg wall-clock `now()` or `new Date()` outside `ItClock`. Only the
@@ -486,7 +570,7 @@ no-arg overloads are banned — `ItClock` itself uses the `Clock`-argument overl
 so it is not flagged. The command-line `-P listing-integration-test` profile deactivates the `build`
 profile, so the guard adds zero overhead to the IT run itself.
 
-### 13.3 Midnight simulation (no waiting for real midnight)
+### 14.3 Midnight simulation (no waiting for real midnight)
 
 `ItClock` reads an optional `-Dit.clock` anchor (forwarded into the forked IT JVM by the failsafe
 `systemPropertyVariables`). `run-it-midnight.sh` at the repo root freezes the clock across the
@@ -496,7 +580,7 @@ profile, so the guard adds zero overhead to the IT run itself.
 ./run-it-midnight.sh   # green at every anchor == midnight-safe
 ```
 
-### 13.4 Day-of-week safety: working-day anchors for multi-day spans
+### 14.4 Day-of-week safety: working-day anchors for multi-day spans
 
 `ItClock.today()` removes *time-of-day* non-determinism (the midnight band) but it is still the **live
 calendar date**, so it can be any day of the week. **Courts do not sit at weekends.** A test that builds a
@@ -528,12 +612,11 @@ Single-day-on-`today()` tests are weekend-safe and need no change; only multi-da
 sitting-day events do.
 
 ---
-
 ## Summary Checklist
 
 When writing or reviewing integration tests, verify:
-- [ ] No raw wall-clock reads (`LocalDate.now()`, `ZonedDateTime.now()`, `new Date()`, …) — use `ItClock` (§13; the `forbidden-apis` guard enforces this on `mvn install`)
-- [ ] Multi-day / split / extend spans that assert sitting-day events use `ItClock.plusWorkingDays`/`nextWorkingDay`, never raw `plusDays` — so they never straddle a weekend (§13.4)
+- [ ] No direct wall-clock reads (`LocalDate.now()`, `ZonedDateTime.now()`, `new Date()`, …) — use `ItClock` (§14; the `forbidden-apis` guard enforces this on `mvn install`)
+- [ ] Multi-day / split / extend hearing spans that assert sitting-day events are anchored on working days (`ItClock.nextWorkingDay()` / `plusWorkingDays(...)`), so they never straddle a weekend — see §14.4
 
 - [ ] No usage of `javax.json.Json` — use `uk.gov.justice.services.messaging.JsonObjects` instead
 - [ ] No direct `RestPoller.poll()` calls — use `RestPollerHelper.pollWithDefaults()` or `pollWithDelayForJms()`
@@ -546,3 +629,6 @@ When writing or reviewing integration tests, verify:
 - [ ] Unnecessary JMS consumers are not created
 - [ ] Awaitility/WireMock timeouts use reduced, reasonable values (e.g., 15s instead of 30s)
 - [ ] Run with `-P test-duration-tracking` to check for slow tests when making changes to integration tests
+- [ ] Negative scenarios that provoke server-side errors are annotated with `@ExpectedServerErrors`
+- [ ] Tests drain their own async aftermath (projections awaited, exports/public events drained) before finishing
+- [ ] The end-of-run `SERVER.LOG UNEXPECTED ERROR SUMMARY` is CLEAN (or run `./runIntegrationTests.sh errorlog`)

@@ -9,11 +9,12 @@ Feature: Vacating a hearing initiated from hearing
     And hearing gets vacated from listing
     And available slots for hearing are freed
 
-  Scenario: Should not attempt to free any slots when a hearing is vacated in Crown jurisdiction
+  Scenario: Should vacate the hearing and free allocated slots when vacating reason is provided and jurisdiction is Crown
 
     Given hearing listed
     When you hearingVacateTrial to a Hearing with a vacate reason
     Then hearing gets vacated from listing
+    And available slots for hearing are freed
 
   Scenario: Should not attempt to free any slots when a hearing is vacated in Magistrates jurisdiction and vacate reason is missing
 

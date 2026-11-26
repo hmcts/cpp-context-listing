@@ -4,7 +4,6 @@ import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -16,11 +15,10 @@ import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateException;
 import uk.gov.moj.cpp.listing.common.pastdate.MoveHearingToPastDateResult;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
 
 import org.apache.http.HttpStatus;
@@ -31,15 +29,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * courtRoomId/startInstant/endInstant mirror main's contract (the review artifact this
+ * reconciles) - courtCentreId/startDate-only calls no longer exist on the adapter.
+ */
 @ExtendWith(MockitoExtension.class)
 class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
-
-    // Absolute UTC instants sent as the move request's startTime/endTime (no separate date/local-time).
-    // courtscheduler derives the per-day times and the duration from these, so the adapter no longer
-    // sends a durationInMinutes.
-    private static final String START_TIME = "2026-05-01T09:00:00.000Z";
-    private static final String DAY_1_TIME = "2026-07-01T09:00:00.000Z";
-    private static final String DAY_2_TIME = "2026-07-02T17:00:00.000Z";
 
     @InjectMocks
     private CourtSchedulerServiceAdapter adapter;
@@ -50,89 +45,184 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
     @Mock
     private Response response;
 
-    private static JsonObjectBuilder slot(final String courtScheduleId, final String sessionDate) {
-        return createObjectBuilder()
-                .add("courtScheduleId", courtScheduleId)
-                .add("courtRoomId", "9d324f4f-6c3b-451f-ac1e-f459db781153")
-                .add("sessionDate", sessionDate)
-                .add("sessionStartTime", sessionDate + "T09:00:00Z")
-                .add("sessionEndTime", sessionDate + "T12:00:00Z")
-                .add("durationInMinutes", 30)
-                .add("source", "MOVE_TO_PAST_DATE");
-    }
+    private static final ZonedDateTime START_INSTANT = ZonedDateTime.parse("2026-05-01T09:00:00Z");
+    private static final ZonedDateTime END_INSTANT = ZonedDateTime.parse("2026-05-01T17:00:00Z");
 
     @Test
-    void shouldParseSingleBookedSlotOn200() {
+    void shouldParseSlotDetailsOn200() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
         final UUID courtScheduleId = UUID.randomUUID();
+        final LocalDate startDate = LocalDate.parse("2026-05-01");
 
         final JsonObject body = createObjectBuilder()
-                .add("bookedSlots", createArrayBuilder().add(slot(courtScheduleId.toString(), "2026-05-01")))
+                .add("hearingId", hearingId.toString())
+                .add("courtScheduleId", courtScheduleId.toString())
+                .add("courtRoomId", "9d324f4f-6c3b-451f-ac1e-f459db781153")
+                .add("sessionDate", "2026-05-01")
+                .add("sessionStartTime", "2026-05-01T09:00:00Z")
+                .add("sessionEndTime", "2026-05-01T17:00:00Z")
+                .add("durationInMinutes", 30)
+                .add("source", "MOVE_TO_PAST_DATE")
                 .build();
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.hasEntity()).thenReturn(true);
         when(response.getEntity()).thenReturn(body);
         when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
 
-        final List<MoveHearingToPastDateResult> result =
-                adapter.moveHearingToPastDate(hearingId, courtCentreId, UUID.randomUUID(), START_TIME, START_TIME);
+        final MoveHearingToPastDateResult result = adapter.moveHearingToPastDate(
+                hearingId, courtCentreId, courtRoomId, START_INSTANT, END_INSTANT, 30, "MAGISTRATES");
 
-        assertThat(result, hasSize(1));
-        assertThat(result.get(0).courtScheduleId(), is(courtScheduleId));
-        assertThat(result.get(0).courtRoomId(), is("9d324f4f-6c3b-451f-ac1e-f459db781153"));
-        assertThat(result.get(0).sessionDate(), is(LocalDate.parse("2026-05-01")));
-        assertThat(result.get(0).sessionStartTime(), is("2026-05-01T09:00:00Z"));
-        assertThat(result.get(0).durationInMinutes(), is(30));
+        assertThat(result.courtScheduleId(), is(courtScheduleId));
+        assertThat(result.courtRoomId(), is("9d324f4f-6c3b-451f-ac1e-f459db781153"));
+        assertThat(result.sessionDate(), is(startDate));
+        assertThat(result.sessionStartTime(), is("2026-05-01T09:00:00Z"));
+        assertThat(result.sessionEndTime(), is("2026-05-01T17:00:00Z"));
+        assertThat(result.durationInMinutes(), is(30));
+        assertThat(result.lastSessionDate(), is(startDate));
+        assertThat("flat body is a single session", result.sessions().size(), is(1));
     }
 
+    /** courtscheduler's real wire shape: the booked day(s) nested under "sessions", first = start day. */
     @Test
-    void shouldParseMultipleBookedSlotsForAMultiDayMove() {
+    void shouldParseFirstNestedSessionOn200() {
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final UUID firstScheduleId = UUID.randomUUID();
+        final UUID secondScheduleId = UUID.randomUUID();
+        final UUID courtHouseId = UUID.randomUUID();
+        final LocalDate startDate = LocalDate.parse("2026-05-04");
+
+        final JsonObject body = createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("source", "MOVE_TO_PAST_DATE")
+                .add("sessions", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("courtScheduleId", firstScheduleId.toString())
+                                .add("courtRoomId", "9d324f4f-6c3b-451f-ac1e-f459db781153")
+                                .add("sessionDate", "2026-05-04")
+                                .add("sessionStartTime", "2026-05-04T10:00:00.000+00:00")
+                                .add("sessionEndTime", "2026-05-04T17:00:00.000+00:00"))
+                        .add(createObjectBuilder()
+                                .add("courtScheduleId", secondScheduleId.toString())
+                                .add("courtRoomId", "9d324f4f-6c3b-451f-ac1e-f459db781153")
+                                .add("courtHouseId", courtHouseId.toString())
+                                .add("sessionDate", "2026-05-05")
+                                .add("isDraft", false)))
+                .build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
+
+        final MoveHearingToPastDateResult result = adapter.moveHearingToPastDate(
+                hearingId, courtCentreId, courtRoomId, START_INSTANT, ZonedDateTime.parse("2026-05-05T17:00:00Z"), 720, "CROWN");
+
+        assertThat(result.courtScheduleId(), is(firstScheduleId));
+        assertThat(result.courtRoomId(), is("9d324f4f-6c3b-451f-ac1e-f459db781153"));
+        assertThat(result.sessionDate(), is(startDate));
+        assertThat(result.sessionStartTime(), is("2026-05-04T10:00:00.000+00:00"));
+        assertThat(result.sessionEndTime(), is("2026-05-04T17:00:00.000+00:00"));
+        assertThat(result.durationInMinutes(), is(nullValue()));
+        assertThat("end date follows the LAST booked session", result.lastSessionDate(), is(LocalDate.parse("2026-05-05")));
+        assertThat("every booked session is returned, in order", result.sessions().size(), is(2));
+        assertThat(result.sessions().get(0).courtScheduleId(), is(firstScheduleId));
+        assertThat(result.sessions().get(1).courtScheduleId(), is(secondScheduleId));
+        assertThat(result.sessions().get(1).sessionDate(), is(LocalDate.parse("2026-05-05")));
+        assertThat(result.sessions().get(1).courtCentreId(), is(courtHouseId));
+        assertThat(result.sessions().get(1).isDraft(), is(false));
+        assertThat("absent on the wire -> unknown, not false", result.sessions().get(0).isDraft(), is(nullValue()));
+    }
+
+    /**
+     * Regression test: a PRESENT-but-empty sessions[] (courtscheduler's "exploratory, genuine
+     * date-range found nothing" 200 response) must parse to an EMPTY result, not fall back to
+     * treating the top-level {hearingId, source, sessions:[]} envelope as a single flat session -
+     * that fallback fabricated a session with every field null, which then broke
+     * listing.command.move-hearing-to-past-date-enriched's schema validation downstream
+     * (courtScheduleId/sessionDate are required on each session entry).
+     */
+    @Test
+    void shouldReturnEmptyResultWhenSessionsArrayIsPresentButEmpty() {
         final UUID hearingId = UUID.randomUUID();
         final JsonObject body = createObjectBuilder()
-                .add("bookedSlots", createArrayBuilder()
-                        .add(slot(UUID.randomUUID().toString(), "2026-07-01"))
-                        .add(slot(UUID.randomUUID().toString(), "2026-07-02")))
+                .add("hearingId", hearingId.toString())
+                .add("source", "MOVE_TO_PAST_DATE")
+                .add("sessions", createArrayBuilder())
                 .build();
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.hasEntity()).thenReturn(true);
         when(response.getEntity()).thenReturn(body);
         when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
 
-        final List<MoveHearingToPastDateResult> result = adapter.moveHearingToPastDate(
-                hearingId, UUID.randomUUID(), UUID.randomUUID(), DAY_1_TIME, DAY_2_TIME);
+        final MoveHearingToPastDateResult result = adapter.moveHearingToPastDate(
+                hearingId, UUID.randomUUID(), UUID.randomUUID(), START_INSTANT, ZonedDateTime.parse("2026-05-04T17:00:00Z"), 720, "CROWN");
 
-        assertThat(result, hasSize(2));
-        assertThat(result.get(0).sessionDate(), is(LocalDate.parse("2026-07-01")));
-        assertThat(result.get(1).sessionDate(), is(LocalDate.parse("2026-07-02")));
+        assertThat(result.sessions(), is(java.util.List.of()));
+        assertThat(result.courtScheduleId(), is(nullValue()));
+        assertThat(result.lastSessionDate(), is(nullValue()));
     }
 
     @Test
-    void shouldParseSlotWithNoDurationInResponse() {
+    void shouldSendSuppliedJurisdictionInRequest() {
         final UUID hearingId = UUID.randomUUID();
-        final JsonObject body = createObjectBuilder()
-                .add("bookedSlots", createArrayBuilder().add(createObjectBuilder()
-                        .add("courtScheduleId", UUID.randomUUID().toString())
-                        .add("sessionDate", "2026-05-01")))
-                .build();
+        final JsonObject body = createObjectBuilder().add("courtScheduleId", UUID.randomUUID().toString())
+                .add("sessionDate", "2026-05-01").build();
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.hasEntity()).thenReturn(true);
         when(response.getEntity()).thenReturn(body);
         when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
 
-        final List<MoveHearingToPastDateResult> result = adapter.moveHearingToPastDate(
-                hearingId, UUID.randomUUID(), UUID.randomUUID(), START_TIME, START_TIME);
+        adapter.moveHearingToPastDate(hearingId, UUID.randomUUID(), UUID.randomUUID(), START_INSTANT, END_INSTANT, 30, "CROWN");
 
-        assertThat(result.get(0).durationInMinutes(), is(nullValue()));
+        final ArgumentCaptor<JsonObject> requestCaptor = ArgumentCaptor.forClass(JsonObject.class);
+        verify(hearingSlotsService).moveHearingToPastDate(eq(hearingId), requestCaptor.capture());
+        assertThat(requestCaptor.getValue().getString("jurisdiction"), is("CROWN"));
     }
 
     @Test
-    void shouldReplaceCourtschedulerDiagnosticMessageWithFixedCopyOn422NoSessionFound() {
-        // courtscheduler propagates its internal diagnostic; the adapter must replace it with the
-        // fixed user-facing copy so the UI always sees one message for NO_SESSION_FOUND
+    void shouldOmitDurationInRequestWhenNotSupplied() {
+        final UUID hearingId = UUID.randomUUID();
+        final JsonObject body = createObjectBuilder().add("courtScheduleId", UUID.randomUUID().toString())
+                .add("sessionDate", "2026-05-01").build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
+
+        final MoveHearingToPastDateResult result = adapter.moveHearingToPastDate(
+                hearingId, UUID.randomUUID(), UUID.randomUUID(), START_INSTANT, END_INSTANT, null, "MAGISTRATES");
+
+        assertThat(result.durationInMinutes(), is(nullValue()));
+    }
+
+    @Test
+    void shouldThrowWith422AndErrorCodeWhenFutureDate() {
+        final JsonObject body = createObjectBuilder()
+                .add("errorCode", "FUTURE_DATE_NOT_ALLOWED")
+                .add("message", "must not be after today")
+                .build();
+        when(response.getStatus()).thenReturn(422);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.moveHearingToPastDate(any(), any())).thenReturn(response);
+
+        final ZonedDateTime future = ZonedDateTime.parse("2999-01-01T09:00:00Z");
+        final MoveHearingToPastDateException ex = assertThrows(MoveHearingToPastDateException.class,
+                () -> adapter.moveHearingToPastDate(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), future, future, 30, "MAGISTRATES"));
+
+        assertThat(ex.getHttpStatus(), is(422));
+        assertThat(ex.getErrorCode(), is("FUTURE_DATE_NOT_ALLOWED"));
+    }
+
+    /** A genuine 422 NO_SESSION_FOUND from courtscheduler is normalised to the fixed user-facing message (ported from main). */
+    @Test
+    void shouldThrowWith422NoSessionFoundWhenCourtschedulerReturns422() {
         final JsonObject body = createObjectBuilder()
                 .add("errorCode", "NO_SESSION_FOUND")
-                .add("message", "No session available at courtCentreId=f8254db1-1683-483e-afb3-b87fde5a0a26 on 2026-06-15")
+                .add("message", "No session available at courtCentreId=... on 2026-05-01")
                 .build();
         when(response.getStatus()).thenReturn(422);
         when(response.hasEntity()).thenReturn(true);
@@ -140,12 +230,13 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
         when(hearingSlotsService.moveHearingToPastDate(any(), any())).thenReturn(response);
 
         final MoveHearingToPastDateException ex = assertThrows(MoveHearingToPastDateException.class,
-                () -> adapter.moveHearingToPastDate(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                        START_TIME, START_TIME));
+                () -> adapter.moveHearingToPastDate(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), START_INSTANT, END_INSTANT, 30, "MAGISTRATES"));
 
         assertThat(ex.getHttpStatus(), is(422));
         assertThat(ex.getErrorCode(), is("NO_SESSION_FOUND"));
-        assertThat(ex.getResponseBody().getString("message"), is(CourtSchedulerServiceAdapter.NO_SESSION_FOUND_MESSAGE));
+        assertThat("courtscheduler's own diagnostic message is replaced with the fixed copy",
+                ex.getResponseBody().getString("message"),
+                is("No suitable sessions are available for the selected date. Please select another date."));
     }
 
     @Test
@@ -157,28 +248,27 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
         when(hearingSlotsService.moveHearingToPastDate(any(), any())).thenReturn(response);
 
         final MoveHearingToPastDateException ex = assertThrows(MoveHearingToPastDateException.class,
-                () -> adapter.moveHearingToPastDate(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                        START_TIME, START_TIME));
+                () -> adapter.moveHearingToPastDate(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), START_INSTANT, END_INSTANT, 30, "MAGISTRATES"));
 
         assertThat(ex.getHttpStatus(), is(HttpStatus.SC_UNPROCESSABLE_ENTITY));
         assertThat(ex.getErrorCode(), is("NO_SESSION_FOUND"));
-        assertThat(ex.getResponseBody().getString("message"), is(CourtSchedulerServiceAdapter.NO_SESSION_FOUND_MESSAGE));
+        assertThat(ex.getResponseBody().getString("message"),
+                is("No suitable sessions are available for the selected date. Please select another date."));
     }
 
     @Test
-    void shouldSendNewFieldsOmitHearingIdAndOmitDurationInRequestBody() {
+    void shouldNotSendHearingIdInRequestBody() {
         final UUID hearingId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
         final UUID courtRoomId = UUID.randomUUID();
-        final JsonObject body = createObjectBuilder()
-                .add("bookedSlots", createArrayBuilder().add(slot(UUID.randomUUID().toString(), "2026-07-01")))
-                .build();
+        final JsonObject body = createObjectBuilder().add("courtScheduleId", UUID.randomUUID().toString())
+                .add("sessionDate", "2026-05-01").build();
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.hasEntity()).thenReturn(true);
         when(response.getEntity()).thenReturn(body);
         when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
 
-        adapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, DAY_1_TIME, DAY_2_TIME);
+        adapter.moveHearingToPastDate(hearingId, courtCentreId, courtRoomId, START_INSTANT, END_INSTANT, 30, "MAGISTRATES");
 
         final ArgumentCaptor<JsonObject> requestCaptor = ArgumentCaptor.forClass(JsonObject.class);
         verify(hearingSlotsService).moveHearingToPastDate(eq(hearingId), requestCaptor.capture());
@@ -187,11 +277,38 @@ class CourtSchedulerServiceAdapterMoveHearingToPastDateTest {
         assertThat(request.getString("courtCentreId"), is(courtCentreId.toString()));
         assertThat(request.getString("courtRoomId"), is(courtRoomId.toString()));
         assertThat(request.getString("jurisdiction"), is("MAGISTRATES"));
-        assertThat(request.getString("startTime"), is(DAY_1_TIME));
-        assertThat(request.getString("endTime"), is(DAY_2_TIME));
-        assertThat(request.containsKey("startDate"), is(false));
-        assertThat(request.containsKey("hearingStartTime"), is(false));
-        // courtscheduler derives the duration itself, so the adapter must not send one
-        assertThat(request.containsKey("durationInMinutes"), is(false));
+        // NOT START_INSTANT.toString()/END_INSTANT.toString(): ZonedDateTime.toString() omits the
+        // seconds field entirely when it's zero (see the regression test below) - the wire value must
+        // always include it, since courtscheduler's schema pattern requires seconds.
+        assertThat(request.getString("startTime"), is("2026-05-01T09:00:00Z"));
+        assertThat(request.getString("endTime"), is("2026-05-01T17:00:00Z"));
+        assertThat(request.getInt("durationInMinutes"), is(30));
+    }
+
+    /**
+     * Regression test: production saw courtscheduler reject a move with 400 because listing sent
+     * "2026-09-01T09:00Z" (no seconds) for an on-the-minute startTime/endTime -
+     * ZonedDateTime.toString() drops the seconds token when it's zero, but courtscheduler's schema
+     * pattern requires it. Every on-the-minute instant must still be sent with explicit seconds.
+     */
+    @Test
+    void shouldAlwaysIncludeSecondsInStartTimeAndEndTimeEvenWhenExactlyOnTheMinute() {
+        final UUID hearingId = UUID.randomUUID();
+        final ZonedDateTime onTheMinuteStart = ZonedDateTime.parse("2026-09-01T09:00Z");
+        final ZonedDateTime onTheMinuteEnd = ZonedDateTime.parse("2026-09-01T09:20Z");
+        final JsonObject body = createObjectBuilder().add("courtScheduleId", UUID.randomUUID().toString())
+                .add("sessionDate", "2026-09-01").build();
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.hasEntity()).thenReturn(true);
+        when(response.getEntity()).thenReturn(body);
+        when(hearingSlotsService.moveHearingToPastDate(eq(hearingId), any())).thenReturn(response);
+
+        adapter.moveHearingToPastDate(hearingId, UUID.randomUUID(), UUID.randomUUID(),
+                onTheMinuteStart, onTheMinuteEnd, 30, "MAGISTRATES");
+
+        final ArgumentCaptor<JsonObject> requestCaptor = ArgumentCaptor.forClass(JsonObject.class);
+        verify(hearingSlotsService).moveHearingToPastDate(eq(hearingId), requestCaptor.capture());
+        assertThat(requestCaptor.getValue().getString("startTime"), is("2026-09-01T09:00:00Z"));
+        assertThat(requestCaptor.getValue().getString("endTime"), is("2026-09-01T09:20:00Z"));
     }
 }
