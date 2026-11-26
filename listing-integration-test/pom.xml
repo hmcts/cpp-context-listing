@@ -18,7 +18,7 @@
           failsafe systemPropertyVariables interpolation below resolves to "" when unset rather than
           leaking the literal ${it.clock}.
         -->
-        <it.clock/>
+        <it.clock />
     </properties>
 
     <dependencies>
