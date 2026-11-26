@@ -16,6 +16,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.JsonNodeUpdater;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -26,6 +27,7 @@ import org.apache.commons.collections.CollectionUtils;
 public class HearingDaysForHearingEventListener {
 
     private static final String HEARING_DAYS = "hearingDays";
+    private static final String ESTIMATED_MINUTES = "estimatedMinutes";
     private static final String EVENT_HEARING_DAYS_CANCELLED = "listing.events.hearing-days-cancelled";
 
     @Inject
@@ -46,6 +48,7 @@ public class HearingDaysForHearingEventListener {
             if(CollectionUtils.isNotEmpty(hearingDays)){
                 hearing.remove("unscheduled");
             }
+            applyEstimatedMinutes(hearing, hearingDays);
             hearing.save();
 
             hearingSearchSyncService.sync(hearingId);
@@ -60,10 +63,12 @@ public class HearingDaysForHearingEventListener {
         final UUID hearingId = sequencedHearing.getHearingId();
 
         if (nonNull(hearingRepository.findBy(hearingId))) {
-            using(hearingRepository)
+            final List<HearingDay> nonCancelledHearingDays = getNotCancelledHearingDays(hearingDays);
+            final JsonNodeUpdater hearing = using(hearingRepository)
                     .find(hearingId)
-                    .putObjectList(HEARING_DAYS, getNotCancelledHearingDays(hearingDays))
-                    .save();
+                    .putObjectList(HEARING_DAYS, nonCancelledHearingDays);
+            applyEstimatedMinutes(hearing, nonCancelledHearingDays);
+            hearing.save();
 
             hearingSearchSyncService.sync(hearingId);
         }
@@ -77,11 +82,30 @@ public class HearingDaysForHearingEventListener {
 
         final List<HearingDay> nonCancelledHearingDays = getNotCancelledHearingDays(hearingDays);
 
-        using(hearingRepository)
+        final JsonNodeUpdater hearing = using(hearingRepository)
                 .find(hearingId)
-                .putObjectList(HEARING_DAYS, nonCancelledHearingDays)
-                .save();
+                .putObjectList(HEARING_DAYS, nonCancelledHearingDays);
+        applyEstimatedMinutes(hearing, nonCancelledHearingDays);
+        hearing.save();
 
         hearingSearchSyncService.sync(hearingId);
+    }
+
+    private static void applyEstimatedMinutes(final JsonNodeUpdater hearing, final List<HearingDay> hearingDays) {
+        final int total = sumDurationMinutes(hearingDays);
+        if (total > 0) {
+            hearing.put(ESTIMATED_MINUTES, total);
+        }
+    }
+
+    private static int sumDurationMinutes(final List<HearingDay> hearingDays) {
+        if (hearingDays == null) {
+            return 0;
+        }
+        return hearingDays.stream()
+                .map(HearingDay::getDurationMinutes)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
     }
 }

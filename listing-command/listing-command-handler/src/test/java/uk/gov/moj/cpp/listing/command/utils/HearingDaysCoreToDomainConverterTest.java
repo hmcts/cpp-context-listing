@@ -47,18 +47,21 @@ public class HearingDaysCoreToDomainConverterTest {
         assertThat(hearingDaysInListingDomain.get(0).getSequence(), is(0));
         assertThat(hearingDaysInListingDomain.get(0).getDurationMinutes(), is(30));
         assertThat(ZonedDateTimes.toString(hearingDaysInListingDomain.get(0).getStartTime()), is("2020-08-18T01:22:12.381Z"));
+        assertThat(ZonedDateTimes.toString(hearingDaysInListingDomain.get(0).getEndTime()), is("2020-08-18T01:52:12.381Z"));
         assertThat(hearingDaysInListingDomain.get(0).getIsCancelled(), nullValue());
 
         assertThat(LocalDates.to(hearingDaysInListingDomain.get(1).getHearingDate()), is("2020-08-19"));
         assertThat(hearingDaysInListingDomain.get(1).getSequence(), is(1));
         assertThat(hearingDaysInListingDomain.get(1).getDurationMinutes(), is(10));
         assertThat(ZonedDateTimes.toString(hearingDaysInListingDomain.get(1).getStartTime()), is("2020-08-19T01:22:12.381Z"));
+        assertThat(ZonedDateTimes.toString(hearingDaysInListingDomain.get(1).getEndTime()), is("2020-08-19T01:32:12.381Z"));
         assertThat(hearingDaysInListingDomain.get(1).getIsCancelled(), is(false));
 
         assertThat(LocalDates.to(hearingDaysInListingDomain.get(2).getHearingDate()), is("2020-08-20"));
         assertThat(hearingDaysInListingDomain.get(2).getSequence(), is(1));
         assertThat(hearingDaysInListingDomain.get(2).getDurationMinutes(), is(20));
         assertThat(ZonedDateTimes.toString(hearingDaysInListingDomain.get(2).getStartTime()), is("2020-08-20T02:22:12.381Z"));
+        assertThat(ZonedDateTimes.toString(hearingDaysInListingDomain.get(2).getEndTime()), is("2020-08-20T02:42:12.381Z"));
         assertThat(hearingDaysInListingDomain.get(2).getIsCancelled(), is(true));
     }
 }

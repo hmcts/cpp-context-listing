@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.change-court-room-for-multiday-hearing-enriched.json",
+  "description": "Enriched command to change the courtroom of SELECTED days of a multiday CROWN hearing. Contains only the changed days. Days already resolved to a booked court schedule are carried in 'changedDays' (they become hearing days): every virtual day, plus any real day whose courtScheduleId changed and was therefore rebooked in courtscheduler (SPRDT-1225). Real days are carried in 'nonDefaultDays' (persisted as nonDefaultDays) - a rebooked real day appears in BOTH arrays and the aggregate dedupes by date, preferring the pre-booked entry. A real day may arrive WITHOUT a courtScheduleId (the UI has none when no bookable slot exists for the room/date): it is persisted as-is, never booked, and the aggregate's merge keeps the stored day's existing schedule. Unchanged days are preserved by the aggregate. At least one of the two arrays is non-empty.",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "sendNotificationToParties": {
+      "type": "boolean"
+    },
+    "changedDays": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "hearingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationMinutes": {
+            "type": "integer"
+          },
+          "courtCentreId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "courtRoomId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "courtScheduleId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "isDraft": {
+            "type": "boolean",
+            "description": "Draft state of the booked target session, carried onto the hearing day"
+          }
+        },
+        "required": [
+          "hearingDate",
+          "startTime",
+          "durationMinutes",
+          "courtCentreId",
+          "courtRoomId",
+          "courtScheduleId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "nonDefaultDays": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationMinutes": {
+            "type": "integer"
+          },
+          "courtCentreId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "roomId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "courtScheduleId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          }
+        },
+        "required": [
+          "startTime",
+          "durationMinutes",
+          "courtCentreId",
+          "roomId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "hearingId",
+    "sendNotificationToParties"
+  ],
+  "additionalProperties": false
+}

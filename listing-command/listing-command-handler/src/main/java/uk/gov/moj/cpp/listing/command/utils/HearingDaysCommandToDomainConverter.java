@@ -24,9 +24,13 @@ public class HearingDaysCommandToDomainConverter implements Converter<List<Heari
                         .withSequence(hearingDay.getSequence())
                         .withIsCancelled(Optional.ofNullable(hearingDay.getIsCancelled()))
                         .withCourtScheduleId(Optional.ofNullable(hearingDay.getCourtScheduleId()))
+                        .withIsDraft(Optional.ofNullable(hearingDay.getIsDraft()))
                         .withHearingDate(hearingDay.getHearingDate())
                         .withStartTime(hearingDay.getStartTime())
-                        .withEndTime(nonNull(hearingDay.getEndTime()) ? hearingDay.getEndTime() : hearingDay.getStartTime())
+                        .withEndTime(nonNull(hearingDay.getEndTime()) ? hearingDay.getEndTime()
+                                : nonNull(hearingDay.getStartTime()) && nonNull(hearingDay.getDurationMinutes())
+                                        ? hearingDay.getStartTime().plusMinutes(hearingDay.getDurationMinutes())
+                                        : hearingDay.getStartTime())
                         .build())
                 .toList();
     }

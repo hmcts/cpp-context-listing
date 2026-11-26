@@ -114,8 +114,65 @@ public class HearingDaysForHearingEventListenerTest {
                 withJsonPath("$.hearingDays[0].startTime", equalTo(ZonedDateTimes.toString(hearingData.getHearingDays().get(0).getStartTime()))),
                 withJsonPath("$.hearingDays[0].durationMinutes", equalTo(hearingData.getHearingDays().get(0).getDurationMinutes())),
                 withJsonPath("$.hearingDays[0].endTime", equalTo(ZonedDateTimes.toString(hearingData.getHearingDays().get(0).getEndTime()))),
-                withJsonPath("$.hearingDays[0].sequence", equalTo(hearingData.getHearingDays().get(0).getSequence()))
+                withJsonPath("$.hearingDays[0].sequence", equalTo(hearingData.getHearingDays().get(0).getSequence())),
+                withJsonPath("$.estimatedMinutes", equalTo(DURATION_MINUTES))
         )));
+    }
+
+    @Test
+    public void shouldRecomputeEstimatedMinutesAsSumOfDurationsForMultiDayHearing() throws Exception {
+        final int perDayMinutes = 360;
+        final int dayCount = 5;
+        final List<HearingDay> days = List.of(
+                hearingDay().withSequence(0).withDurationMinutes(perDayMinutes).build(),
+                hearingDay().withSequence(0).withDurationMinutes(perDayMinutes).build(),
+                hearingDay().withSequence(0).withDurationMinutes(perDayMinutes).build(),
+                hearingDay().withSequence(0).withDurationMinutes(perDayMinutes).build(),
+                hearingDay().withSequence(0).withDurationMinutes(perDayMinutes).build()
+        );
+
+        final Envelope<HearingDaysChangedForHearing> envelope = mock(Envelope.class);
+        final HearingDaysChangedForHearing hearingData = HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingDays(days)
+                .withHearingId(HEARING_ID)
+                .build();
+        final ObjectNode properties = (ObjectNode) mapper.readTree(TEST_JSON);
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+        given(envelope.payload()).willReturn(hearingData);
+
+        hearingDaysForHearingEventListener.hearingDaysChangedForHearing(envelope);
+
+        verify(hearingRepository).save(hearing);
+        verify(hearing).setProperties(propertiesCaptor.capture());
+        assertThat(propertiesCaptor.getValue().toString(), isJson(allOf(
+                withJsonPath("$.hearingDays", hasSize(dayCount)),
+                withJsonPath("$.estimatedMinutes", equalTo(perDayMinutes * dayCount))
+        )));
+    }
+
+    @Test
+    public void shouldNotOverwriteEstimatedMinutesWhenAllDurationsAreNull() throws Exception {
+        final List<HearingDay> daysWithoutDurations = List.of(
+                hearingDay().withSequence(0).build()
+        );
+
+        final Envelope<HearingDaysChangedForHearing> envelope = mock(Envelope.class);
+        final HearingDaysChangedForHearing hearingData = HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingDays(daysWithoutDurations)
+                .withHearingId(HEARING_ID)
+                .build();
+        final ObjectNode properties = (ObjectNode) mapper.readTree("{ \"hearingDays\": [], \"estimatedMinutes\": 90 }");
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+        given(envelope.payload()).willReturn(hearingData);
+
+        hearingDaysForHearingEventListener.hearingDaysChangedForHearing(envelope);
+
+        verify(hearing).setProperties(propertiesCaptor.capture());
+        assertThat(propertiesCaptor.getValue().toString(), isJson(
+                withJsonPath("$.estimatedMinutes", equalTo(90))
+        ));
     }
 
     @Test
@@ -246,6 +303,58 @@ public class HearingDaysForHearingEventListenerTest {
                 withJsonPath("$.hearingDays[0].sequence", equalTo(hearingData.getHearingDays().get(0).getSequence())),
                 withJsonPath("$.hearingDays[1].hearingDate", equalTo(LocalDates.to(hearingData.getHearingDays().get(1).getHearingDate()))),
                 withJsonPath("$.hearingDays[1].sequence", equalTo(hearingData.getHearingDays().get(1).getSequence()))
+        )));
+    }
+
+    @Test
+    public void shouldRecomputeEstimatedMinutesWhenHearingDaysSequenced() throws Exception {
+        final ObjectNode properties = (ObjectNode) mapper.readTree(TEST_JSON);
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
+        final Envelope<HearingDaysSequenced> envelope = mock(Envelope.class);
+        final HearingDaysSequenced hearingData = hearingDaysSequenced()
+                .withHearingId(HEARING_ID)
+                .withHearingDays(asList(
+                        hearingDay().withSequence(SEQUENCE_1).withHearingDate(LocalDate.parse(DATE_1)).withDurationMinutes(120).build(),
+                        hearingDay().withSequence(SEQUENCE_2).withHearingDate(LocalDate.parse(DATE_2)).withDurationMinutes(180).build()
+                ))
+                .build();
+        given(envelope.payload()).willReturn(hearingData);
+
+        hearingDaysForHearingEventListener.hearingDaysSequenced(envelope);
+
+        verify(hearingRepository).save(hearing);
+        verify(hearing).setProperties(propertiesCaptor.capture());
+        assertThat(propertiesCaptor.getValue().toString(), isJson(allOf(
+                withJsonPath("$.hearingDays", hasSize(2)),
+                withJsonPath("$.estimatedMinutes", equalTo(300))
+        )));
+    }
+
+    @Test
+    public void shouldExcludeCancelledDaysFromEstimatedMinutesWhenCancelled() throws Exception {
+        final ObjectNode properties = (ObjectNode) mapper.readTree(TEST_JSON);
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
+        final Envelope<HearingDaysCancelled> envelope = mock(Envelope.class);
+        final HearingDaysCancelled hearingData = hearingDaysCancelled()
+                .withHearingId(HEARING_ID)
+                .withHearingDays(asList(
+                        hearingDay().withSequence(SEQUENCE_1).withHearingDate(LocalDate.parse(DATE_1)).withDurationMinutes(120).build(),
+                        hearingDay().withSequence(SEQUENCE_2).withHearingDate(LocalDate.parse(DATE_2)).withDurationMinutes(180).build(),
+                        hearingDay().withSequence(SEQUENCE_3).withHearingDate(LocalDate.parse(DATE_3)).withDurationMinutes(240).withIsCancelled(true).build()
+                ))
+                .build();
+        given(envelope.payload()).willReturn(hearingData);
+
+        hearingDaysForHearingEventListener.hearingDaysCancelled(envelope);
+
+        verify(hearing).setProperties(propertiesCaptor.capture());
+        assertThat(propertiesCaptor.getValue().toString(), isJson(allOf(
+                withJsonPath("$.hearingDays", hasSize(2)),
+                withJsonPath("$.estimatedMinutes", equalTo(300))
         )));
     }
 

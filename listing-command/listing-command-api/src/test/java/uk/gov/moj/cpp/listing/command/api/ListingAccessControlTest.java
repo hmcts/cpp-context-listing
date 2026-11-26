@@ -350,4 +350,5 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
 
         assertFailureOutcome(results);
     }
+
 }

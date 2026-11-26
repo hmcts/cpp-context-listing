@@ -59,6 +59,12 @@ runs:
         GITLEAKS_LICENSE: ${{ inputs.gitleaks_license }}
         GITLEAKS_ENABLE_COMMENTS: "false" # suppress PR comments
         GITLEAKS_ENABLE_SUMMARY:  "false" # suppress Job Summary
+        # gitleaks-action derives the pull_request scan range as "<oldest PR commit>^..<30th PR commit>".
+        # When a PR brings in a parent-less commit (e.g. merging a squashed/migrated main into a team
+        # branch) "<root>^" does not exist and the scan aborts with exit 1 before scanning anything.
+        # Anchoring the range at the PR base commit keeps it valid; this is empty (and therefore
+        # ignored by the action) for schedule / workflow_dispatch runs.
+        BASE_REF: ${{ github.event.pull_request.base.sha }}
 
     - name: TruffleHog 🐽 scanning
       uses: trufflesecurity/trufflehog@main

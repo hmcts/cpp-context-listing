@@ -32,6 +32,7 @@ public class CourtSchedule implements Comparable<CourtSchedule> {
     private String courtHouseId;
     private boolean slotBased;
     private boolean allDaySplit;
+    private boolean isDraft;
     private Date sessionStartTime;
     private Date sessionEndTime;
     private final List<CourtScheduleJudiciary> judiciaries = new ArrayList();
@@ -235,6 +236,14 @@ public class CourtSchedule implements Comparable<CourtSchedule> {
 
     public void setAllDaySplit(final boolean allDaySplit) {
         this.allDaySplit = allDaySplit;
+    }
+
+    public boolean isDraft() {
+        return isDraft;
+    }
+
+    public void setDraft(final boolean isDraft) {
+        this.isDraft = isDraft;
     }
 
     public Date getSessionStartTime() {

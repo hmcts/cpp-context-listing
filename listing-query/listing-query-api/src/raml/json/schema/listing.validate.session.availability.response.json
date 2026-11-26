@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/query/listing.validate.session.availability.response.json",
+  "type": "object",
+  "properties": {
+    "validationResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "SUCCESS",
+            "FAILURE"
+          ]
+        },
+        "conflictingCourtScheduleId": {
+          "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+        },
+        "validationError": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "validationResult"
+  ],
+  "additionalProperties": false
+}
