@@ -17,6 +17,7 @@ import uk.gov.justice.listing.courts.DeleteNextHearings;
 import uk.gov.justice.listing.courts.DeleteSeededHearing;
 import uk.gov.justice.listing.courts.ListNextHearing;
 import uk.gov.justice.listing.courts.ListNextHearingsEnrichedV2;
+import uk.gov.justice.listing.courts.RemoveCaseFromHearing;
 import uk.gov.justice.listing.courts.RemoveOffencesFromExistingHearing;
 import uk.gov.justice.listing.courts.RemoveSelectedOffencesFromExistingHearing;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
@@ -235,6 +236,20 @@ public class ListNextHearingCommandHandler {
         final UUID hearingId = removeSelectedOffencesFromExistingHearing.getHearingId();
 
         updateHearingEventStream(command, hearingId, (Hearing hearing) -> hearing.removeSelectedOffencesFromExistingHearing(hearingId, removeSelectedOffencesFromExistingHearing.getOffenceIds(), Hearing.SOURCE_HEARING, false));
+    }
+
+    @Handles("listing.command.remove-case-from-hearing")
+    public void removeCaseFromHearing(final JsonEnvelope command) throws EventStreamException {
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.remove-case-from-hearing' received with payload {}", command.toObfuscatedDebugString());
+        }
+
+        final RemoveCaseFromHearing removeCaseFromHearing = jsonObjectConverter.convert(command.payloadAsJsonObject(), RemoveCaseFromHearing.class);
+        final UUID hearingId = removeCaseFromHearing.getHearingId();
+        final UUID caseId = removeCaseFromHearing.getCaseId();
+
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> hearing.removeCaseFromHearing(hearingId, caseId));
     }
 
 

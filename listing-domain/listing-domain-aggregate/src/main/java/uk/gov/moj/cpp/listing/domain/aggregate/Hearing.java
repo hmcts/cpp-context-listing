@@ -1646,6 +1646,25 @@ public class Hearing implements Aggregate {
 
     }
 
+    public Stream<Object> removeCaseFromHearing(final UUID hearingId, final UUID caseId) {
+        if (this.duplicate || this.deleted) {
+            return Stream.empty();
+        }
+
+        final List<UUID> offenceIds = prosecutionCaseDefendantOffenceIds.stream()
+                .filter(prosecutionCaseDefendantOffenceId -> prosecutionCaseDefendantOffenceId.getId().equals(caseId))
+                .flatMap(prosecutionCaseDefendantOffenceId -> prosecutionCaseDefendantOffenceId.getDefendants().stream())
+                .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
+                .map(OffenceIds::getId)
+                .collect(toList());
+
+        if (offenceIds.isEmpty()) {
+            return Stream.empty();
+        }
+
+        return removeSelectedOffencesFromExistingHearing(hearingId, offenceIds, SOURCE_HEARING, false);
+    }
+
     private boolean isReschedulingEvent(final List<Object> occuredEventList) {
         return occuredEventList.stream()
                 .anyMatch(
