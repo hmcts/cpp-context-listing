@@ -1045,13 +1045,17 @@ public class CourtSchedulerServiceStub {
      * own session rather than the last broad stub registered winning for all of them.
      */
     public static void stubListHearingInCourtSessionsForCourtSchedule(final String hearingId, final String courtScheduleId, final ZonedDateTime hearingStartTime) {
+        stubListHearingInCourtSessionsForCourtSchedule(hearingId, courtScheduleId, hearingStartTime, 20);
+    }
+
+    public static void stubListHearingInCourtSessionsForCourtSchedule(final String hearingId, final String courtScheduleId, final ZonedDateTime hearingStartTime, final int duration) {
         final String payload = "{\n" +
                 "  \"hearings\": [\n" +
                 "    {\n" +
                 "      \"hearingId\": \"" + hearingId + "\",\n" +
                 "      \"courtScheduleId\": \"" + courtScheduleId + "\",\n" +
                 "      \"hearingStartTime\": \"" + hearingStartTime.toString() + "\",\n" +
-                "      \"duration\": 20\n" +
+                "      \"duration\": " + duration + "\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}";

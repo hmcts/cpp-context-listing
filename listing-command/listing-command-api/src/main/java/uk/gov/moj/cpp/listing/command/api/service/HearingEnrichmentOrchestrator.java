@@ -327,10 +327,13 @@ public class HearingEnrichmentOrchestrator {
     }
 
     private static HearingListingNeeds buildWeekCommencingHearing(final HearingListingNeeds hearing) {
-        return HearingListingNeeds.hearingListingNeeds()
+        final HearingListingNeeds.Builder builder = HearingListingNeeds.hearingListingNeeds()
                 .withValuesFrom(hearing)
-                .withWeekCommencingDate(getWeekCommencingDate(hearing.getWeekCommencingDate()))
-                .build();
+                .withWeekCommencingDate(getWeekCommencingDate(hearing.getWeekCommencingDate()));
+        if (!isEmpty(hearing.getHearingDays())) {
+            builder.withHearingDays(orderAndFilterOutNonSittingDays(hearing.getHearingDays(), new ArrayList<>()));
+        }
+        return builder.build();
     }
 
     private static WeekCommencingDate getWeekCommencingDate(WeekCommencingDate weekCommencingDate) {

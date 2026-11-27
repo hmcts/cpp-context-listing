@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.command.api.service;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,6 +28,8 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1022,5 +1025,87 @@ public class HearingEnrichmentOrchestratorTest {
         assertThat(result.size(), is(1));
         assertThat(result.get(0).getHearingDays().size(), is(1));
         assertThat(result.get(0).getEndDate(), is(mar2.toString()));
+    }
+
+    @Test
+    public void shouldSequenceTheBookedDayOfAWeekCommencingHearingAndLeaveItsOtherValuesAlone() {
+        final LocalDate monday = LocalDate.of(2026, 11, 30);
+        final UUID courtScheduleId = UUID.randomUUID();
+        final ZonedDateTime sessionStart = ZonedDateTime.of(monday, LocalTime.of(10, 0), ZoneOffset.UTC);
+        final HearingDay bookedDay = HearingDay.hearingDay()
+                .withHearingDate(monday)
+                .withStartTime(sessionStart)
+                .withEndTime(sessionStart.plusMinutes(25))
+                .withDurationMinutes(25)
+                .withCourtScheduleId(courtScheduleId)
+                .withIsDraft(true)
+                .build();
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withHearingDays(Collections.singletonList(bookedDay))
+                .withWeekCommencingDate(WeekCommencingDate.weekCommencingDate().withStartDate(monday.toString()).build())
+                .withEstimatedMinutes(240)
+                .build();
+
+        final List<HearingListingNeeds> result = HearingEnrichmentOrchestrator.recalculateDurationSequenceAndEndDatesForHearingDays(
+                Arrays.asList(hearing));
+
+        assertThat(result.size(), is(1));
+        final HearingListingNeeds weekCommencingHearing = result.get(0);
+        assertThat(weekCommencingHearing.getHearingDays().size(), is(1));
+        final HearingDay sequencedDay = weekCommencingHearing.getHearingDays().get(0);
+        assertThat(sequencedDay.getSequence(), is(0));
+        assertThat(sequencedDay.getCourtScheduleId(), is(courtScheduleId));
+        assertThat(sequencedDay.getHearingDate(), is(monday));
+        assertThat(sequencedDay.getStartTime(), is(sessionStart));
+        assertThat(sequencedDay.getEndTime(), is(sessionStart.plusMinutes(25)));
+        assertThat(sequencedDay.getDurationMinutes(), is(25));
+        assertThat(sequencedDay.getIsDraft(), is(true));
+        assertThat(weekCommencingHearing.getWeekCommencingDate().getStartDate(), is(monday.toString()));
+        assertThat(weekCommencingHearing.getWeekCommencingDate().getDuration(), is(1));
+        assertThat(weekCommencingHearing.getEstimatedMinutes(), is(240));
+        assertThat(weekCommencingHearing.getEndDate(), is(nullValue()));
+    }
+
+    @Test
+    public void shouldOrderTheDaysOfAWeekCommencingHearingByDateAndKeepEveryDay() {
+        final LocalDate monday = LocalDate.of(2026, 11, 30);
+        final UUID mondaySession = UUID.randomUUID();
+        final UUID tuesdaySession = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final UUID courtRoomId = UUID.randomUUID();
+        final HearingDay tuesday = HearingDay.hearingDay().withHearingDate(monday.plusDays(1)).withDurationMinutes(360)
+                .withCourtScheduleId(tuesdaySession).withCourtCentreId(courtCentreId).withCourtRoomId(courtRoomId).build();
+        final HearingDay mondayDay = HearingDay.hearingDay().withHearingDate(monday).withDurationMinutes(360)
+                .withCourtScheduleId(mondaySession).withCourtCentreId(courtCentreId).withCourtRoomId(courtRoomId).build();
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withHearingDays(Arrays.asList(tuesday, mondayDay))
+                .withNonSittingDays(Collections.singletonList(monday.toString()))
+                .withWeekCommencingDate(WeekCommencingDate.weekCommencingDate().withStartDate(monday.toString()).build())
+                .build();
+
+        final List<HearingDay> days = HearingEnrichmentOrchestrator.recalculateDurationSequenceAndEndDatesForHearingDays(
+                Arrays.asList(hearing)).get(0).getHearingDays();
+
+        assertThat(days.size(), is(2));
+        assertThat(days.get(0).getCourtScheduleId(), is(mondaySession));
+        assertThat(days.get(1).getCourtScheduleId(), is(tuesdaySession));
+        assertThat(days.get(0).getSequence(), is(0));
+        assertThat(days.get(1).getSequence(), is(0));
+        assertThat(days.get(0).getCourtCentreId(), is(courtCentreId));
+        assertThat(days.get(0).getCourtRoomId(), is(courtRoomId));
+    }
+
+    @Test
+    public void shouldLeaveAWeekCommencingHearingWithNoDaysWithoutDays() {
+        final HearingListingNeeds hearing = HearingListingNeeds.hearingListingNeeds()
+                .withWeekCommencingDate(WeekCommencingDate.weekCommencingDate().withStartDate("2026-11-30").withDuration(2).build())
+                .withEstimatedMinutes(240)
+                .build();
+
+        final List<HearingListingNeeds> result = HearingEnrichmentOrchestrator.recalculateDurationSequenceAndEndDatesForHearingDays(
+                Arrays.asList(hearing));
+
+        assertThat(result.get(0).getHearingDays(), is(nullValue()));
+        assertThat(result.get(0).getWeekCommencingDate().getDuration(), is(2));
     }
 }

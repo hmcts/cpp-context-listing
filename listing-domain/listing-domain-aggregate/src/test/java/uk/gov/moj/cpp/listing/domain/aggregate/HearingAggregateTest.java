@@ -9393,4 +9393,124 @@ class HearingAggregateTest {
         assertThat(casesAdded.getListType(), is(nullValue()));
         assertThat(casesAdded.getKeyReason(), is(nullValue()));
     }
+
+    @Test
+    void shouldKeepTheBookedSessionDayWhenACrownHearingIsListedForAWeekCommencing() {
+        final LocalDate weekCommencing = LocalDate.of(2026, 11, 30);
+        final UUID courtScheduleId = randomUUID();
+        final UUID sessionCourtCentreId = randomUUID();
+        final ZonedDateTime sessionStart = ZonedDateTime.of(weekCommencing, LocalTime.of(10, 0), UTC);
+        final uk.gov.moj.cpp.listing.domain.HearingDay bookedDay = uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
+                .withHearingDate(weekCommencing)
+                .withStartTime(sessionStart)
+                .withEndTime(sessionStart.plusMinutes(25))
+                .withDurationMinutes(25)
+                .withSequence(0)
+                .withCourtScheduleId(of(courtScheduleId))
+                .withCourtCentreId(of(sessionCourtCentreId))
+                .withIsDraft(of(true))
+                .build();
+
+        final uk.gov.justice.listing.events.Hearing listed = listForWeekCommencing(JurisdictionType.CROWN, of(weekCommencing), List.of(bookedDay));
+
+        assertThat(listed.getHearingDays(), hasSize(1));
+        final HearingDay storedDay = listed.getHearingDays().get(0);
+        assertThat(storedDay.getCourtScheduleId(), is(courtScheduleId));
+        assertThat(storedDay.getHearingDate(), is(weekCommencing));
+        assertThat(storedDay.getStartTime(), is(sessionStart));
+        assertThat(storedDay.getEndTime(), is(sessionStart.plusMinutes(25)));
+        assertThat(storedDay.getDurationMinutes(), is(25));
+        assertThat(storedDay.getSequence(), is(0));
+        assertThat(storedDay.getCourtCentreId(), is(sessionCourtCentreId));
+        assertThat(storedDay.getCourtRoomId(), is(nullValue()));
+        assertThat(storedDay.getIsDraft(), is(true));
+        assertThat(listed.getStartDate(), is(nullValue()));
+        assertThat(listed.getEndDate(), is(nullValue()));
+        assertThat(listed.getWeekCommencingStartDate(), is(weekCommencing));
+        assertThat(listed.getAllocated(), is(false));
+        assertThat(listed.getNonDefaultDays(), is(emptyList()));
+        assertThat(listed.getNonSittingDays(), is(emptyList()));
+    }
+
+    @Test
+    void shouldNotAllocateACrownWeekCommencingHearingBookedIntoAFinalSessionWithARoom() {
+        final LocalDate weekCommencing = LocalDate.of(2026, 11, 30);
+        final uk.gov.moj.cpp.listing.domain.HearingDay bookedDay = bookedDay(weekCommencing, of(randomUUID()))
+                .withCourtRoomId(of(courtRoomId))
+                .withIsDraft(of(false))
+                .build();
+
+        final uk.gov.justice.listing.events.Hearing listed = listForWeekCommencing(JurisdictionType.CROWN, of(weekCommencing), List.of(bookedDay));
+        final List<Object> allocationEvents = hearing.applyAllocationRules(empty(), false, false, emptyList(), empty(), false).collect(Collectors.toList());
+
+        assertThat(listed.getHearingDays(), hasSize(1));
+        assertThat(listed.getCourtRoomId(), is(courtRoomId));
+        assertThat(allocationEvents, is(emptyList()));
+    }
+
+    @Test
+    void shouldListACrownWeekCommencingHearingWithNoDaysWhenNoSessionIsBooked() {
+        final LocalDate weekCommencing = LocalDate.of(2026, 11, 30);
+
+        assertThat(listForWeekCommencing(JurisdictionType.CROWN, of(weekCommencing), emptyList()).getHearingDays(), is(emptyList()));
+    }
+
+    @Test
+    void shouldListACrownWeekCommencingHearingWithNoDaysWhenTheDaysAreMissing() {
+        final LocalDate weekCommencing = LocalDate.of(2026, 11, 30);
+
+        assertThat(listForWeekCommencing(JurisdictionType.CROWN, of(weekCommencing), null).getHearingDays(), is(emptyList()));
+    }
+
+    @Test
+    void shouldKeepOnlyTheDaysThatCarryABookedSessionForACrownWeekCommencingHearing() {
+        final LocalDate weekCommencing = LocalDate.of(2026, 11, 30);
+        final UUID courtScheduleId = randomUUID();
+        final uk.gov.moj.cpp.listing.domain.HearingDay withoutSession = bookedDay(weekCommencing.plusDays(1), empty()).build();
+        final uk.gov.moj.cpp.listing.domain.HearingDay withSession = bookedDay(weekCommencing, of(courtScheduleId)).build();
+
+        final List<HearingDay> storedDays = listForWeekCommencing(JurisdictionType.CROWN, of(weekCommencing), List.of(withoutSession, withSession)).getHearingDays();
+
+        assertThat(storedDays, hasSize(1));
+        assertThat(storedDays.get(0).getCourtScheduleId(), is(courtScheduleId));
+        assertThat(storedDays.get(0).getHearingDate(), is(weekCommencing));
+    }
+
+    @Test
+    void shouldStillListAMagistratesWeekCommencingHearingWithNoDays() {
+        final LocalDate weekCommencing = LocalDate.of(2026, 11, 30);
+        final uk.gov.moj.cpp.listing.domain.HearingDay bookedDay = bookedDay(weekCommencing, of(randomUUID())).build();
+
+        assertThat(listForWeekCommencing(MAGISTRATES, of(weekCommencing), List.of(bookedDay)).getHearingDays(), is(emptyList()));
+    }
+
+    @Test
+    void shouldStillListACrownHearingWithNoStartDateAndNoWeekCommencingWithNoDays() {
+        final uk.gov.moj.cpp.listing.domain.HearingDay bookedDay = bookedDay(LocalDate.of(2026, 11, 30), of(randomUUID())).build();
+
+        assertThat(listForWeekCommencing(JurisdictionType.CROWN, empty(), List.of(bookedDay)).getHearingDays(), is(emptyList()));
+    }
+
+    private uk.gov.moj.cpp.listing.domain.HearingDay.Builder bookedDay(final LocalDate hearingDate, final Optional<UUID> courtScheduleId) {
+        final ZonedDateTime sessionStart = ZonedDateTime.of(hearingDate, LocalTime.of(10, 0), UTC);
+        return uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay()
+                .withHearingDate(hearingDate)
+                .withStartTime(sessionStart)
+                .withEndTime(sessionStart.plusMinutes(25))
+                .withDurationMinutes(25)
+                .withSequence(0)
+                .withCourtScheduleId(courtScheduleId);
+    }
+
+    private uk.gov.justice.listing.events.Hearing listForWeekCommencing(final JurisdictionType jurisdiction,
+                                                                         final Optional<LocalDate> weekCommencing,
+                                                                         final List<uk.gov.moj.cpp.listing.domain.HearingDay> days) {
+        final Stream<Object> events = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary,
+                days != null && days.stream().anyMatch(day -> day.getCourtRoomId().isPresent()) ? courtRoomId : null,
+                listingDirections, jurisdiction, prosecutorDatesToAvoid, reportingRestrictionReason, null, null, courtCentreDefaults,
+                courtApplications, courtApplicationPartyListingNeeds, adjournedFromDate,
+                weekCommencing, weekCommencing.map(start -> start.plusDays(6)), weekCommencing.map(start -> 1),
+                days, emptyList(), emptyList(), true, "", "", null, empty(), of(false), empty(), null);
+        return ((HearingListed) events.findFirst().get()).getHearing();
+    }
 }

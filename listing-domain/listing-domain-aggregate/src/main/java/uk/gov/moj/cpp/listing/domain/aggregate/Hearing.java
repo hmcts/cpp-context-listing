@@ -482,7 +482,8 @@ public class Hearing implements Aggregate {
                 builder.withNonSittingDays(nonSittingDays);
                 builder.withHearingDays(NewDomainToEventConverter.convertHearingDaysDomainToEvent(hearingDays));
             } else {
-                builder.withHearingDays(emptyList());
+                builder.withHearingDays(NewDomainToEventConverter.convertHearingDaysDomainToEvent(
+                        crownWeekCommencingDaysWithBookedSession(jurisdictionType, weekCommencingStartDate, hearingDays)));
                 builder.withNonDefaultDays(emptyList());
                 builder.withNonSittingDays(emptyList());
                 builder.withWeekCommencingDurationInWeeks(weekCommencingDurationInWeeks.orElse(null))
@@ -2342,6 +2343,17 @@ public class Hearing implements Aggregate {
     private boolean canAllocateForMags() {
         return currentlyAssigned(this.hearingLanguage) && currentlyAssigned(this.jurisdictionType) && MAGISTRATES.equals(this.jurisdictionType) && hasCourtScheduleIds(this.hearingDays)
                 && currentlyAssigned(this.courtRoomId) && currentlyAssigned(this.endDate) && currentlyAssigned(this.startDate);
+    }
+
+    private static List<uk.gov.moj.cpp.listing.domain.HearingDay> crownWeekCommencingDaysWithBookedSession(final JurisdictionType jurisdictionType,
+                                                                                                     final Optional<LocalDate> weekCommencingStartDate,
+                                                                                                     final List<uk.gov.moj.cpp.listing.domain.HearingDay> hearingDays) {
+        if (JurisdictionType.CROWN != jurisdictionType || !weekCommencingStartDate.isPresent() || isEmpty(hearingDays)) {
+            return emptyList();
+        }
+        return hearingDays.stream()
+                .filter(hearingDay -> hearingDay.getCourtScheduleId().isPresent())
+                .collect(toList());
     }
 
     private boolean hasCourtScheduleIds(final List<HearingDay> hearingDays) {

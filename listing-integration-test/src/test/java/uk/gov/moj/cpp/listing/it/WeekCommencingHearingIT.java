@@ -43,20 +43,21 @@ public class WeekCommencingHearingIT extends AbstractIT {
     }
 
     @Test
-    public void shouldListCrownWeekCommencingHearingWithBookedSlotAndKeepItUnallocated() {
+    public void shouldListCrownWeekCommencingHearingWithBookedSlotKeepItsSessionDayAndStayUnallocated() {
         final LocalDate weekCommencingStartDate = ItClock.today().with(next(MONDAY));
         final HearingsData hearingsData = HearingsData.hearingsDataForBookedSlotWithWeekCommencing(weekCommencingStartDate, 1);
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         final RotaSlot bookedSlot = hearingData.getBookedSlots().get(0);
 
         final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
-        listCourtHearingSteps.whenCaseIsSubmittedForListingWithProsecutionCasesAndBookedSlot();
+        listCourtHearingSteps.whenCaseIsSubmittedForListingWithProsecutionCasesAndBookedDraftSession();
 
         listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         listCourtHearingSteps.verifyHearingListedWithWeekCommencingFromAPI(UNALLOCATED, weekCommencingStartDate, 1);
-        listCourtHearingSteps.verifyCrownHearingListedWithoutHearingDaysFromAPI();
+        listCourtHearingSteps.verifyCrownWeekCommencingHearingListedWithBookedSessionDayFromAPI(bookedSlot.getCourtScheduleId(),
+                weekCommencingStartDate, bookedSlot.getStartTime(), bookedSlot.getDuration());
         verifyListHearingInCourtSessionsCalledOnce(hearingData.getId().toString(), bookedSlot.getCourtScheduleId(),
-                bookedSlot.getStartTime(), hearingData.getHearingEstimateMinutes());
+                bookedSlot.getStartTime(), bookedSlot.getDuration());
         listCourtHearingSteps.verifyPublicEventHearingListed();
     }
 

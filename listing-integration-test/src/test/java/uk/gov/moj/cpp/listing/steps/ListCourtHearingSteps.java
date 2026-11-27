@@ -133,6 +133,7 @@ import uk.gov.moj.cpp.listing.it.util.ItClock;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -310,18 +311,19 @@ public class ListCourtHearingSteps extends AbstractIT {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
-    public void whenCaseIsSubmittedForListingWithProsecutionCasesAndBookedSlot() {
+    public void whenCaseIsSubmittedForListingWithProsecutionCasesAndBookedDraftSession() {
         stubReferenceDataForFirstHearing();
-        hearingsData.getHearingData().forEach(ListCourtHearingSteps::stubCrownBookedSlotResolution);
 
         final List<RotaSlot> bookedSlots = hearingsData.getHearingData().get(0).getBookedSlots();
         final ListCourtHearing listCourtHearing = getListCourtHearingData(hearingsData);
+        hearingsData.getHearingData().forEach(ListCourtHearingSteps::stubCrownDraftSessionForBookedSlot);
         final ListCourtHearing listCourtHearingWithBookedSlot = ListCourtHearing.listCourtHearing()
                 .withValuesFrom(listCourtHearing)
                 .withHearings(singletonList(HearingListingNeeds.hearingListingNeeds()
                         .withValuesFrom(listCourtHearing.getHearings().get(0))
                         .withBookedSlots(bookedSlots)
                         .withBookingReference(null)
+                        .withNonDefaultDays(null)
                         .withListedStartDateTime(bookedSlots.get(0).getStartTime())
                         .withEarliestStartDateTime(bookedSlots.get(0).getStartTime())
                         .build()))
@@ -541,6 +543,15 @@ public class ListCourtHearingSteps extends AbstractIT {
                             startTime.toLocalDate(), startTime, false);
                     stubListHearingInCourtSessionsForCourtSchedule(hearingData.getId().toString(), slot.getCourtScheduleId(), startTime);
                 });
+    }
+
+    private static void stubCrownDraftSessionForBookedSlot(final HearingData hearingData) {
+        hearingData.getBookedSlots().forEach(slot -> {
+            stubSearchCourtSchedulesByIdSession(
+                    slot.getCourtScheduleId(), hearingData.getCourtCentreId(), fromString(slot.getRoomId()),
+                    slot.getStartTime().toLocalDate(), slot.getStartTime(), true);
+            stubListHearingInCourtSessionsForCourtSchedule(hearingData.getId().toString(), slot.getCourtScheduleId(), slot.getStartTime(), slot.getDuration());
+        });
     }
 
     /**
@@ -1061,8 +1072,10 @@ public class ListCourtHearingSteps extends AbstractIT {
         );
     }
 
-    public void verifyCrownHearingListedWithoutHearingDaysFromAPI() {
+    public void verifyCrownWeekCommencingHearingListedWithBookedSessionDayFromAPI(final String courtScheduleId, final LocalDate sessionDate,
+                                                                                 final ZonedDateTime startTime, final int durationMinutes) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final ZonedDateTime startTimeUtc = startTime.withZoneSameInstant(ZoneOffset.UTC);
         pollForHearingByWeekCommencing(
                 hearingData.getCourtCentreId().toString(),
                 false,
@@ -1072,8 +1085,20 @@ public class ListCourtHearingSteps extends AbstractIT {
                 new Matcher[]{
                         withJsonPath("$.hearings[0].id", equalTo(hearingData.getId().toString())),
                         withJsonPath("$.hearings[0].jurisdictionType", equalTo("CROWN")),
-                        withoutJsonPath("$.hearings[0].hearingDays[0]"),
-                        withoutJsonPath("$.hearings[0].startDate")
+                        withJsonPath("$.hearings[0].allocated", equalTo(false)),
+                        withJsonPath("$.hearings[0].hearingDays", hasSize(1)),
+                        withJsonPath("$.hearings[0].hearingDays[0].courtScheduleId", equalTo(courtScheduleId)),
+                        withJsonPath("$.hearings[0].hearingDays[0].hearingDate", equalTo(FORMATTER.format(sessionDate))),
+                        withJsonPath("$.hearings[0].hearingDays[0].startTime", equalTo(startTimeUtc.format(ZONED_DATE_TIME_FORMAT))),
+                        withJsonPath("$.hearings[0].hearingDays[0].endTime", equalTo(startTimeUtc.plusMinutes(durationMinutes).format(ZONED_DATE_TIME_FORMAT))),
+                        withJsonPath("$.hearings[0].hearingDays[0].durationMinutes", equalTo(durationMinutes)),
+                        withJsonPath("$.hearings[0].hearingDays[0].sequence", equalTo(0)),
+                        withJsonPath("$.hearings[0].hearingDays[0].isDraft", equalTo(true)),
+                        withJsonPath("$.hearings[0].hearingDays[0].courtCentreId", equalTo(hearingData.getCourtCentreId().toString())),
+                        withoutJsonPath("$.hearings[0].hearingDays[0].courtRoomId"),
+                        withoutJsonPath("$.hearings[0].courtRoomId"),
+                        withoutJsonPath("$.hearings[0].startDate"),
+                        withoutJsonPath("$.hearings[0].endDate")
                 }
         );
     }
