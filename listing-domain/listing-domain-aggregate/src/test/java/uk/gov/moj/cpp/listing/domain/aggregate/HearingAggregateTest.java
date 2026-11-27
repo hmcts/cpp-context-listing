@@ -2615,6 +2615,132 @@ class HearingAggregateTest {
     }
 
     @Test
+    void shouldRemoveCaseFromAllocatedHearingAndReapCaseEntryEntirely() {
+        final UUID case1Id = randomUUID();
+        final UUID case2Id = randomUUID();
+        final UUID defendant1Id = randomUUID();
+        final UUID defendant2Id = randomUUID();
+        final UUID offence1Id = randomUUID();
+        final UUID offence2Id = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case1Id)
+                                        .withDefendants(new ArrayList<>(asList(Defendant.defendant()
+                                                .withId(defendant1Id)
+                                                .withOffences(new ArrayList(asList(Offence.offence().withId(offence1Id).build())))
+                                                .build())))
+                                        .build(),
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case2Id)
+                                        .withDefendants(new ArrayList(asList(Defendant.defendant()
+                                                .withId(defendant2Id)
+                                                .withOffences(new ArrayList<>(asList(Offence.offence().withId(offence2Id).build())))
+                                                .build())))
+                                        .build()))
+                        .build())
+                .build());
+
+        hearing.apply(HearingAllocatedForListing.hearingAllocatedForListing()
+                .withHearingId(hearingId)
+                .withProsecutionCaseDefendantsOffenceIds(asList(ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
+                        .withId(case1Id)
+                        .withDefendants(asList(DefendantOffenceIds.defendantOffenceIds()
+                                .withId(defendant1Id)
+                                .withOffenceIds(asList(offence1Id))
+                                .build()))
+                        .build()))
+                .build());
+
+        final List<OffencesRemovedFromExistingAllocatedHearing> events = hearing.removeCaseFromHearing(hearingId, case1Id)
+                .map(OffencesRemovedFromExistingAllocatedHearing.class::cast)
+                .collect(Collectors.toList());
+
+        assertThat(events.get(0).getHearingId(), is(hearingId));
+        assertThat(events.get(0).getOffenceIds(), is(asList(offence1Id)));
+
+        assertThat(hearing.getCurrentHearingEventState().getListedCases().stream()
+                .anyMatch(listedCase -> listedCase.getId().equals(case1Id)), is(false));
+        assertThat(hearing.getCurrentHearingEventState().getListedCases().stream()
+                .anyMatch(listedCase -> listedCase.getId().equals(case2Id)), is(true));
+
+        assertThat(hearing.getProsecutionCaseDefendantOffenceIds().stream()
+                .anyMatch(prosecutionCase -> prosecutionCase.getId().equals(case1Id)), is(false));
+    }
+
+    @Test
+    void shouldRemoveCaseFromUnallocatedHearingAndReapCaseEntryEntirely() {
+        final UUID case1Id = randomUUID();
+        final UUID case2Id = randomUUID();
+        final UUID defendant1Id = randomUUID();
+        final UUID defendant2Id = randomUUID();
+        final UUID offence1Id = randomUUID();
+        final UUID offence2Id = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case1Id)
+                                        .withDefendants(asList(Defendant.defendant()
+                                                .withId(defendant1Id)
+                                                .withOffences(new ArrayList(asList(Offence.offence().withId(offence1Id).build())))
+                                                .build()))
+                                        .build(),
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case2Id)
+                                        .withDefendants(asList(Defendant.defendant()
+                                                .withId(defendant2Id)
+                                                .withOffences(new ArrayList(asList(Offence.offence().withId(offence2Id).build())))
+                                                .build()))
+                                        .build()))
+                        .build())
+                .build());
+
+        final List<OffencesRemovedFromExistingUnallocatedHearing> events = hearing.removeCaseFromHearing(hearingId, case1Id)
+                .map(OffencesRemovedFromExistingUnallocatedHearing.class::cast)
+                .collect(Collectors.toList());
+
+        assertThat(events.get(0).getHearingId(), is(hearingId));
+        assertThat(events.get(0).getOffenceIds(), is(asList(offence1Id)));
+
+        assertThat(hearing.getCurrentHearingEventState().getListedCases().stream()
+                .anyMatch(listedCase -> listedCase.getId().equals(case1Id)), is(false));
+
+        assertThat(hearing.getProsecutionCaseDefendantOffenceIds().stream()
+                .anyMatch(prosecutionCase -> prosecutionCase.getId().equals(case1Id)), is(false));
+    }
+
+    @Test
+    void shouldReturnNoEventsWhenRemovingUnknownCaseFromHearing() {
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withListedCases(emptyList())
+                        .build())
+                .build());
+
+        final List<Object> events = hearing.removeCaseFromHearing(hearingId, randomUUID())
+                .collect(Collectors.toList());
+
+        assertThat(events.isEmpty(), is(true));
+    }
+
+    @Test
     void shouldAddNewCaseWhenDefendantCourtProceedingsUpdatedV2() {
         final UUID seedingHearingId = randomUUID();
         final UUID case1Id = randomUUID();

@@ -42,6 +42,7 @@ import uk.gov.justice.listing.courts.DeleteSeededHearing;
 import uk.gov.justice.listing.courts.ListNextHearing;
 import uk.gov.justice.listing.courts.ListNextHearingsEnrichedV2;
 import uk.gov.justice.listing.courts.ListNextHearingsV2;
+import uk.gov.justice.listing.courts.RemoveCaseFromHearing;
 import uk.gov.justice.listing.courts.RemoveSelectedOffencesFromExistingHearing;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
@@ -55,6 +56,7 @@ import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.NextHearingDayChanged;
 import uk.gov.justice.listing.events.NextHearingRequested;
 import uk.gov.justice.listing.events.OffencesRemovedFromExistingAllocatedHearing;
+import uk.gov.justice.listing.events.OffencesRemovedFromExistingUnallocatedHearing;
 import uk.gov.justice.listing.events.OffencesRemovedFromHearing;
 import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.Type;
@@ -118,7 +120,8 @@ class ListNextHearingCommandHandlerTest {
             OffencesRemovedFromHearing.class,
             DeleteNextHearingRequested.class,
             NextHearingDayChanged.class,
-            OffencesRemovedFromExistingAllocatedHearing.class);
+            OffencesRemovedFromExistingAllocatedHearing.class,
+            OffencesRemovedFromExistingUnallocatedHearing.class);
 
     @Mock
     private EventSource eventSource;
@@ -727,6 +730,60 @@ class ListNextHearingCommandHandlerTest {
 
 
 
+    }
+
+    @Test
+    public void shouldHandleRemoveCaseFromHearing() throws EventStreamException {
+        final UUID hearingId = randomUUID();
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId1 = randomUUID();
+        final UUID offenceId2 = randomUUID();
+
+        final JsonObject commandPayload = createObjectBuilder().build();
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.remove-case-from-hearing", commandPayload);
+        final Hearing hearingAggregate = new Hearing();
+
+        when(jsonObjectConverter.convert(commandPayload, RemoveCaseFromHearing.class))
+                .thenReturn(RemoveCaseFromHearing.removeCaseFromHearing()
+                        .withHearingId(hearingId)
+                        .withCaseId(caseId)
+                        .build());
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearingAggregate);
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+
+        hearingAggregate.apply(HearingListedCaseUpdated.hearingListedCaseUpdated()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withAllocated(true)
+                        .withType(Type.type().build())
+                        .withHearingDays(emptyList())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(CROWN)
+                        .withListedCases(emptyList())
+                        .build())
+                .withUnAllocatedListedCases(singletonList(ListedCase.listedCase()
+                        .withId(caseId)
+                        .withDefendants(asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                .withId(defendantId)
+                                .withOffences(asList(uk.gov.justice.listing.events.Offence.offence()
+                                        .withId(offenceId1)
+                                        .build(), uk.gov.justice.listing.events.Offence.offence()
+                                        .withId(offenceId2)
+                                        .build()))
+                                .build()))
+                        .withMarkers(singletonList(Marker.marker().build()))
+                        .build()))
+                .build());
+
+        listNextHearingCommandHandler.removeCaseFromHearing(commandEnvelope);
+
+        final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).collect(Collectors.toList());
+        assertThat(events.size(), is(1));
+        final JsonEnvelope eventProduced = events.get(0);
+        assertThat(eventProduced.metadata().name(), is("listing.events.offences-removed-from-existing-allocated-hearing"));
+        final JsonObject eventObject = eventProduced.payloadAsJsonObject();
+        assertThat(eventObject.getString("hearingId"), is(hearingId.toString()));
+        assertThat(eventObject.getJsonArray("offenceIds").size(), is(2));
     }
 
     private ListNextHearing buildListNextHearing() {
